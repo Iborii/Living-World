@@ -1,12 +1,12 @@
 {
- "version": "0.15.0",
+ "version": "0.15.1",
  "date": "2026-11-17",
  "notes": [
-  "Accounts: sign in (main menu or Settings) and your API keys, settings, personas, characters, worlds, races and stories are saved to your account. Sign in on your phone or another PC and everything is there.",
-  "Everything synced is encrypted with your password before it leaves your device, so nobody else (not even the server owner) can read your keys or stories.",
-  "Your Studio account and your sync account are the same account."
+  "Signing in is now required to use the app. New here? Create a free account on the sign-in screen.",
+  "Forgot your password? There's a link on the sign-in screen to reset it by email.",
+  "Signing out takes you back to the sign-in screen."
  ],
  "file": "index.html",
- "sha256": "1ffb77f2f74e9ba09c5007da00c3984191700af306f502ca4973f91ad40071e0",
+ "sha256": "5799a65227df44903d08e2ff050bcc9f4bde9355d144ed981f8ff6a482e2441e",
  "minShell": "0.5.0"
 }

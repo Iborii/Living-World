@@ -23,6 +23,7 @@ button.primary{background:var(--accent);color:#1b1407;border-color:var(--accent)
 button.ghost{background:transparent}
 input,select,textarea{font:inherit;color:var(--text);background:#111217;border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%}
 textarea{resize:vertical}
+a{color:var(--accent2)}
 label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
 #app{display:grid;grid-template-rows:auto 1fr auto;height:100vh}
 header{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
@@ -138,6 +139,13 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .wcard .bot{padding:12px 18px;display:flex;gap:8px;align-items:center}
 .wcard .bot .prog{margin-right:auto;font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:14px}
+/* sign-in gate */
+#authModal.gate{background:radial-gradient(ellipse at 50% -10%,#2a2333 0%,var(--bg) 60%)}
+#authModal.gate #auClose{display:none}
+#authModal .gatebrand{display:none;text-align:center;margin-bottom:6px}
+#authModal.gate .gatebrand{display:block}
+.gatebrand .orb{width:54px;height:54px;border-radius:50%;margin:0 auto 8px;background:radial-gradient(circle at 50% 38%,#f6d07a,#b5761f 70%);box-shadow:0 0 24px rgba(217,164,65,.5)}
+.gatebrand h1{font-family:var(--serif);font-weight:400;margin:0;font-size:26px}
 /* studio */
 #studio{position:fixed;inset:0;overflow:auto;display:none;background:radial-gradient(ellipse at 20% -10%,#22283a 0%,var(--bg) 55%)}
 #studio.on{display:block;animation:fadein .4s ease}
@@ -453,7 +461,8 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 </div></div>
 
 <div class="modal" id="authModal"><div class="box">
-  <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0" id="auTitle">Sign in to the Studio</h2><button class="ghost" id="auClose" style="margin-left:auto">Close</button></div>
+  <div class="gatebrand"><div class="orb"></div><h1>Living World</h1><div class="small">Sign in or create a free account to continue.</div></div>
+  <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0" id="auTitle">Sign in</h2><button class="ghost" id="auClose" style="margin-left:auto">Close</button></div>
   <div id="auBody"></div>
 </div></div>
 
@@ -686,7 +695,8 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
       async enable(password, a){ const k=await deriveKey(password, a.user.id); cryptoKey=k; const raw=new Uint8Array(await crypto.subtle.exportKey('raw',k)); mem.set('livingworld_synckey',b64(raw)+'|'+a.user.id); mark('livingworld_synckey'); await flush();
         meta={rv:{},lv:{}}; saveMeta(); return pull(); },
       disable(){ cryptoKey=null; clearTimeout(pushTimer); mem.delete('livingworld_synckey'); mem.delete('livingworld_syncmeta'); mark('livingworld_synckey'); mark('livingworld_syncmeta'); setState('off'); return flush(); },
-      pull, push:()=>push(), token
+      pull, push:()=>push(), token,
+      async resetRemote(){ await rest('user_data?key=like.livingworld_*',{method:'DELETE'}); meta={rv:{},lv:{}}; saveMeta(); }
     }
   };
   addEventListener('pagehide',()=>{ LS.flush(); if(cryptoKey) push(); }); document.addEventListener('visibilitychange',()=>{ if(document.hidden){ LS.flush(); if(cryptoKey){ clearTimeout(pushTimer); push(); } } });
@@ -1552,8 +1562,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.15.0';
+const APP_VERSION = '0.15.1';
 const CHANGELOG = [
+ {v:'0.15.1', d:'2026-11-17', notes:['Signing in is now required to use the app. New here? Create a free account on the sign-in screen.','Forgot your password? There\'s a link on the sign-in screen to reset it by email.','Signing out takes you back to the sign-in screen.']},
  {v:'0.15.0', d:'2026-11-17', notes:['Accounts: sign in (main menu or Settings) and your API keys, settings, personas, characters, worlds, races and stories are saved to your account. Sign in on your phone or another PC and everything is there.','Everything synced is encrypted with your password before it leaves your device, so nobody else (not even the server owner) can read your keys or stories.','Your Studio account and your sync account are the same account.']},
  {v:'0.14.0', d:'2026-11-17', notes:['📱 Living World now works on phones, including iPhone: open the web link in Safari and choose Share → Add to Home Screen. It opens fullscreen like a normal app, works offline (except the AI), and updates itself.','Phone-sized layout: the cast list slides in from the 👥 button, and every window becomes full screen.','Saves now live in a much bigger storage area, so long stories, pictures and wallpapers have room. Your existing saves move over automatically.','New setting: when you come back to the app after it was closed or your phone was locked, either pick up where you left off (default) or let that time pass in the world too.']},
  {v:'0.13.1', d:'2026-11-17', notes:['Phones are optional: pick Standard, Zenless Zone Zero or No phones for each world (in the creator, in Settings, or in the phone\'s own Settings app).','Standard phones use Messages and Social; Zenless Zone Zero worlds use Knock Knock and Inter-Knot (Krampus, and any world set in New Eridu, picks this automatically).','Each character can have a phone or not (creator → Basics). Characters without one don\'t show in your contacts and never text, call or post.','Customize the phone: rename the apps, pick its color and wallpaper (or your own picture), and choose which apps show on the home screen.']},
@@ -2413,7 +2424,12 @@ function syncLine(){ const s=LS.sync?LS.sync.state:{on:false}; if(!AUTH) return 
   if(!s.on) return 'Signed in · sync is off on this device';
   return s.state==='busy'?(s.msg||'Syncing…'):s.state==='error'?'Sync problem: '+s.msg:`Synced${s.last?' at '+new Date(s.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):''}`; }
 async function afterSync(changed){ if(changed&&changed.length){ await LS.flush(); notice?.('Loaded your things from your account.'); location.reload(); } }
+async function enableSync(pw){ try{ return await LS.sync.enable(pw, AUTH); }catch(e){
+    if(LS.sync.state.state==='error'&&/unlock/i.test(LS.sync.state.msg)&&confirm('Your account\'s saved data was locked with an older password and can\'t be opened. Replace it with what\'s on this device?')){ await LS.sync.resetRemote(); return await LS.sync.enable(pw, AUTH); } throw e; } }
 async function signInWith(email, pw){ const j=await sbAuth('token?grant_type=password',{email,password:pw}); saveAuth(authFrom(j)); try{ const p=await sb('profiles?select=name&id=eq.'+AUTH.user.id,{auth:true}); if(p[0]) saveAuth({...AUTH,name:p[0].name}); }catch(e){} return j; }
+const needGate=()=>studioReady()&&!AUTH;
+function openGate(){ $('#authModal').classList.add('gate'); openAuth(); }
+function passGate(){ if($('#authModal').classList.contains('gate')){ $('#authModal').classList.remove('gate','on'); } }
 function openAuth(why){
   if(!studioReady()){ alert('Accounts aren\'t connected yet.'); return; }
   $('#authModal').classList.add('on');
@@ -2424,37 +2440,49 @@ function openAuth(why){
       <label>Display name (shown on what you publish in the Studio)</label><input id="auName" value="${esc(AUTH.name||'')}" maxlength="40">
       <div class="rowbtns" style="margin-top:12px"><span class="small" id="auMsg"></span><button id="auOut" class="ghost">Sign out</button><button class="primary" id="auSave" style="margin-left:auto">Save name</button></div>`;
     const msg=t=>$('#auMsg').textContent=t;
-    $('#auOut').onclick=async()=>{ if(!confirm('Sign out? This device keeps its copy of your things, but stops syncing.')) return; await LS.sync?.disable(); saveAuth(null); MYLIKES=new Set(); likesLoaded=false; $('#authModal').classList.remove('on'); if(SCREEN==='studio') renderStudio(); else if(SCREEN==='home') renderHome(); };
+    $('#auOut').onclick=async()=>{ if(!confirm('Sign out? You\'ll need to sign in again to use the app. This device keeps its copy of your things.')) return; flushSave(); await LS.sync?.disable(); saveAuth(null); MYLIKES=new Set(); likesLoaded=false; await LS.flush(); location.reload(); };
     $('#auSave').onclick=async()=>{ const n=$('#auName').value.trim(); if(!n) return; try{ await sb('profiles?id=eq.'+AUTH.user.id,{method:'PATCH',auth:true,body:{name:n}}); saveAuth({...AUTH,name:n}); msg('Saved.'); renderStudioNav(); }catch(e){ msg(e.message); } };
     const sn=$('#auSyncNow'); if(sn) sn.onclick=async()=>{ flushSave(); sn.disabled=true; try{ await LS.sync.push(); const ch=await LS.sync.pull(); await afterSync(ch); }catch(e){ msg(e.message); } sn.disabled=false; $('#auSync').textContent=syncLine(); };
     const so=$('#auSyncOn'); if(so) so.onclick=async()=>{ const pw=$('#auSyncPw').value; if(!pw) return; so.disabled=true; msg('Checking…');
-      try{ await signInWith(AUTH.user.email, pw); const ch=await LS.sync.enable(pw, AUTH); msg('Sync is on.'); await afterSync(ch); openAuth(); }catch(e){ so.disabled=false; msg(/invalid login/i.test(e.message)?'That password isn\'t right.':e.message); } };
+      try{ await signInWith(AUTH.user.email, pw); const ch=await enableSync(pw); msg('Sync is on.'); await afterSync(ch); openAuth(); }catch(e){ so.disabled=false; msg(/invalid login/i.test(e.message)?'That password isn\'t right.':e.message); } };
     return; }
   let mode='in';
   const draw=()=>{ $('#auTitle').textContent=mode==='in'?'Sign in':'Create an account';
-    $('#auBody').innerHTML=`${why?`<p class="small">${esc(why)}</p>`:''}<p class="small">An account saves your API keys, personas, characters, worlds and stories, so they're on every device you sign in on (PC and phone). It also lets you publish, like and report in the Studio. Browsing the Studio needs no account.</p>
+    $('#auBody').innerHTML=`${why?`<p class="small">${esc(why)}</p>`:''}<p class="small">An account saves your API keys, personas, characters, worlds and stories, so they're on every device you sign in on (PC and phone). It's also your Studio account for publishing, liking and reporting.</p>
       ${mode==='up'?'<label>Display name</label><input id="auName" maxlength="40" placeholder="Shown on what you publish">':''}
       <label>Email</label><input id="auEmail" type="email" autocomplete="email"><label>Password</label><input id="auPw" type="password" autocomplete="${mode==='in'?'current-password':'new-password'}" placeholder="${mode==='up'?'At least 8 characters':''}">
+      ${mode==='in'?'<div class="small" style="margin-top:6px"><a href="#" id="auForgot">Forgot your password?</a></div>':''}
       <div class="hint">Your password also locks your synced data. If you ever reset it, you'd need to enter your API key again on your devices.</div>
       <div class="rowbtns" style="margin-top:12px"><span class="small" id="auMsg"></span><button class="ghost" id="auSwitch">${mode==='in'?'Create an account instead':'I already have an account'}</button><button class="primary" id="auGo" style="margin-left:auto">${mode==='in'?'Sign in':'Create account'}</button></div>`;
     $('#auSwitch').onclick=()=>{ mode=mode==='in'?'up':'in'; draw(); };
+    const fg=$('#auForgot'); if(fg) fg.onclick=async e=>{ e.preventDefault(); const email=$('#auEmail').value.trim(); if(!email){ $('#auMsg').textContent='Type your email first.'; return; }
+      try{ await sbAuth('recover',{email}); $('#auMsg').textContent='Check your email for a link to set a new password.'; }catch(err){ $('#auMsg').textContent=err.message; } };
     const go=async()=>{ const email=$('#auEmail').value.trim(), pw=$('#auPw').value; const msg=t=>$('#auMsg').textContent=t;
       if(!email||!pw) return msg('Enter your email and password.'); if(mode==='up'&&pw.length<8) return msg('Use at least 8 characters for the password.');
       $('#auGo').disabled=true; msg(mode==='in'?'Signing in…':'Creating your account…');
       try{ if(mode==='up'){ const name=($('#auName').value||'').trim()||email.split('@')[0]; const j=await sbAuth('signup',{email,password:pw,data:{name}});
           if(j.access_token){ saveAuth({...authFrom(j), name}); } else { msg('Check your email and click the confirmation link, then come back and sign in.'); mode='in'; $('#auGo').disabled=false; setTimeout(()=>{ draw(); $('#auEmail').value=email; $('#auMsg').textContent='Confirmed? Sign in here.'; },2500); return; } }
         else await signInWith(email, pw);
-        msg('Getting your things…'); flushSave(); let ch=[]; try{ ch=await LS.sync.enable(pw, AUTH); }catch(e){ console.warn(e); }
-        await loadMyLikes(); $('#authModal').classList.remove('on'); await afterSync(ch); if(SCREEN==='studio') renderStudio(); else if(SCREEN==='home') renderHome(); else renderStudioNav();
+        msg('Getting your things…'); flushSave(); let ch=[]; try{ ch=await enableSync(pw); }catch(e){ console.warn(e); }
+        await loadMyLikes(); passGate(); $('#authModal').classList.remove('on'); await afterSync(ch); if(SCREEN==='studio') renderStudio(); else if(SCREEN==='home') renderHome(); else renderStudioNav();
       }catch(e){ $('#auGo').disabled=false; msg(/invalid login/i.test(e.message)?'Wrong email or password (or the account isn\'t confirmed yet).':e.message); } };
     $('#auGo').onclick=go; $('#auPw').onkeydown=e=>{ if(e.key==='Enter') go(); };
   };
   draw();
 }
+// links from emails (confirming an account, resetting a password) come back to the web app
+(function(){ const hp=new URLSearchParams(location.hash.slice(1)); const typ=hp.get('type'); if(!typ||!hp.get('access_token')) return;
+  history.replaceState(null,'',location.pathname);
+  setTimeout(()=>{ if(typ==='recovery'){ $('#authModal').classList.add('on','gate'); $('#auTitle').textContent='Set a new password';
+      $('#auBody').innerHTML=`<label>New password</label><input id="auNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"><div class="hint">Your old synced data was locked with your old password, so you'll be asked to start fresh on the server (your devices keep their own copies).</div><div class="rowbtns" style="margin-top:12px"><span class="small" id="auMsg"></span><button class="primary" id="auSet" style="margin-left:auto">Save password</button></div>`;
+      $('#auSet').onclick=async()=>{ const pw=$('#auNew').value; if(pw.length<8){ $('#auMsg').textContent='Use at least 8 characters.'; return; }
+        try{ const r=await fetch(STUDIO.url+'/auth/v1/user',{method:'PUT',headers:{'content-type':'application/json',apikey:STUDIO.key,Authorization:'Bearer '+hp.get('access_token')},body:JSON.stringify({password:pw})}); if(!r.ok) throw new Error('That link has expired. Ask for a new one.'); const u=await r.json();
+          $('#auMsg').textContent='Saved. Sign in with your new password.'; setTimeout(()=>{ $('#authModal').classList.remove('on'); openGate(); $('#auEmail')&&($('#auEmail').value=u.email||''); },1500); }catch(e){ $('#auMsg').textContent=e.message; } }; }
+    else if(typ==='signup'||typ==='magiclink'||typ==='invite'){ openGate(); const m=$('#auMsg'); if(m) m.textContent='Your email is confirmed. Sign in to continue.'; } }, 3400); })();
 addEventListener('lwsync',()=>{ const el=$('#auSync'); if(el) el.textContent=syncLine(); const sl=$('#setAcct'); if(sl) sl.textContent=AUTH?`${AUTH.user.email} · ${syncLine()}`:'Not signed in'; });
 // back on the main menu after the phone was away: pick up changes from your other devices
 document.addEventListener('visibilitychange',async()=>{ if(document.hidden||!LS.sync?.state.on||SCREEN!=='home') return; try{ const ch=await LS.sync.pull(); if(ch.length){ await LS.flush(); location.reload(); } }catch(e){} });
-$('#auClose').onclick=()=>$('#authModal').classList.remove('on');
+$('#auClose').onclick=()=>{ if($('#authModal').classList.contains('gate')) return; $('#authModal').classList.remove('on'); };
 
 // ---- popular on the main menu ----
 async function renderHomeStudio(){ const sec=$('#studioSec'); if(!sec) return; if(!studioReady()){ sec.style.display='none'; return; }
@@ -2492,7 +2520,7 @@ $('#homeBtn').onclick=()=>{ if(S) LS.setItem(SAVE_KEY, JSON.stringify(S)); showS
 loadCfg(); loadPersonas();
 (function splash(){
   const t='LIVING WORLD'; $('#splashTitle').innerHTML=[...t].map((ch,i)=>`<span style="animation-delay:${0.55+i*0.06}s">${ch===' '?'&nbsp;':ch}</span>`).join('');
-  let done=false; const finish=()=>{ if(done) return; done=true; $('#splash').classList.add('out'); showScreen('home'); setTimeout(()=>$('#splash').remove(),800); };
+  let done=false; const finish=()=>{ if(done) return; done=true; $('#splash').classList.add('out'); showScreen('home'); if(needGate()) openGate(); setTimeout(()=>$('#splash').remove(),800); };
   $('#splash').onclick=finish; setTimeout(finish, matchMedia('(prefers-reduced-motion: reduce)').matches?600:3200);
 })();
 </script>
