@@ -140,6 +140,9 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .wcard .bot .prog{margin-right:auto;font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:14px}
 #sendBtn.stopping{background:#5a2030;border-color:#c0475f;color:#ffd5dc}
+.card .needs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.card .needs span{font-size:10.5px;padding:1px 7px;border-radius:20px;background:#2a2433;color:#d9c9f3}.card .needs span.ow{background:#1f2a33;color:#bcd6e8}
+.wr-row{display:grid;grid-template-columns:1.1fr 110px 2fr 30px;gap:6px;margin-bottom:6px}
+@media (max-width:760px){.wr-row{grid-template-columns:1fr 100px 30px}.wr-row .wd{grid-column:1/-1}}
 /* sign-in gate */
 #authModal.gate{background:radial-gradient(ellipse at 50% -10%,#2a2333 0%,var(--bg) 60%)}
 #authModal.gate #auClose{display:none}
@@ -477,7 +480,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 
 <div class="modal" id="evModal"><div class="box">
   <div class="lb-head"><h2 style="margin:0;font-size:18px">Events</h2>
-    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button></div>
+    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button><button data-ev="wear">Clothes &amp; bag</button></div>
     <span class="small" id="evNow"></span><button class="ghost" id="evClose" style="margin-left:auto">Close</button></div>
   <div class="ev-body" id="evBody"></div>
 </div></div>
@@ -815,7 +818,8 @@ function load(){
   if(!S&&fresh) S=fresh;
   if(!S||S.world!==W.id) S=newState();
   for(const c of W.characters) if(!S.chars[c.id]) S.chars[c.id]={loc:c.loc,act:c.act,lastBeat:S.clock,log:[],washed:S.clock,trust:0};
-  S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel();
+  S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel(); S.user.bag=S.user.bag||[];
+  setTimeout(()=>{ if(!S) return; for(const c of W.characters) if(!wardrobeOf(c).length) genWardrobe(c); }, 3000);
   for(const c of W.characters){ const st=S.chars[c.id]; if(!st.cycle || (st.cycle.custom!==true && (c.custom||c.edited) && c.cycle && (!!c.cycle.on!==st.cycle.on || (c.cycle.on && (+c.cycle.len!==st.cycle.len || +c.cycle.days!==st.cycle.days))))) st.cycle=defaultCycle(c); }
   // older saves kept one memory string per character: turn each into a memory entry
   for(const c of W.characters){ const st=S.chars[c.id]; if(st.memory){ addMemory({who:[c.id], text:st.memory, t:S.clock, src:'old', imp:2}); delete st.memory; } }
@@ -1054,6 +1058,57 @@ function present(){ // characters in the user's scene
   if(S.branch) return W.characters.filter(c=>c.id===S.branch.charId);
   return W.characters.filter(c=> S.user.companions.includes(c.id) || sameLoc(S.chars[c.id].loc, S.user.loc));
 }
+// ======================= needs, moods, boredom and clothes =======================
+const HOUR=60*MIN;
+const EAT=/\b(eat|eats|eating|lunch|dinner|breakfast|brunch|meal|snack|food|hot ?pot|noodles|ramen|dim sum|caf[eé]|restaurant|diner|buffet|dessert|donuts?|bbq|barbecue|supper)\b/i;
+const WORKOUT=/\b(train|training|gym|workout|exercise|spar|sparring|jog|jogging|running|drills?|combat practice)\b/i;
+const FORMAL=/\b(gala|banquet|ceremony|wedding|formal|ball|award|opera|interview|funeral)\b/i;
+const actKey=a=>String(a||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').trim().split(/\s+/).slice(0,4).join(' ');
+function needsOf(st){ if(!st.need) st.need={lastAte:S.clock-3*HOUR, awakeSince:S.clock-3*HOUR, stress:20, t:S.clock}; st.acts=st.acts||[]; return st.need; }
+function tickNeeds(){
+  for(const c of W.characters){ const st=S.chars[c.id]; const n=needsOf(st); pickOutfit(c); const dtH=(S.clock-n.t)/HOUR; if(dtH<=0.01) continue; n.t=S.clock;
+    if(isConstruct(c)){ n.lastAte=S.clock; }
+    if(SLEEPY.test(st.act)){ n.awakeSince=S.clock; n.stress=Math.max(0,n.stress-4*dtH); }
+    else { if(EAT.test(st.act)) n.lastAte=S.clock; n.stress=Math.max(0,Math.min(100,n.stress+(BUSY.test(st.act)?4:-5)*dtH)); }
+    if(st.act&&st.act!=='with you'){ const k=actKey(st.act); const last=st.acts[st.acts.length-1]; if(!last||last.k!==k){ st.acts.push({k,a:st.act,t:S.clock}); if(st.acts.length>150) st.acts.splice(0,st.acts.length-150); } } } }
+function stateBits(c, short){ const st=S.chars[c.id]; const n=needsOf(st); const out=[];
+  const ate=(S.clock-n.lastAte)/HOUR, up=(S.clock-n.awakeSince)/HOUR, hr=dt(S.clock).h;
+  if(!isConstruct(c)&&!SLEEPY.test(st.act)){
+    if(ate>=8) out.push(short?'starving':`starving (hasn't eaten in about ${Math.round(ate)} hours)`); else if(ate>=5) out.push(short?'hungry':`hungry (last ate about ${Math.round(ate)} hours ago)`); else if(ate>=3.5) out.push('peckish');
+    if(up>=20) out.push(short?'exhausted':`running on fumes (awake about ${Math.round(up)} hours)`); else if(up>=16) out.push(short?'exhausted':`exhausted (awake about ${Math.round(up)} hours)`); else if(up>=13||(hr>=0&&hr<5&&up>=4)) out.push('tired'); }
+  if(n.stress>=85) out.push('frazzled'); else if(n.stress>=60) out.push('stressed');
+  if(st.mood&&S.clock-st.mood.t<8*HOUR) out.push(short?st.mood.word:`feeling ${st.mood.word}${st.mood.why?` (${st.mood.why})`:''}`);
+  if(!short){ const k=actKey(st.act); const reps=(st.acts||[]).filter(a=>a.k===k&&S.clock-a.t<7*24*HOUR).length; if(st.act!=='with you'&&reps>=4) out.push(`getting bored of "${st.act}" (${reps} times this week)`); }
+  return out; }
+function stateLine(c){ const b=stateBits(c,false); return b.length?b.join('; '):'fine'; }
+// clothes
+const OUTFIT_KINDS=['casual','work','sleep','workout','formal'];
+function wardrobeOf(c){ const st=S.chars[c.id]; if(!st.wardrobe) st.wardrobe=(c.wardrobe||[]).map(o=>({...o})); return st.wardrobe; }
+function wantKind(c){ const a=S.chars[c.id].act||''; return SLEEPY.test(a)?'sleep':WORKOUT.test(a)?'workout':FORMAL.test(a)?'formal':BUSY.test(a)?'work':'casual'; }
+function pickOutfit(c){ const st=S.chars[c.id]; const wr=wardrobeOf(c); if(!wr.length) return; if(present().includes(c)&&st.outfit) return; // on screen, the story changes their clothes
+  const want=wantKind(c); if(st.outfit&&st.outfit.kind===want) return;
+  let pool=wr.filter(o=>o.kind===want&&!o.dirty); if(!pool.length) pool=wr.filter(o=>o.kind==='casual'&&!o.dirty); if(!pool.length) pool=wr;
+  const prev=st.outfit&&st.outfit.name; const choice=pool.length>1?pool.filter(o=>o.name!==prev)[Math.floor(Math.random()*(pool.length-1))]||pool[0]:pool[0];
+  st.outfit={name:choice.name, desc:choice.desc, kind:choice.kind, since:S.clock}; }
+function outfitLine(c){ const st=S.chars[c.id]; const wr=wardrobeOf(c); if(!st.outfit&&!wr.length) return '';
+  return `${st.outfit?`WEARING: ${st.outfit.name}${st.outfit.desc?` (${st.outfit.desc})`:''}${st.outfit.kind==='custom'?'':''}`:'WEARING: (whatever fits their sheet)'}${wr.length?`\nWARDROBE: ${wr.map(o=>`${o.name} [${o.kind}]`).join(', ')}`:''}\n`; }
+let wardrobeBusy=new Set();
+async function genWardrobe(c){ if(wardrobeBusy.has(c.id)||!CFG.key||CFG.bgOn==='0') return; wardrobeBusy.add(c.id);
+  try{ const out=await callAI({system:'You list a roleplay character\'s real wardrobe. Return ONLY JSON: [{"name":"short outfit name","kind":"casual|work|sleep|workout|formal","desc":"one sentence: pieces, colors, fit, fabric"}]. Use the outfits their sheet describes first (their signature look), then add realistic everyday clothes that fit their personality, job and budget. 5 to 9 outfits, at least one sleep outfit.', messages:[{role:'user',content:`${c.full}\n${c.sheet.slice(0,12000)}`}], model:CFG.bg, maxTokens:900});
+    const arr=JSON.parse((out.match(/\[[\s\S]*\]/)||['[]'])[0]).filter(o=>o&&o.name).map(o=>({name:String(o.name).slice(0,60), kind:OUTFIT_KINDS.includes(o.kind)?o.kind:'casual', desc:String(o.desc||'').slice(0,300)}));
+    if(arr.length&&!S.chars[c.id].wardrobe?.length){ S.chars[c.id].wardrobe=arr; pickOutfit(c); save(); }
+  }catch(e){} finally{ wardrobeBusy.delete(c.id); } }
+function applyLifeTag(C, arg, only){ // shared by the story and off-screen scenes
+  const nameOf=s=>String(s||'').trim(); const parts=arg.split(':').map(x=>x.trim());
+  if(C==='ATE'){ const a=parts[0].toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.lastAte=S.clock; else { const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))) needsOf(S.chars[c.id]).lastAte=S.clock; } return true; }
+  if(C==='MOOD'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]) S.chars[c.id].mood={word:parts[1].slice(0,40), why:(parts.slice(2).join(':')||'').slice(0,140), t:S.clock}; return true; }
+  if(C==='OUTFIT'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]){ const desc=parts.slice(1).join(':').slice(0,300); const wr=wardrobeOf(c); const m=wr.find(o=>desc.toLowerCase().startsWith(o.name.toLowerCase())); S.chars[c.id].outfit=m?{...m, since:S.clock}:{name:desc.split(/[,(]/)[0].slice(0,60), desc, kind:wantKind(c), since:S.clock}; } return true; }
+  if(C==='BUY'){ const c=charByName(parts[0]); if(c&&parts[1]){ wardrobeOf(c).push({name:parts[1].slice(0,60), kind:OUTFIT_KINDS.includes((parts[2]||'').toLowerCase())?parts[2].toLowerCase():'casual', desc:(OUTFIT_KINDS.includes((parts[2]||'').toLowerCase())?parts.slice(3).join(':'):parts.slice(2).join(':')).slice(0,300), bought:S.clock}); } return true; }
+  if(C==='RETURN'){ const c=charByName(parts[0]); if(c&&parts[1]){ const wr=wardrobeOf(c); const i=wr.findIndex(o=>o.name.toLowerCase()===parts[1].toLowerCase()); if(i>=0) wr.splice(i,1); } return true; }
+  if(C==='GET'){ S.user.bag=S.user.bag||[]; if(arg.trim()) S.user.bag.push(arg.trim().slice(0,80)); return true; }
+  if(C==='LOSE'){ S.user.bag=S.user.bag||[]; const i=S.user.bag.findIndex(x=>x.toLowerCase()===arg.trim().toLowerCase()); if(i>=0) S.user.bag.splice(i,1); return true; }
+  return false; }
+
 function updateSchedules(){
   if(S.branch){ const st=S.chars[S.branch.charId]; st.loc=S.user.loc; st.act='with you'; return; }
   for(const c of W.characters){
@@ -1227,6 +1282,11 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
 `}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  small changes (usually 1 to 3) from what the user actually did
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
    [[NUMBER: Name]]  when a character and the user swap phone numbers
+   [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
+   [[MOOD: Name: feeling: why]]  when something clearly changes how a character feels (angry, hurt, giddy, sulking…)
+   [[OUTFIT: Name: what they're wearing now]]  when a character changes clothes
+   [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
+   [[GET: item]] / [[LOSE: item]]  when the user picks up, receives, uses up or loses something they carry
    [[BOND: Name / Name +N: reason]]  when something changes how two characters feel about each other (usually 1 to 3)
    Do not write a status line; the app shows it.`;
   s+='\n\n';
@@ -1242,12 +1302,15 @@ LAST WASHED: ${washedLine()}
 ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
   s+=`NEXT EVENTS for people here: ${nextEventsFor(pres)||'none'}.\n\n`;
+  for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: ${stateLine(c)}\n${outfitLine(c)}`; }
+  if((S.user.bag||[]).length) s+=`THE USER IS CARRYING: ${S.user.bag.join(', ')}\n`;
+  s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
   for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What ${c.name} was just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
   const lore=matchLore(ctx+'\n'+pres.map(c=>c.full).join(' '));
   if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
   s+=raceLoreBlock([...pres, persona()], ctx);
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
-  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
+  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   return subUser(s);
 }
 function chatMessages(){
@@ -1281,8 +1344,7 @@ async function generateReply(){
     const full=await callAI({system:mainSystem(), messages:chatMessages(), model:CFG.main, maxTokens:+CFG.maxTok||1600, signal:mainAbort.signal,
       onText:t=>{ msg.text=t; renderStreaming(msg); }});
     if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
-    msg.text=applyControls(full); delete msg.streaming;
-    syncClockFromStamp(msg.text);
+    syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
     const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text);
     maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
@@ -1299,6 +1361,7 @@ function applyControls(text){
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
+    else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
@@ -1359,17 +1422,19 @@ TIME: ${timeLine(now)} (about ${since} minutes since their last moment)
 PLACE: ${st0.loc}
 CHARACTERS HERE: ${cs.map(c=>c.full).join(', ')}
 DOING: ${cs.map(c=>`${c.name}: ${S.chars[c.id].act}`).join('; ')}
+STATE: ${cs.map(c=>`${c.name}: ${stateLine(c)}${S.chars[c.id].outfit?`; wearing ${S.chars[c.id].outfit.name}${S.chars[c.id].outfit.desc?` (${S.chars[c.id].outfit.desc})`:''}`:''}`).join(' | ')}
 ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
+Optional lines when they apply: ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind.
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:450});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
-  story=story.replace(/^\s*(POST|TEXT TO USER|BOND):.*$/gim,'').trim();
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|ATE|MOOD|OUTFIT|BUY):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -1391,7 +1456,7 @@ function tick(){
     if(CFG.away==='catchup'&&!S.paused){ const gone=Math.min(dtReal,12*3600000); notice(`While you were away, ${gone>=3600000?Math.round(gone/360000)/10+' hours':Math.round(gone/60000)+' minutes'} of real time passed in the world.`); dtReal=gone; }
     else dtReal=1000; }
   if(!S.paused){ S.clock+=dtReal*(+S.speed||1); }
-  updateSchedules(); renderClock(); renderCards(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
+  updateSchedules(); tickNeeds(); renderClock(); renderCards(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
 }
 setInterval(tick,1000);
 setInterval(()=>{ if(W&&SCREEN==='world'){ scheduleBeats(); save(); } }, 5000);
@@ -1439,7 +1504,7 @@ function renderCards(){
   const pres=present().map(c=>c.id);
   $('#allCard').style.display=S.branch?'none':''; document.querySelectorAll('aside h3')[1].textContent=S.branch?'In this chat':'Watch the world';
   $('#charCards').innerHTML=W.characters.filter(c=>!S.branch||c.id===S.branch.charId).map(c=>{ const st=S.chars[c.id]; const withU=pres.includes(c.id);
-    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div><div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div></div>`; }).join('');
+    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div><div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>${(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
   document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=()=>{ S.view=el.dataset.id; render(); save(); closeSide(); });
   $('#myStoryCard').classList.toggle('sel',S.view==='me'); $('#allCard').classList.toggle('sel',S.view==='all');
   $('#myWhere').textContent=S.user.loc; $('#myWith').textContent=pres.length?'With: '+pres.map(i=>charById(i).name).join(', '):'Alone';
@@ -1616,8 +1681,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.16.4';
+const APP_VERSION = '0.17.0';
 const CHANGELOG = [
+ {v:'0.17.0', d:'2026-11-18', notes:['Needs and moods: characters get hungry, tired and stressed over the day (work stresses them, free time and sleep calm them down), and their mood changes with what happens. It shows on their card and drives how they act.','Boredom: doing the same thing over and over gets old. Characters notice when their routine repeats a lot.','Wardrobes: everyone has their own clothes (made from their sheet if you didn\'t write any) and changes on their own for work, sleep, the gym or a formal event. The story can buy, return and change clothes too.','Your bag: the story keeps track of what you pick up, receive or lose.','See and edit clothes and your bag in 📅 Events → Clothes & bag. The creator has a Wardrobe box with a ✨ suggest button.']},
  {v:'0.16.4', d:'2026-11-18', notes:['Real conflict: arguments don\'t magically resolve. If nobody is swayed, someone may walk away or stand their ground, and anger and grudges carry over into later scenes, texts and off-screen life.','Physical fights aren\'t avoided anymore when a character would really throw a punch. Fights play out beat by beat with real injuries that take time to heal, and real consequences.']},
  {v:'0.16.3', d:'2026-11-18', notes:['Much faster replies: DeepSeek\'s "thinking" step is now off (it spent a long time thinking first, and sometimes used up the whole reply on thinking so nothing came back). You can turn it back on in Settings.','The AI request is now arranged so DeepSeek can reuse most of it from turn to turn (prompt caching), which makes replies start sooner and cost less.','Replies never hang forever: if the AI doesn\'t answer within 2 minutes you get a clear message, and your message is kept.','While a reply is being written, the Send button becomes ■ Stop.','If a reply fails, ↻ Regenerate now retries it (it used to delete the previous reply instead).','Off-screen scenes and memories no longer slow down your own replies, and the story summary runs in the background.']},
  {v:'0.16.2', d:'2026-11-17', notes:['Undo last now asks "Are you sure?" first and shows what will be deleted, so you can\'t wipe part of a story by accident.']},
@@ -2015,6 +2081,26 @@ function renderEvents(){
       S.events.push(e); save(); updateSchedules(); renderEvents(); };
     B.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ S.events=S.events.filter(e=>e.id!==b.dataset.del); save(); updateSchedules(); renderEvents(); });
   }
+  if(evTab==='wear'){
+    const kinds=k=>OUTFIT_KINDS.map(x=>`<option ${x===k?'selected':''}>${x}</option>`).join('');
+    B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">What everyone owns and has on. Characters change by themselves when their day changes (work, sleep, the gym), and the story can buy, return and swap clothes. You can edit any of it here.</div>
+      <div class="ev-card"><h4>🎒 Your bag</h4><div>${(S.user.bag||[]).map((x,i)=>`<span class="pill" style="margin:2px">${esc(x)} <a href="#" data-bagdel="${i}">✕</a></span>`).join('')||'<span class="small">Empty.</span>'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><input id="bagNew" placeholder="Add something you carry"><button id="bagAdd">Add</button></div></div>`+
+      cs.map(c=>{ const st=S.chars[c.id]; const wr=wardrobeOf(c); return `<div class="ev-card"><h4><span class="ev-dot" style="background:${c.color}"></span>${esc(c.full)} <span class="small" style="font-weight:400">${st.outfit?'wearing '+esc(st.outfit.name):''}</span></h4>
+        ${wr.length?'':`<div class="small">No wardrobe yet. ${wardrobeBusy.has(c.id)?'Making one from their sheet…':`<a href="#" data-gen="${c.id}">Make one from their sheet</a>`}</div>`}
+        ${wr.map((o,i)=>`<div class="wr-row"><input value="${esc(o.name)}" data-wn="${c.id}|${i}"><select data-wk="${c.id}|${i}">${kinds(o.kind)}</select><input class="wd" value="${esc(o.desc||'')}" data-wd="${c.id}|${i}"><button class="ghost" data-wx="${c.id}|${i}" title="Remove">✕</button></div>`).join('')}
+        <div class="rowbtns"><button data-wadd="${c.id}">+ Add outfit</button>${wr.length?`<select data-wear="${c.id}"><option value="">Change what they're wearing…</option>${wr.map((o,i)=>`<option value="${i}">${esc(o.name)}</option>`).join('')}</select>`:''}</div></div>`; }).join('');
+    const ref=(s)=>{ const [id,i]=s.split('|'); return {c:charById(id), wr:wardrobeOf(charById(id)), i:+i}; };
+    $('#bagAdd').onclick=()=>{ const v=$('#bagNew').value.trim(); if(!v) return; S.user.bag.push(v); save(); renderEvents(); };
+    B.querySelectorAll('[data-bagdel]').forEach(a=>a.onclick=e=>{ e.preventDefault(); S.user.bag.splice(+a.dataset.bagdel,1); save(); renderEvents(); });
+    B.querySelectorAll('[data-gen]').forEach(a=>a.onclick=e=>{ e.preventDefault(); genWardrobe(charById(a.dataset.gen)).then(()=>renderEvents()); renderEvents(); });
+    B.querySelectorAll('[data-wn]').forEach(x=>x.onchange=()=>{ const r=ref(x.dataset.wn); r.wr[r.i].name=x.value.trim()||r.wr[r.i].name; save(); });
+    B.querySelectorAll('[data-wk]').forEach(x=>x.onchange=()=>{ const r=ref(x.dataset.wk); r.wr[r.i].kind=x.value; save(); });
+    B.querySelectorAll('[data-wd]').forEach(x=>x.onchange=()=>{ const r=ref(x.dataset.wd); r.wr[r.i].desc=x.value.trim(); save(); });
+    B.querySelectorAll('[data-wx]').forEach(x=>x.onclick=()=>{ const r=ref(x.dataset.wx); r.wr.splice(r.i,1); save(); renderEvents(); });
+    B.querySelectorAll('[data-wadd]').forEach(x=>x.onclick=()=>{ wardrobeOf(charById(x.dataset.wadd)).push({name:'New outfit',kind:'casual',desc:''}); save(); renderEvents(); });
+    B.querySelectorAll('[data-wear]').forEach(x=>x.onchange=()=>{ if(x.value==='') return; const c=charById(x.dataset.wear); const o=wardrobeOf(c)[+x.value]; S.chars[c.id].outfit={...o, since:S.clock}; save(); renderEvents(); renderCards(); });
+  }
   if(evTab==='rel'){
     initRel(); const pairs=Object.entries(S.rel).map(([k,r])=>({k,r,a:charById(k.split('|')[0]),b:charById(k.split('|')[1])})).filter(p=>p.a&&p.b).sort((x,y)=>y.r.score-x.r.score);
     const col=s=>s>=70?'#6fbf8f':s>=45?'#d9a441':s>=25?'#8a8fa0':'#c76a5a';
@@ -2070,7 +2156,7 @@ function openCreator(editKey){
 function crCollect(){ // read the visible step's fields into CR
   const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined; };
   if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.phone=$('#crPhone').checked; CR.gender=v('crGender')==='__other'?(v('crGenderOther')||'').trim():v('crGender'); { const r=raceSelectRead($('#crRace'),$('#crRaceX')); CR.race=r.race; CR.raceId=r.raceId; CR.animal=r.animal; const d=raceById(r.raceId); CR.construct=d?d.cycle==='none':/construct|robot|android/i.test(CR.race); } CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
-  if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
+  if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); CR.wardrobe=(v('crWard')||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const m=l.match(/^(.+?)\s*\((\w+)\)\s*:?\s*(.*)$/); return m?{name:m[1].trim().slice(0,60), kind:OUTFIT_KINDS.includes(m[2].toLowerCase())?m[2].toLowerCase():'casual', desc:m[3].trim().slice(0,300)}:{name:l.split(':')[0].trim().slice(0,60), kind:'casual', desc:(l.split(':').slice(1).join(':')||'').trim()}; }); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
   if(crStep===3&&!CR._builtin){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
@@ -2117,7 +2203,14 @@ function renderCreator(){
       <textarea id="crSheet" rows="18" placeholder="Write as much as you like. The more specific, the better they'll be played.">${esc(c.sheet)}</textarea><div class="hint" id="crSheetCount"></div>
       <label>Short summary (used when they live off-screen and in their card; 2–4 sentences)</label>
       <textarea id="crBrief" rows="4">${esc(c.brief)}</textarea>
-      <div class="rowbtns"><button class="aibtn" id="crAiBrief">✨ Write the summary from the sheet</button></div>`;
+      <div class="rowbtns"><button class="aibtn" id="crAiBrief">✨ Write the summary from the sheet</button></div>
+      <label>Wardrobe: one outfit per line, as "Name (casual/work/sleep/workout/formal): description"</label>
+      <textarea id="crWard" rows="6" placeholder="Work uniform (work): navy blazer, white blouse, pencil skirt&#10;Lazy day hoodie (casual): oversized grey hoodie, bike shorts&#10;Pajamas (sleep): soft pink flannel set">${esc((c.wardrobe||[]).map(o=>`${o.name} (${o.kind}): ${o.desc||''}`).join('\n'))}</textarea>
+      <div class="rowbtns"><button class="aibtn" id="crAiWard">✨ Suggest a wardrobe from the sheet</button><span class="small">Leave it empty and one is made from their sheet when the story starts.</span></div>`;
+    $('#crAiWard').onclick=async()=>{ crCollect(); if(!CR.sheet.trim()){ $('#crMsg').textContent='Write the character sheet first.'; return; } const b=$('#crAiWard'); b.disabled=true; b.textContent='✨ Thinking…';
+      try{ const out=await callAI({system:'You list a roleplay character\'s real wardrobe. Return ONLY JSON: [{"name":"short outfit name","kind":"casual|work|sleep|workout|formal","desc":"one sentence: pieces, colors, fit, fabric"}]. Use outfits the sheet describes first, then realistic everyday clothes for their personality, job and budget. 5 to 9 outfits, at least one sleep outfit.', messages:[{role:'user',content:`${CR.full||CR.name}\n${CR.sheet.slice(0,12000)}`}], model:CFG.bg, maxTokens:900});
+        const arr=JSON.parse((out.match(/\[[\s\S]*\]/)||['[]'])[0]); $('#crWard').value=arr.map(o=>`${o.name} (${OUTFIT_KINDS.includes(o.kind)?o.kind:'casual'}): ${o.desc||''}`).join('\n'); }catch(e){ $('#crMsg').textContent=e.message; }
+      b.disabled=false; b.textContent='✨ Suggest a wardrobe from the sheet'; };
     const cnt=()=>$('#crSheetCount').textContent=`${$('#crSheet').value.length.toLocaleString()} characters`; cnt(); $('#crSheet').oninput=cnt;
     $('#crAiBrief').onclick=async()=>{ crCollect(); if(!CR.sheet.trim()){ $('#crMsg').textContent='Write the character sheet first.'; return; }
       $('#crAiBrief').disabled=true; $('#crAiBrief').textContent='✨ Writing…';
@@ -2176,7 +2269,7 @@ $('#crSave').onclick=()=>{
   if(!c.sheet.trim()){ crStep=1; renderCreator(); return msg('Write their character sheet.'); }
   if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
   if(c._builtin){ const sheet=(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,'');
-    const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
+    const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, wardrobe:c.wardrobe||[], schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
     if(!setOverrides(OV)) return; rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); if(SCREEN==='home') renderHome(); setTimeout(()=>openChar(c.world+':'+c.id),200); return; }
   const C=getCustom();
   let wid=c.world;
@@ -2189,7 +2282,7 @@ $('#crSave').onclick=()=>{
   }
   const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
-    brief:c.brief, phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+    brief:c.brief, wardrobe:c.wardrobe||[], phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));

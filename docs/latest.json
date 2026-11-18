@@ -1,11 +1,14 @@
 {
- "version": "0.16.4",
+ "version": "0.17.0",
  "date": "2026-11-18",
  "notes": [
-  "Real conflict: arguments don't magically resolve. If nobody is swayed, someone may walk away or stand their ground, and anger and grudges carry over into later scenes, texts and off-screen life.",
-  "Physical fights aren't avoided anymore when a character would really throw a punch. Fights play out beat by beat with real injuries that take time to heal, and real consequences."
+  "Needs and moods: characters get hungry, tired and stressed over the day (work stresses them, free time and sleep calm them down), and their mood changes with what happens. It shows on their card and drives how they act.",
+  "Boredom: doing the same thing over and over gets old. Characters notice when their routine repeats a lot.",
+  "Wardrobes: everyone has their own clothes (made from their sheet if you didn't write any) and changes on their own for work, sleep, the gym or a formal event. The story can buy, return and change clothes too.",
+  "Your bag: the story keeps track of what you pick up, receive or lose.",
+  "See and edit clothes and your bag in \ud83d\udcc5 Events \u2192 Clothes & bag. The creator has a Wardrobe box with a \u2728 suggest button."
  ],
  "file": "index.html",
- "sha256": "574d297f5227d69eaee2c4b666acef22cb5bcac61bdfbca1435c2a4ae0f471bd",
+ "sha256": "e8104e1a8ca719b34c25b5561ac7a6eb33f7a7b07b2cad35fe230cf4f7a56d04",
  "minShell": "0.5.0"
 }
