@@ -1,0 +1,13 @@
+{
+ "version": "0.6.0",
+ "date": "2026-11-17",
+ "notes": [
+  "Living World now installs like a normal Windows program (Start menu, desktop shortcut, and Settings > Apps to remove it).",
+  "New in Settings > Data & privacy: wipe all your data automatically when the app is uninstalled.",
+  "New \"Wipe all data now\" button to erase every story, persona, setting and your API key.",
+  "Automatic updates are now connected."
+ ],
+ "file": "index.html",
+ "sha256": "bc2dedf00471d632f39d7a470777c6ee089245e521d3eb16b672a701759a40c9",
+ "minShell": "0.5.0"
+}
