@@ -1,16 +1,13 @@
 {
- "version": "0.13.0",
+ "version": "0.13.1",
  "date": "2026-11-17",
  "notes": [
-  "\ud83d\udcf1 The phone is now a real phone with a home screen and apps: Messages, Calls, Invite, Map, Feed, Calendar and Weather.",
-  "Contacts show live status like Knock Knock: Available, Busy (with what they're doing), Asleep, or With you, plus a colored dot on their picture.",
-  "Calls: ring someone and talk live. Free people usually pick up; busy people often can't and text you back; asleep means a missed call. What was said is remembered.",
-  "Invitations, ZZZ-style: invite someone somewhere at a time (3 a day). They check their schedule and accept or decline. If they accept they really go there, and if you don't show up they'll let you know (and trust drops).",
-  "Map: see which district everyone is in right now and what they're doing.",
-  "Feed (Inter-Knot in Krampus): characters sometimes post about their day; you can like, comment and post, and they react and reply.",
-  "The narrator knows about your calls, plans and posts."
+  "Phones are optional: pick Standard, Zenless Zone Zero or No phones for each world (in the creator, in Settings, or in the phone's own Settings app).",
+  "Standard phones use Messages and Social; Zenless Zone Zero worlds use Knock Knock and Inter-Knot (Krampus, and any world set in New Eridu, picks this automatically).",
+  "Each character can have a phone or not (creator \u2192 Basics). Characters without one don't show in your contacts and never text, call or post.",
+  "Customize the phone: rename the apps, pick its color and wallpaper (or your own picture), and choose which apps show on the home screen."
  ],
  "file": "index.html",
- "sha256": "6341b7954622773aa49a66c99ef8a85089ff79240d9d10295d37f2c8c9a7f37f",
+ "sha256": "b63fb95605118d5c6d9c15883a23da1a203be5318798dc6e809b9ffd417a3b8e",
  "minShell": "0.5.0"
 }
