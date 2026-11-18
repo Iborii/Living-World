@@ -233,6 +233,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .ph-post .cm{font-size:13px;padding:3px 0 3px 10px;border-left:2px solid #2e313d;margin:3px 0}
 .ph-cmnew{display:flex;gap:6px;margin-top:6px}.ph-cmnew input{padding:4px 10px;border-radius:20px;font-size:13px}
 .ph-wx{min-width:74px;background:#1c1e26;border-radius:12px;padding:8px;text-align:center}
+.ph-addc{padding:10px 16px;border-bottom:1px solid var(--line);background:#16171e}
 #phBadge{background:#d94a5b;color:#fff;font-size:10px;border-radius:20px;padding:0 6px;margin-left:3px;display:none}
 /* relationships */
 .rel-card{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px}
@@ -469,7 +470,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 <div class="modal" id="phoneModal"><div class="box">
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
   <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
-  <div class="ph-body" id="phBody"></div>
+  <div class="ph-body" id="phBody"></div><input type="file" id="phPhotoFile" accept="image/*" style="display:none">
   <div class="ph-send" id="phSendRow" style="display:none"><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
 </div></div>
 
@@ -486,7 +487,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
     <button class="ghost" id="crImport" style="margin-left:auto">Import file</button><button class="ghost" id="crClose">Close</button></div>
   <div class="cr-body" id="crBody"></div>
   <div class="cr-foot"><span class="small" id="crMsg"></span><button id="crDelete" class="ghost" style="margin-left:auto;border-color:var(--danger);display:none">Delete character</button><button id="crBack">Back</button><button id="crNext">Next</button><button class="primary" id="crSave">Save character</button></div>
-  <input type="file" id="crImgFile" accept="image/*" style="display:none"><input type="file" id="crImportFile" accept=".json" style="display:none">
+  <input type="file" id="crImgFile" accept="image/*" style="display:none"><input type="file" id="crPhFile" accept="image/*" style="display:none"><input type="file" id="crImportFile" accept=".json" style="display:none">
 </div></div>
 
 <div id="updToast"><h4 id="updTitle">Update ready</h4><div class="small" id="updNotes"></div>
@@ -512,6 +513,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
       <div><label>Age (optional)</label><input id="pmAge" placeholder="e.g. 22"></div>
     </div>
     <div class="grid2"><div><label>Race</label><span id="pmRaceWrap"></span></div><div><label id="pmRaceXL">&nbsp;</label><input id="pmRaceX" style="display:none"></div></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px"><div class="ph-av" id="pmPhAv" title="Phone profile picture" style="width:46px;height:46px;font-size:20px;cursor:pointer"></div><div class="small" style="line-height:1.35">Your phone profile picture (what characters see in their messages)<br><a href="#" id="pmPhDel">remove</a></div><input type="file" id="pmPhFile" accept="image/*" style="display:none"></div>
     <label>Color</label><div class="colors" id="pmColors"></div>
     <label>Appearance (height, build, hair, eyes, clothes, anything characters would notice)</label><textarea id="pmLook" rows="4"></textarea>
     <label>Personality and background (job, history, how you act; only what characters could know or sense)</label><textarea id="pmBg" rows="4"></textarea>
@@ -830,7 +832,15 @@ function phonesOn(){ return !!W&&phoneCfg().style!=='none'; }
 function hasPhone(c){ return phonesOn()&&!!c&&c.phone!==false; }
 function phoneApp(){ const p=phoneCfg(); return p.msgName||(p.style==='zzz'?'Knock Knock':'Messages'); }
 function feedApp(){ const p=phoneCfg(); return p.feedName||(p.style==='zzz'?'Inter-Knot':'Social'); }
-function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads||{}; P.pending=P.pending||{}; P.calls=P.calls||[]; P.invites=P.invites||[]; P.feed=P.feed||[]; P.err=P.err||{}; P.extra=P.extra||{}; return P; }
+function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads||{}; P.pending=P.pending||{}; P.calls=P.calls||[]; P.invites=P.invites||[]; P.feed=P.feed||[]; P.err=P.err||{}; P.extra=P.extra||{}; P.photos=P.photos||{};
+  if(!P.contacts){ // who has your number: whoever you already texted, plus anyone the world says you start with
+    const start=(W.opening&&W.opening.contacts)||(W.opening&&W.opening.companions)||[]; P.contacts=[...new Set([...Object.keys(P.threads).filter(id=>P.threads[id].length), ...start])]; }
+  return P; }
+const isContact=id=>phone().contacts.includes(id);
+function addContact(id, how){ const P=phone(); if(P.contacts.includes(id)) return false; const c=charById(id); if(!c) return false; P.contacts.push(id);
+  addText(id,true,how==='swap'?'📇 You swapped numbers':'📇 Added to your contacts','call');
+  addMemory({who:[id], text:`${c.name} and ${uN()} swapped phone numbers`, imp:2, src:'phone'}); notice(`📇 ${c.name} is now in your contacts.`); save(); return true; }
+function contactPic(c){ const P=S&&S.phone; return (P&&P.photos&&P.photos[c.id])||c.phoneImg||c.img||''; }
 function thread(id){ const P=phone(); return P.threads[id]||(P.threads[id]=[]); }
 function phoneOn(){ return $('#phoneModal').classList.contains('on'); }
 function addText(id, me, text, kind){ const m={me, text:String(text).trim(), t:S.clock, read:me||(phoneOn()&&phView==='chat'&&phoneOpenId===id)}; if(kind) m.kind=kind; if(!m.text) return; thread(id).push(m); if(thread(id).length>400) thread(id).splice(0,100); renderPhoneBadge(); if(phoneOn()) renderPhone(); save(); }
@@ -1174,7 +1184,8 @@ ${S.branch.scenario}`:W.scenario}
 ${S.summary?('STORY SO FAR\n'+S.summary+'\n\n'):''}CURRENT TIME: ${timeLine(S.clock)}
 USER'S LOCATION: ${S.user.loc}
 CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
-TRUST TOWARD THE USER: ${trustLine()}
+TRUST TOWARD THE USER: ${trustLine()}${phonesOn()?`
+PHONE CONTACTS: The user has the numbers of ${phone().contacts.map(id=>charById(id)?.name).filter(Boolean).join(', ')||'nobody yet'}. Everyone else can't text or call the user (and the user can't text them) until they swap numbers in the story; when someone gives their number or takes the user's, add [[NUMBER: Name]].`:''}
 LAST WASHED: ${washedLine()}
 ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
@@ -1196,6 +1207,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[LEAVE: Name]]  when a main character goes off on their own
 `}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  small changes (usually 1 to 3) from what the user actually did
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
+   [[NUMBER: Name]]  when a character and the user swap phone numbers
    [[BOND: Name / Name +N: reason]]  when something changes how two characters feel about each other (usually 1 to 3)
    Do not write a status line; the app shows it.`;
   return subUser(s);
@@ -1247,6 +1259,7 @@ function applyControls(text){
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
+    else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
   for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act='with you'; }
@@ -1310,7 +1323,7 @@ ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a statu
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
-${cs.some(hasPhone)?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(hasPhone).map(c=>c.name).join(', ')} ${cs.filter(hasPhone).length>1?'have phones':'has a phone'}.)
+${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:450});
   let story=out, memory='', textTo=null;
@@ -1321,7 +1334,7 @@ Rarely (about one moment in six), if a character would post about this moment on
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
   if(memory) addMemory({who:ids, text:memory, t:now, src:'offscreen', imp:1});
-  if(textTo){ const c=charByName(textTo.from); if(c&&ids.includes(c.id)&&hasPhone(c)){ S.chat.push({role:'text',from:c.name,text:textTo.text,t:now}); addText(c.id,false,textTo.text); notice(`📱 New text from ${c.name}`); } }
+  if(textTo){ const c=charByName(textTo.from); if(c&&ids.includes(c.id)&&hasPhone(c)&&isContact(c.id)){ S.chat.push({role:'text',from:c.name,text:textTo.text,t:now}); addText(c.id,false,textTo.text); notice(`📱 New text from ${c.name}`); } }
   render(); save();
 }
 async function compressMemory(id){ return;
@@ -1562,8 +1575,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.15.1';
+const APP_VERSION = '0.16.0';
 const CHANGELOG = [
+ {v:'0.16.0', d:'2026-11-17', notes:['You don\'t start with everyone\'s number anymore. Swap numbers with someone while you\'re with them (Messages → Swap numbers), or they can give you theirs in the story. Only contacts can text, call or invite you, and only they show on the Map.','Phone profile pictures: set one for each character in the creator, and one for yourself in Personas. You can also tap any contact\'s picture in a chat to give them your own contact photo.','New worlds: choose whether you already have each other\'s numbers.']},
  {v:'0.15.1', d:'2026-11-17', notes:['Signing in is now required to use the app. New here? Create a free account on the sign-in screen.','Forgot your password? There\'s a link on the sign-in screen to reset it by email.','Signing out takes you back to the sign-in screen.']},
  {v:'0.15.0', d:'2026-11-17', notes:['Accounts: sign in (main menu or Settings) and your API keys, settings, personas, characters, worlds, races and stories are saved to your account. Sign in on your phone or another PC and everything is there.','Everything synced is encrypted with your password before it leaves your device, so nobody else (not even the server owner) can read your keys or stories.','Your Studio account and your sync account are the same account.']},
  {v:'0.14.0', d:'2026-11-17', notes:['📱 Living World now works on phones, including iPhone: open the web link in Safari and choose Share → Add to Home Screen. It opens fullscreen like a normal app, works offline (except the AI), and updates itself.','Phone-sized layout: the cast list slides in from the 👥 button, and every window becomes full screen.','Saves now live in a much bigger storage area, so long stories, pictures and wallpapers have room. Your existing saves move over automatically.','New setting: when you come back to the app after it was closed or your phone was locked, either pick up where you left off (default) or let that time pass in the world too.']},
@@ -1632,7 +1646,7 @@ function renderPersonaModal(){
   $('#pmList').innerHTML=PS.list.map(p=>`<div class="pcard ${p.id===pmEditing?'sel':''}" data-id="${p.id}"><div class="pav" style="background:${p.color}">${esc((p.name||'?')[0])}</div><div><div class="pn">${esc(p.name||'(unnamed)')}</div><div class="pp">${p.gender?esc(p.gender):'<span style="color:var(--danger)">gender not set</span>'}${p.pronouns?' · '+esc(p.pronouns):''}${p.age?' · '+esc(p.age):''}</div></div>${p.id===PS.defaultId?'<span class="def">default</span>':''}</div>`).join('')||'<div class="small">No personas yet. Fill in the form to make your first one.</div>';
   $('#pmList').querySelectorAll('.pcard').forEach(el=>el.onclick=()=>{ pmEditing=el.dataset.id; renderPersonaModal(); });
   const p=PS.list.find(x=>x.id===pmEditing)||{name:'',pronouns:'',age:'',look:'',bg:'',color:PCOLORS[PS.list.length%PCOLORS.length]};
-  pmColor=p.color||PCOLORS[0]; $('#pmName').value=p.name||''; $('#pmPron').value=p.pronouns||'';
+  pmColor=p.color||PCOLORS[0]; pmPhone=p.phoneImg||''; $('#pmName').value=p.name||''; $('#pmPron').value=p.pronouns||'';
   const gStd=['Male','Female','Transgender man','Transgender woman','Non-binary']; const g=p.gender||'';
   $('#pmGender').value=!g?'':gStd.includes(g)?g:'__other'; $('#pmGenderOther').value=gStd.includes(g)?'':g; $('#pmGenderOther').style.display=$('#pmGender').value==='__other'?'':'none'; $('#pmAge').value=p.age||''; { $('#pmRaceWrap').innerHTML=raceSelectHTML('pmRace','',{placeholder:'Human (default)',noHuman:true}); $('#pmRace').onchange=pmRaceSync; raceSelectSet($('#pmRace'),$('#pmRaceX'),$('#pmRaceXL'),p.race==='Human'?{}:p); } $('#pmLook').value=p.look||''; $('#pmBg').value=p.bg||'';
   $('#pmTitle').textContent=pmEditing?(p.name||'(unnamed)'):'New persona'; pmPaintAv();
@@ -1642,7 +1656,9 @@ function renderPersonaModal(){
   $('#pmUse').style.display=pmEditing&&W&&S&&SCREEN==='world'&&S.personaId!==pmEditing?'':'none';
   $('#pmMsg').textContent='';
 }
-function pmPaintAv(){ $('#pmAv').style.background=pmColor; $('#pmAv').textContent=($('#pmName').value||'?')[0]; }
+let pmPhone='';
+function pmPaintAv(){ $('#pmAv').style.background=pmColor; $('#pmAv').textContent=($('#pmName').value||'?')[0]; const a=$('#pmPhAv'); a.style.background=avatarBg(pmColor,pmPhone); a.textContent=pmPhone?'':($('#pmName').value||'?')[0]; $('#pmPhDel').style.display=pmPhone?'':'none'; }
+$('#pmPhAv').onclick=()=>$('#pmPhFile').click(); $('#pmPhFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; pmPhone=await shrinkImage(f,256); pmPaintAv(); }; $('#pmPhDel').onclick=e=>{ e.preventDefault(); pmPhone=''; pmPaintAv(); };
 $('#pmName').oninput=pmPaintAv;
 const PRON_FOR={'Male':'he/him','Female':'she/her','Transgender man':'he/him','Transgender woman':'she/her','Non-binary':'they/them'};
 function pmRaceSync(){ raceSelectSync($('#pmRace'),$('#pmRaceX'),$('#pmRaceXL')); }
@@ -1653,7 +1669,7 @@ $('#pmSave').onclick=()=>{
   const name=$('#pmName').value.trim(); if(!name){ $('#pmMsg').textContent='Give your persona a name first.'; return; }
   const gsel=$('#pmGender').value; const gender=gsel==='__other'?$('#pmGenderOther').value.trim():gsel;
   if(!gender){ $('#pmMsg').textContent='Choose a gender first (it\'s required so characters treat you correctly).'; $('#pmGender').focus(); return; }
-  const data={name, gender, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), ...(()=>{ const r=raceSelectRead($('#pmRace'),$('#pmRaceX')); return {race:r.race||'Human', raceId:r.raceId, animal:r.animal}; })(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor};
+  const data={name, gender, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), ...(()=>{ const r=raceSelectRead($('#pmRace'),$('#pmRaceX')); return {race:r.race||'Human', raceId:r.raceId, animal:r.animal}; })(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor, phoneImg:pmPhone};
   if(pmEditing){ Object.assign(PS.list.find(x=>x.id===pmEditing),data); }
   else { const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),...data}; PS.list.push(p); pmEditing=p.id; if(!PS.defaultId) PS.defaultId=p.id; if(W&&S&&!S.personaId) S.personaId=p.id; }
   savePersonas(); renderPersonaModal(); $('#pmMsg').textContent='Saved.'; if(SCREEN==='world'){ render(); save(); } else renderHome();
@@ -1786,11 +1802,11 @@ let phoneOpenId=null, phView='home';
 const ST_COL={with:'#d9a441',free:'#5fcf8a',busy:'#e0566b',asleep:'#8b7bd8'};
 function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; b.textContent=n; b.style.display=n?'inline-block':'none'; }
 function openPhone(view, id){ if(!S) return; phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
-function avHTML(c,size=42,dot=true){ const s=contactStatus(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
+function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
 function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
 function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); return; }
-  const B=$('#phBody'); const P=phone(); const PC=phoneCfg(); const cs=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(hasPhone);
+  const B=$('#phBody'); const P=phone(); const PC=phoneCfg(); const everyone=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(hasPhone); const cs=everyone.filter(c=>isContact(c.id));
   const box=$('#phoneModal .box'); box.style.setProperty('--pa',PC.accent||'#d9a441'); box.style.setProperty('--pat',lightColor(PC.accent||'#d9a441')?'#16130c':'#fff');
   $('#phTime').textContent=`${hhmm(S.clock)} · ${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)}`; $('#phWx').textContent=`${weather(S.clock).temp}°F`;
   if(phView==='home'){ phHeader(esc(phoneApp()==='Knock Knock'?'Phone':'Phone'),'',false);
@@ -1818,13 +1834,17 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); return; }
   }
   else if(phView==='msgs'){ phHeader(esc(phoneApp()),'',true);
     const sorted=[...cs].sort((a,b)=>((P.threads[b.id]||[]).slice(-1)[0]?.t||0)-((P.threads[a.id]||[]).slice(-1)[0]?.t||0));
-    B.innerHTML=sorted.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
+    const here=everyone.filter(c=>!isContact(c.id)&&present().includes(c));
+    const addRow=`<div class="ph-addc">${here.length?`<div class="small" style="margin-bottom:6px">With you right now:</div>${here.map(c=>`<div class="ph-item" style="padding:6px 0;border:0;cursor:default">${avHTML(c,34,false)}<div style="flex:1"><b>${esc(c.full)}</b></div><button class="primary" data-swap="${c.id}">Swap numbers</button></div>`).join('')}`:`<div class="small">You only have the numbers of people you've swapped with. Swap numbers with someone when you're with them, or they may give you theirs in the story.</div>`}</div>`;
+    B.innerHTML=addRow+(sorted.length?'':'<div class="small" style="padding:12px 16px">No contacts yet.</div>')+sorted.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
       return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(c.full)}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
     B.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
+    B.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>{ addContact(b.dataset.swap,'swap'); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${uN()} and ${charById(b.dataset.swap).name} swap phone numbers just now. Show it briefly in the next reply if it fits.)`}); renderPhone(); });
   }
   else if(phView==='chat'){ const c=charById(phoneOpenId); if(!c){ phView='msgs'; return renderPhone(); } const th=thread(c.id); th.forEach(m=>m.read=true);
     phHeader(esc(c.full), statusPill(c), true); $('#phSendRow').style.display='';
-    const av=$('#phAv'); av.style.display='flex'; av.style.background=avatarBg(c.color,c.img); av.textContent=c.img?'':c.name[0];
+    const av=$('#phAv'); const pic=contactPic(c); av.style.display='flex'; av.style.background=avatarBg(c.color,pic); av.textContent=pic?'':c.name[0]; av.title='Tap to set a contact photo'; av.style.cursor='pointer';
+    av.onclick=()=>{ const f=$('#phPhotoFile'); f.onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return; P.photos[c.id]=await shrinkImage(file,256); save(); renderPhone(); }; f.click(); };
     let lastDay='', html='';
     for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
     const s=contactStatus(c); let waiting='';
@@ -1879,7 +1899,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); return; }
     B.querySelectorAll('.ph-pin[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
   }
   else if(phView==='feed'){ phHeader(esc(feedApp()),'',true); P.feed.forEach(f=>f.seen=true);
-    const name=w=>w==='user'?uN():(charById(w)?.name||'?'); const avw=w=>w==='user'?`<div class="ph-av" style="width:34px;height:34px;font-size:15px;background:${avatarBg(persona().color||'#d9a441')}">${esc((uN()||'?')[0])}</div>`:avHTML(charById(w),34,false);
+    const name=w=>w==='user'?uN():(charById(w)?.name||'?'); const avw=w=>w==='user'?`<div class="ph-av" style="width:34px;height:34px;font-size:15px;background:${avatarBg(persona().color||'#d9a441',persona().phoneImg)}">${persona().phoneImg?'':esc((uN()||'?')[0])}</div>`:(charById(w)?avHTML(charById(w),34,false):'');
     B.innerHTML=`<div class="ph-post-new"><textarea id="fdNew" rows="2" placeholder="Post something…"></textarea><button class="primary" id="fdPost">Post</button></div>`+
       ([...P.feed].reverse().map(f=>`<div class="ph-post"><div style="display:flex;gap:8px;align-items:center">${avw(f.who)}<div><b>${esc(name(f.who))}</b><div class="small">${wdName(f.t).slice(0,3)} ${mmdd(f.t)} ${hhmm(f.t)}</div></div></div>
         <div class="tx">${esc(subUser(f.text))}</div><div class="small">♥ ${f.likes.length}${f.likes.length?' · '+f.likes.map(x=>esc(name(x))).join(', '):''}${phoneBusy.has('feed:'+f.id)?' · <i>people are reacting…</i>':''}</div>
@@ -1987,7 +2007,7 @@ $('#evBtn').onclick=openEvents;
 // ======================= character creator =======================
 const DAYS=['M','T','W','T','F','S','S'];
 let CR=null, crStep=0;
-function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', gender:'', race:'', animal:'', construct:false, phone:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
+function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', phoneImg:'', gender:'', race:'', animal:'', construct:false, phone:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
 function openCreator(editKey){
   if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id); if(!c) return; CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
@@ -2002,7 +2022,7 @@ function crCollect(){ // read the visible step's fields into CR
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
-  if(crStep===3){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; }
+  if(crStep===3){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
 }
 function renderCreator(){
   document.querySelectorAll('.cr-steps button').forEach(b=>b.classList.toggle('on',+b.dataset.step===crStep));
@@ -2012,6 +2032,7 @@ function renderCreator(){
     B.innerHTML=`<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
       <div><div class="cr-av" id="crAv" title="Click to upload a picture" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc((c.name||'?')[0])}</div>
         <div class="hint" style="text-align:center">Click to add a picture</div>${c.img?'<div style="text-align:center"><button class="ghost" id="crImgDel" style="font-size:12px;padding:3px 8px;margin-top:4px">Remove picture</button></div>':''}
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px"><div class="ph-av" id="crPhAv" title="Phone profile picture" style="width:46px;height:46px;font-size:20px;cursor:pointer;background:${avatarBg(c.color,c.phoneImg||c.img)}">${(c.phoneImg||c.img)?'':esc((c.name||'?')[0])}</div><div class="small" style="line-height:1.3">Phone profile<br>picture${c.phoneImg?' · <a href="#" id="crPhDel">remove</a>':''}</div></div>
         <label>Color</label><div class="colors" id="crColors">${PCOLORS.map(x=>`<span data-c="${x}" style="background:${x}" class="${x===c.color?'sel':''}"></span>`).join('')}</div></div>
       <div style="flex:1;min-width:280px">
         <div class="grid2"><div><label>Short name (used in chat)</label><input id="crName" value="${esc(c.name)}" placeholder="e.g. Mira"></div><div><label>Full name</label><input id="crFull" value="${esc(c.full)}" placeholder="e.g. Mira Vale"></div></div>
@@ -2034,7 +2055,9 @@ function renderCreator(){
       const rsel=$('#crRace'), rx=$('#crRaceX'); raceSelectSet(rsel, rx, $('#crRaceXL'), c);
       rsel.onchange=()=>{ raceSelectSync(rsel, rx, $('#crRaceXL')); syncCyc(); };
       $('#crNewRace').onclick=e=>{ e.preventDefault(); crCollect(); openRaceEditor(); const done=()=>{ if(!$('#raceModal').classList.contains('on')){ clearInterval(t); renderCreator(); } }; const t=setInterval(done,400); }; setTimeout(()=>{ if(!canCycle(CR)) $('#crCycBox').style.display='none'; }); }
-    $('#crAv').onclick=()=>$('#crImgFile').click(); const del=$('#crImgDel'); if(del) del.onclick=()=>{ crCollect(); CR.img=''; renderCreator(); };
+    $('#crAv').onclick=()=>$('#crImgFile').click();
+    $('#crPhAv').onclick=()=>{ const f=$('#crPhFile'); f.onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return; crCollect(); CR.phoneImg=await shrinkImage(file,256); renderCreator(); }; f.click(); };
+    const pd=$('#crPhDel'); if(pd) pd.onclick=e=>{ e.preventDefault(); crCollect(); CR.phoneImg=''; renderCreator(); }; const del=$('#crImgDel'); if(del) del.onclick=()=>{ crCollect(); CR.img=''; renderCreator(); };
     $('#crColors').querySelectorAll('span').forEach(el=>el.onclick=()=>{ crCollect(); CR.color=el.dataset.c; renderCreator(); });
     $('#crName').oninput=e=>{ if(!CR.img) $('#crAv').textContent=(e.target.value||'?')[0]; };
   }
@@ -2078,7 +2101,7 @@ function renderCreator(){
         <label>Scenario: who you are, how you know them, what's going on right now</label><textarea id="nwScenario" rows="5">${esc(nw.scenario)}</textarea>
         <label>Opening message (optional: leave empty and the AI writes it when you start)</label><textarea id="nwOpening" rows="5">${esc(nw.opening)}</textarea>
         <div class="grid2"><div><label>Story start date</label><input id="nwDate" type="date" value="${esc(nw.date)}"></div><div><label>Start time</label><input id="nwTime" type="time" value="${esc(nw.time)}"></div></div>
-        <div class="grid2"><div><label>Where you start (District, exact spot)</label><input id="nwUserLoc" value="${esc(nw.userLoc)}"></div><div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="nwWith" style="width:auto" ${nw.withUser?'checked':''}>They start with you</label></div></div>
+        <div class="grid2"><div><label>Where you start (District, exact spot)</label><input id="nwUserLoc" value="${esc(nw.userLoc)}"></div><div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="nwWith" style="width:auto" ${nw.withUser?'checked':''}>They start with you</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="nwNum" style="width:auto" ${nw.hasNumber!==false?'checked':''}>You already have each other's numbers</label></div></div>
         <label>Phones in this world</label><select id="nwPhone"><option value="standard" ${(nw.phoneStyle||'standard')==='standard'?'selected':''}>Standard (Messages and Social)</option><option value="zzz" ${nw.phoneStyle==='zzz'?'selected':''}>Zenless Zone Zero (Knock Knock and Inter-Knot)</option><option value="none" ${nw.phoneStyle==='none'?'selected':''}>No phones (fantasy, historical…)</option></select>
         <label>Extra world rules (optional: anything special about this world)</label><textarea id="nwRules" rows="3">${esc(nw.extraRules)}</textarea>
         <div class="hint">New worlds automatically get the full realism rules and an editable lorebook.</div></div>`:''}`;
@@ -2106,12 +2129,12 @@ $('#crSave').onclick=()=>{
     const existing=c._editing&&C.worlds.find(w=>w.id===C.chars.find(x=>x.id===c.id)?.world);
     wid=existing?existing.id:('w'+Date.now().toString(36));
     const world={id:wid, title:nw.title, setting:nw.setting||'', blurb:nw.blurb||'', tags:['Custom',...c.tags.slice(0,3)], start:{date:nw.date, time:nw.time||'09:00'}, scenario:nw.scenario||'', extraRules:nw.extraRules||'', events:[],
-      phone:{style:nw.phoneStyle||'standard'}, opening:{userLoc:nw.userLoc||c.loc||nw.setting||'', companions:nw.withUser?[c.id]:[], text:nw.opening||'', washed:{}}};
+      phone:{style:nw.phoneStyle||'standard'}, opening:{userLoc:nw.userLoc||c.loc||nw.setting||'', companions:nw.withUser?[c.id]:[], contacts:nw.hasNumber!==false?[c.id]:[], text:nw.opening||'', washed:{}}};
     C.worlds=C.worlds.filter(w=>w.id!==wid); C.worlds.push(world);
   }
   const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
-    brief:c.brief, gender:c.gender, phone:c.phone!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+    brief:c.brief, phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));
