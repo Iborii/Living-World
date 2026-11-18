@@ -1,16 +1,10 @@
 {
- "version": "0.18.0",
+ "version": "0.19.1",
  "date": "2026-11-18",
  "notes": [
-  "Your whole story is kept now. Older messages used to disappear once the story summary was written; now you can scroll all the way back (Show earlier messages).",
-  "Hover or tap any message for tools: \u270f\ufe0f edit it, \ud83d\udccd pin it to your timeline, \u293a rewind the story to it, or \u2442 branch a new timeline from it.",
-  "Rewinding also rewinds the world: the clock, where you are, who's with you, trust, moods, outfits and phone contacts go back to how they were.",
-  "\u21bb Regenerate keeps the old reply: flip between versions with \u25c0 \u25b6. It also rewinds the world before trying again.",
-  "Alternate timelines: branch from any message to try a different choice; your original story stays untouched. Timelines show up with your 1-on-1 chats.",
-  "\"Previously\u2026\" recap when you come back to a story after a while.",
-  "\ud83d\udcc5 Events \u2192 Timeline: pinned moments, big memories and relationship changes."
+  "Import from Clank World: in + Create, paste a bot's character prompt, dialogue example, scene, initial message and lorebook entries. The app works out their details and schedule, builds their world from the scene (start time and place from the time stamp), adds the lorebook, and lets you check everything before saving."
  ],
  "file": "index.html",
- "sha256": "75e5506f62d7b00578a89c1f3ede7c1a5586dc7c0c0042fbdc3f3c7e64e06dd0",
+ "sha256": "af9ff7f11f346487a001bd05d94ed180d1fbdc48469c988c08f57a98e5fbcf10",
  "minShell": "0.5.0"
 }
