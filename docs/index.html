@@ -1161,9 +1161,20 @@ function matchLore(context, maxEntries=6, maxChars=14000){
   for(const {e} of hits){ const c=e.cat||'World'; const cap=c==='World'?5:2; if((perCat[c]||0)>=cap||out.length>=maxEntries+2||total+e.text.length>maxChars) continue; out.push(e); total+=e.text.length; perCat[c]=(perCat[c]||0)+1; }
   return out;
 }
+// Conflict is real here: arguments don't magically resolve and fights aren't dodged.
+const CONFLICT_RULES=`
+
+CONFLICT (always on)
+- Never smooth over conflict to keep things pleasant. Characters disagree, argue and fight exactly as their personalities, history and feelings say they would.
+- In an argument, nobody is automatically won over. A character only changes their mind if they are genuinely convinced, and stubborn or proud ones may never admit it even then. If neither side is swayed, someone may walk away, slam a door, go quiet, stand their ground, or keep arguing. It can stay unresolved for days.
+- Hurt and anger last. A character who was insulted, betrayed or embarrassed stays cold, short or avoidant until something real repairs it (an apology that lands, time, a gesture). Grudges carry into later scenes, texts and off-screen life, and show in trust and how they treat people.
+- Physical fights are not avoided. If someone with a temper is pushed far enough, or someone is attacked, threatened, or protecting another person, they may shove, slap, punch, grapple or use whatever they actually fight with. Trained fighters fight like trained fighters; untrained people fight messily. Bystanders react: some step in, some film it, some call for help or security.
+- Fights have real weight: pain, bruises, split lips, sprains and worse, described with realistic detail for the people involved, and injuries that ache and take days or weeks to heal. They bring consequences: people stop talking, someone gets in trouble at work or with the law, relationships change.
+- Do not end a fight early just to be safe, and do not have the user's opponent conveniently give up. Let it play out beat by beat, end the reply at a point where the user can respond, and never decide the user's actions, injuries they cause, or how they feel.
+- Characters under 18 can argue, get into scuffles and get hurt like real kids and teens, but keep injury descriptions to them non-graphic.`;
 function realismBlock(forBeats){
-  const mode=CFG.realism||'full'; if(mode==='off') return '';
-  let s='\n\n'+(W.realismCore||'');
+  const mode=CFG.realism||'full'; if(mode==='off') return CONFLICT_RULES;
+  let s=CONFLICT_RULES+'\n\n'+(W.realismCore||'');
   if(mode==='full' && !forBeats){ const R=getLore().filter(e=>e.on&&(e.cat||'World')==='Realism');
     if(R.length) s+='\n\nREALISM DETAILS (always on; follow every one of these):\n'+R.map(e=>`## ${e.title}\n${e.text}`).join('\n\n'); }
   return s;
@@ -1605,8 +1616,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.16.3';
+const APP_VERSION = '0.16.4';
 const CHANGELOG = [
+ {v:'0.16.4', d:'2026-11-18', notes:['Real conflict: arguments don\'t magically resolve. If nobody is swayed, someone may walk away or stand their ground, and anger and grudges carry over into later scenes, texts and off-screen life.','Physical fights aren\'t avoided anymore when a character would really throw a punch. Fights play out beat by beat with real injuries that take time to heal, and real consequences.']},
  {v:'0.16.3', d:'2026-11-18', notes:['Much faster replies: DeepSeek\'s "thinking" step is now off (it spent a long time thinking first, and sometimes used up the whole reply on thinking so nothing came back). You can turn it back on in Settings.','The AI request is now arranged so DeepSeek can reuse most of it from turn to turn (prompt caching), which makes replies start sooner and cost less.','Replies never hang forever: if the AI doesn\'t answer within 2 minutes you get a clear message, and your message is kept.','While a reply is being written, the Send button becomes ■ Stop.','If a reply fails, ↻ Regenerate now retries it (it used to delete the previous reply instead).','Off-screen scenes and memories no longer slow down your own replies, and the story summary runs in the background.']},
  {v:'0.16.2', d:'2026-11-17', notes:['Undo last now asks "Are you sure?" first and shows what will be deleted, so you can\'t wipe part of a story by accident.']},
  {v:'0.16.1', d:'2026-11-17', notes:['You can now edit the built-in characters too (their page → Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an "edited" tag, and Reset to original undoes your changes.']},
