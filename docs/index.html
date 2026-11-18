@@ -533,6 +533,70 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
 .card.dead{opacity:.55}.card.dead .nm{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
 #clock.tick{animation:tickPulse .5s ease}
 @keyframes tickPulse{50%{color:#fff3d6}}
+
+/* ---- interface motion (0.24) ---- */
+:root{--ease-out:cubic-bezier(.2,.8,.2,1);--ease-spring:cubic-bezier(.34,1.56,.64,1)}
+/* screens */
+#app.screenIn{animation:screenIn .45s var(--ease-out) backwards}
+@keyframes screenIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+#home.on .sec{animation:enterUp .55s var(--ease-out) backwards}
+#home.on .sec:nth-child(2){animation-delay:.06s}#home.on .sec:nth-child(3){animation-delay:.12s}#home.on .sec:nth-child(4){animation-delay:.18s}#home.on .sec:nth-child(5){animation-delay:.24s}
+/* cards arrive one after another */
+.ccard,.wcard,.scard{animation:cardIn .5s var(--ease-out) backwards}
+:is(.ccard,.wcard,.scard):nth-child(2){animation-delay:.04s}:is(.ccard,.wcard,.scard):nth-child(3){animation-delay:.08s}:is(.ccard,.wcard,.scard):nth-child(4){animation-delay:.12s}
+:is(.ccard,.wcard,.scard):nth-child(5){animation-delay:.16s}:is(.ccard,.wcard,.scard):nth-child(6){animation-delay:.2s}:is(.ccard,.wcard,.scard):nth-child(7){animation-delay:.24s}:is(.ccard,.wcard,.scard):nth-child(n+8){animation-delay:.28s}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+/* hover: cards lift, the cast fans out */
+.wcard{transition:transform .25s var(--ease-out),box-shadow .25s,border-color .25s}
+.wcard:hover{transform:translateY(-4px);box-shadow:0 18px 40px -18px rgba(0,0,0,.7);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.wcard .cast span{transition:margin .3s var(--ease-spring),transform .3s var(--ease-spring)}
+.wcard:hover .cast span{margin-right:3px}.wcard .cast span:hover{transform:translateY(-4px) scale(1.12);z-index:2}
+.wcard .top{transition:background-position .6s}.wcard .top{background-size:140% 140%}.wcard:hover .top{background-position:100% 0}
+.ccard:hover{transform:translateY(-4px) rotate(-.4deg)}
+.wm-row{transition:background .2s,transform .2s var(--ease-out)}.wm-row:hover{background:rgba(255,255,255,.03);transform:translateX(3px)}
+.wm-row .wm-av{transition:transform .3s var(--ease-spring)}.wm-row:hover .wm-av{transform:scale(1.08) rotate(-4deg)}
+#wmBody .wm-row{animation:enterUp .4s var(--ease-out) backwards}
+#wmBody .wm-row:nth-child(3){animation-delay:.04s}#wmBody .wm-row:nth-child(4){animation-delay:.08s}#wmBody .wm-row:nth-child(5){animation-delay:.12s}#wmBody .wm-row:nth-child(n+6){animation-delay:.16s}
+/* buttons press in; the main button has a soft shine */
+button{transition:background .15s,border-color .15s,transform .12s var(--ease-out)}
+button:active:not(:disabled){transform:scale(.96)}
+button.primary{position:relative;overflow:hidden}
+button.primary::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-120%);pointer-events:none}
+button.primary:hover::before{transform:translateX(120%);transition:transform .7s ease}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:ripple .55s ease-out forwards;pointer-events:none}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+/* modals open and close */
+.modal.on{animation:fadein .22s ease both}
+.modal.closing{display:flex!important;animation:fadeout .18s ease both;pointer-events:none}
+.modal.closing .box{animation:boxOut .18s ease both!important}
+@keyframes fadeout{to{opacity:0}}
+@keyframes boxOut{to{opacity:0;transform:translateY(10px) scale(.985)}}
+#phoneModal.closing .box{animation:phoneOut .22s ease both!important}
+@keyframes phoneOut{to{opacity:0;transform:translateY(60px)}}
+/* scene picker */
+.scopt{transition:border-color .2s,background .2s,transform .2s var(--ease-out)}.scopt:hover{transform:translateY(-2px)}
+.scpane.on{animation:enterUp .35s var(--ease-out) backwards}
+/* story side panel */
+.card{transition:background .25s,border-color .25s,transform .2s var(--ease-out)}
+.card:hover{transform:translateX(3px)}
+.card .dot{transition:transform .3s var(--ease-spring)}.card:hover .dot{transform:scale(1.3)}
+.card.busy .dot{animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.5);box-shadow:0 0 0 4px rgba(255,255,255,.06)}}
+/* waiting for the AI: bouncing dots before the first words */
+#streaming.waiting::after{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:12px 0 0 var(--accent),24px 0 0 var(--accent);margin:8px 26px 8px 2px;vertical-align:middle;animation:dots 1.1s ease-in-out infinite}
+@keyframes dots{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+/* notices slide away instead of vanishing */
+.notice.leave{animation:noticeOut .35s ease forwards}
+@keyframes noticeOut{to{opacity:0;transform:translateY(-6px);max-height:0;margin:0;padding:0}}
+/* phone */
+#phBadge.bump{animation:bump .5s var(--ease-spring)}
+@keyframes bump{30%{transform:scale(1.45)}}
+#phoneModal .ph-av{transition:transform .3s var(--ease-spring)}
+#phoneModal .ph-av:hover{transform:scale(1.08)}
+.ph-body.phIn{animation:phSlide .32s var(--ease-out) both}
+@keyframes phSlide{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+/* calm mode turns all of this off */
+body.calm *,body.calm *::before,body.calm *::after{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion:reduce){#sky{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-width:760px){
@@ -780,6 +844,7 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
   <div class="grid2">
     <div><label>Background lives on/off</label><select id="sBgOn"><option value="1">On</option><option value="0">Off (save money)</option></select></div>
     <div><label>Weather and light effects</label><select id="sFx"><option value="on">On: rain, snow, fog, stars and the light of the hour behind the story</option><option value="off">Off</option></select></div>
+    <div><label>Interface animations</label><select id="sAnim"><option value="full">Full: cards, menus and buttons move</option><option value="calm">Calm: no motion</option></select></div>
     <div><label>Character deaths</label><select id="sDeaths"><option value="on">On: characters can die if the story leads there</option><option value="off">Off: lethal harm leaves them badly hurt instead</option></select></div>
     <div><label>Daily spending limit (USD, 0 = none)</label><input id="sLimit" type="number" min="0" step="0.05"><div class="hint" id="sSpend"></div></div>
     <div><label>Read replies aloud</label><select id="sVoice"><option value="off">Off (use 🔊 on a message to hear it)</option><option value="auto">Read every new reply aloud</option></select></div>
@@ -1014,7 +1079,8 @@ function newState(){
   return s;
 }
 function stripStatus(t){ return t.split('\n').filter(l=>!/\d+\/100\s*\|/.test(l)).join('\n').trim(); }
-function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } if(+CFG.maxTok===1600) CFG.maxTok=3000; }
+function applyAnim(){ document.body.classList.toggle('calm', (CFG&&CFG.anim)==='calm'); }
+function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } if(+CFG.maxTok===1600) CFG.maxTok=3000; applyAnim(); }
 function load(){
   const fresh=(S&&S.branch&&S.world===W.id&&SAVE_KEY.endsWith('~'+S.branch.id)&&!S.chat.length)?S:null;
   try{ const raw=LS.getItem(SAVE_KEY); S=raw?JSON.parse(raw):null; }catch(e){ S=null; }
@@ -1791,9 +1857,9 @@ function renderFeed(){
       const tools=m.streaming?'':`<div class="mtools">${m.role==='assistant'&&(m.versions||[]).length>1?`<button data-ver="${ix}|-1" title="Previous version">◀</button><span>${(m.vi??m.versions.length-1)+1}/${m.versions.length}</span><button data-ver="${ix}|1" title="Next version">▶</button>`:''}${m.role==='assistant'?`<button data-say="${ix}" title="Read aloud">🔊</button>`:''}<button data-edit="${ix}" title="Edit">✏️</button><button data-pin="${ix}" title="${pin?'Unpin from timeline':'Pin to timeline'}">${pin?'📌':'📍'}</button><button data-rew="${ix}" title="Rewind to here">⤺</button><button data-fork="${ix}" title="Branch a new timeline from here">⑂</button></div>`;
       if(m.role==='user') h+=`<div class="msg user" data-i="${ix}">${tools}<div class="who">${esc(m.pname||persona().name||'You')} · ${mmdd(m.t)} ${hhmm(m.t)}</div><div class="bubble">${fmt(m.text)}</div></div>`;
       else if(m.role==='text') h+=`<div class="notice"><div class="in">📱 <b>${esc(m.from)}</b> texts you (${hhmm(m.t)}): ${esc(m.text)}</div></div>`;
-      else h+=`<div class="msg ai${pin?' pinned':''}" data-i="${ix}" ${m.streaming?'id="streaming"':''}>${tools}${fmt(m.text||'…')}</div>`;
+      else h+=`<div class="msg ai${pin?' pinned':''}${m.streaming&&!m.text?' waiting':''}" data-i="${ix}" ${m.streaming?'id="streaming"':''}>${tools}${m.streaming&&!m.text?'':fmt(m.text||'…')}</div>`;
     }
-    if(firstShown>0) h=`<div class="earlier"><button id="showEarlier">Show earlier messages (${firstShown})</button></div>`+h;
+    const earlierN=vis.filter(m=>S.chat.indexOf(m)<firstShown).length; if(earlierN>0) h=`<div class="earlier"><button id="showEarlier">Show earlier messages (${earlierN})</button></div>`+h;
     if(recapHTML) h=recapHTML+h;
     if(!S.chat.length) h='<div class="notice"><div class="in">Your story starts here.</div></div>';
   } else {
@@ -1852,7 +1918,7 @@ function forkTimeline(i){ if(busyMain) return; const name=prompt('Name this new 
   setBranches(list); LS.setItem(branchSaveKey(W.id,id), JSON.stringify(forked));
   notice(`Made the timeline "${name.trim()||'New timeline'}". Opening it now; your original story is untouched.`);
   setTimeout(()=>enterWorld(W.id,{branchId:id}),600); }
-function renderStreaming(m){ const el=$('#streaming'); if(el){ el.innerHTML=fmt(m.text); const f=$('#feed'); f.scrollTop=f.scrollHeight; } }
+function renderStreaming(m){ const el=$('#streaming'); if(el){ el.classList.toggle('waiting',!m.text); el.innerHTML=fmt(m.text); const f=$('#feed'); f.scrollTop=f.scrollHeight; } }
 function renderClock(){ const w=weather(S.clock); $('#clock').textContent=`${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)} ${hhmm(S.clock)}`; $('#weather').textContent=`${w.desc}, ${w.temp}°F`; $('#pauseBtn').textContent=S.paused?'Resume':'Pause'; }
 const lastCardLoc={};
 function renderCards(){
@@ -1882,7 +1948,7 @@ function renderViewbar(){
 function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return; sel.innerHTML=PS.list.map(p=>`<option value="${p.id}">Playing as ${esc(p.name||'(unnamed)')}</option>`).join('')+'<option value="__manage">Manage personas…</option>'; sel.value=S.personaId||''; }
 function render(){ renderPersonaSel(); $('#worldTitle').textContent=S.branch?`${charById(S.branch.charId).full} · 1-on-1`:W.title; renderClock(); renderCards(); renderViewbar(); renderFeed(); renderStatus(); }
 function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; $('#sendBtn').classList.toggle('stopping',busyMain); }
-function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>d.remove(), err?15000:6000); }
+function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>{ d.classList.add('leave'); setTimeout(()=>d.remove(),360); }, err?15000:6000); }
 
 // ======================= UI wiring =======================
 $('#sendBtn').onclick=()=>{ if(busyMain){ mainAbort&&mainAbort.abort(); return; } const t=$('#input').value; $('#input').value=''; send(t); };
@@ -1917,7 +1983,7 @@ function openSettings(){
   refreshWipeToggle();
   $('#verLine').textContent=`Version ${APP_VERSION}`+(window.lwUpdate?'':WEBAPP?' (phone/web app)':' (browser version)');
   $('#resetBtn').style.display=W?'':'none'; $('#exportBtn').style.display=W?'':'none'; $('#importBtn').style.display=W?'':'none';
-  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
+  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sAnim').value=CFG.anim||'full'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
   $('#baseRow').style.display=CFG.provider==='openai'?'':'none';
   $('#costNote').textContent='Tip: the story model writes your scenes (use a strong one). The background model writes everyone else\'s lives many times an hour, so a small cheap model keeps costs down. Raise "update every" to save more.';
   $('#settingsModal').classList.add('on');
@@ -1926,7 +1992,7 @@ $('#settingsBtn').onclick=openSettings;
 $('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
-$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
+$('#saveSettings').onclick=()=>{ setTimeout(applyAnim,0); const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, anim:$('#sAnim').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
 $('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`livingworld-${W.id}-${isoDate(S.clock)}.json`; a.click(); };
 $('#importBtn').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); if(j.world!==W.id) throw new Error('That save is for a different world.'); S=j; save(); render(); notice('Save loaded.'); }catch(err){ notice('Could not load: '+err.message,true); } };
@@ -2097,8 +2163,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.23.0';
+const APP_VERSION = '0.24.0';
 const CHANGELOG = [
+ {v:'0.24.0', d:'2026-11-18', notes:['More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world\'s cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.','Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.','Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.','Fixed: a new story no longer shows a stray "Show earlier messages" button.']},
  {v:'0.23.0', d:'2026-11-18', notes:['New stories now ask how you want to start: use the story\'s scene, keep the scene but choose who you are and how everyone knows you, or write your whole scene prompt yourself (with your own starting place and opening message if you like).']},
  {v:'0.22.4', d:'2026-11-18', notes:['Owner build only: Belle and Wise in Yunkui Summit are back to their regular selves. Who they are to you now comes only from the scene, not their character sheets.']},
  {v:'0.22.3', d:'2026-11-18', notes:['Owner build only: Yunkui Summit is back, Suibian Temple with Yixuan, Ju Fufu, Ye Shunguang, Pan Yinhu, Belle and Wise. It sits in the Zenless Zone Zero universe next to Krampus, with Knock Knock and the Inter-Knot.']},
@@ -2345,12 +2412,14 @@ $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 // ======================= phone UI =======================
 let phoneOpenId=null, phView='home';
 const ST_COL={with:'#d9a441',free:'#5fcf8a',busy:'#e0566b',asleep:'#8b7bd8'};
-function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; b.textContent=n; b.style.display=n?'inline-block':'none'; }
+function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; if(n>(+b.textContent||0)){ b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } b.textContent=n; b.style.display=n?'inline-block':'none'; }
 function openPhone(view, id){ if(!S) return; phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
 function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
 function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
-function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); return; }
+let lastPhView='';
+function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; return; }
+  { const k=phView+'|'+phoneOpenId; if(k!==lastPhView){ lastPhView=k; const pb=$('#phBody'); if(pb){ pb.classList.remove('phIn'); void pb.offsetWidth; pb.classList.add('phIn'); } } }
   const B=$('#phBody'); const P=phone(); const PC=phoneCfg(); const everyone=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(hasPhone); const cs=everyone.filter(c=>isContact(c.id));
   const box=$('#phoneModal .box'); box.style.setProperty('--pa',PC.accent||'#d9a441'); box.style.setProperty('--pat',lightColor(PC.accent||'#d9a441')?'#16130c':'#fff');
   $('#phTime').textContent=`${hhmm(S.clock)} · ${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)}`; $('#phWx').textContent=`${weather(S.clock).temp}°F`;
@@ -3147,7 +3216,7 @@ async function renderHomeStudio(){ const sec=$('#studioSec'); if(!sec) return; i
 function showScreen(name){
   SCREEN=name;
   $('#home').classList.toggle('on',name==='home'); $('#studio').classList.toggle('on',name==='studio'); if(name==='studio') renderStudio();
-  $('#app').style.display=name==='world'?'grid':'none';
+  $('#app').style.display=name==='world'?'grid':'none'; if(name==='world'){ const a=$('#app'); a.classList.remove('screenIn'); void a.offsetWidth; a.classList.add('screenIn'); }
   if(name==='home'){ renderHome(); let seen=''; try{ seen=LS.getItem(LOG_SEEN_KEY)||''; }catch(e){}
     if(seen!==APP_VERSION){ $('#logDot').style.display='inline-block'; if(seen) setTimeout(openLog,500); else try{ LS.setItem(LOG_SEEN_KEY,APP_VERSION); }catch(e){} } }
 }
@@ -3172,6 +3241,12 @@ function enterWorld(id, opts={}){
   else if(!S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the story. Open the scenario vividly from the user's starting place, show who is here and what is going on, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }
   else if(S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the one-on-one scene. Set the place and moment from the scenario, introduce ${charById(S.branch.charId).full} vividly, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }
 }
+// modals fade out instead of vanishing
+new MutationObserver(list=>{ for(const m of list){ const el=m.target; if(!el.classList||!el.classList.contains('modal')) continue; const was=(m.oldValue||'').split(/\s+/).includes('on'), now=el.classList.contains('on');
+  if(was&&!now&&!document.body.classList.contains('calm')){ el.classList.add('closing'); clearTimeout(el._ct); el._ct=setTimeout(()=>el.classList.remove('closing'),220); }
+  if(now&&el.classList.contains('closing')){ clearTimeout(el._ct); el.classList.remove('closing'); } } }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});
+document.addEventListener('pointerdown',e=>{ const b=e.target.closest('button.primary'); if(!b||document.body.classList.contains('calm')) return; const r=b.getBoundingClientRect(), d=Math.max(r.width,r.height)*2;
+  const sp=document.createElement('span'); sp.className='ripple'; sp.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`; b.appendChild(sp); setTimeout(()=>sp.remove(),600); });
 $('#homeBtn').onclick=()=>{ if(S) LS.setItem(SAVE_KEY, JSON.stringify(S)); showScreen('home'); };
 
 // ======================= start =======================

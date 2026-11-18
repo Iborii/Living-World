@@ -1,10 +1,13 @@
 {
- "version": "0.23.0",
+ "version": "0.24.0",
  "date": "2026-11-18",
  "notes": [
-  "New stories now ask how you want to start: use the story's scene, keep the scene but choose who you are and how everyone knows you, or write your whole scene prompt yourself (with your own starting place and opening message if you like)."
+  "More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world's cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.",
+  "Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.",
+  "Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.",
+  "Fixed: a new story no longer shows a stray \"Show earlier messages\" button."
  ],
  "file": "index.html",
- "sha256": "5152dae709c78e0756bff0a3830e12d31767fa84f99e865d643b21bbda565480",
+ "sha256": "0ec5d2c102c4dc965c930830414fd57083ff8eecf058b16c91dc479f3d5adea8",
  "minShell": "0.5.0"
 }
