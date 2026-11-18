@@ -1,15 +1,10 @@
 {
- "version": "0.12.0",
+ "version": "0.12.1",
  "date": "2026-11-17",
  "notes": [
-  "\u2726 The Studio: browse races, characters and worlds other people have shared, download them into your app, and like the ones you love. Sort by most liked, newest or most downloaded, and search.",
-  "Publish your own races, characters and worlds for everyone (free account needed to publish, like or report; browsing and downloading need no account).",
-  "Make your own races in Studio \u2192 My races: looks, biology, culture, whether they have cycles, an optional \"what kind?\" question (like which animal), and race lore entries. Their lore reaches the narrator whenever someone of that race is in a scene.",
-  "Race lists in the character creator and personas now use your races instead of a fixed list.",
-  "Content rules: 18+ items are hidden unless you turn them on; anything with a character under 18 can never be marked 18+; anything reported several times is hidden until reviewed.",
-  "Your own worlds no longer borrow anything from the Krampus world."
+  "The Studio is now connected to its server: sign up, publish, like, report and download for real."
  ],
  "file": "index.html",
- "sha256": "76323726f42c6300672c115aa33b00f3a53933eaee1a3c04f913fb5c1eb66a00",
+ "sha256": "ad113f71ed6749105ed8bcd666693f16dfcc6a0142ec79fb1a1ea8a9762c5936",
  "minShell": "0.5.0"
 }

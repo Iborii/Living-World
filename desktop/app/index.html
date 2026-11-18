@@ -1256,8 +1256,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.12.1';
 const CHANGELOG = [
+ {v:'0.12.1', d:'2026-11-17', notes:['The Studio is now connected to its server: sign up, publish, like, report and download for real.']},
  {v:'0.12.0', d:'2026-11-17', notes:['✦ The Studio: browse races, characters and worlds other people have shared, download them into your app, and like the ones you love. Sort by most liked, newest or most downloaded, and search.','Publish your own races, characters and worlds for everyone (free account needed to publish, like or report; browsing and downloading need no account).','Make your own races in Studio → My races: looks, biology, culture, whether they have cycles, an optional "what kind?" question (like which animal), and race lore entries. Their lore reaches the narrator whenever someone of that race is in a scene.','Race lists in the character creator and personas now use your races instead of a fixed list.','Content rules: 18+ items are hidden unless you turn them on; anything with a character under 18 can never be marked 18+; anything reported several times is hidden until reviewed.','Your own worlds no longer borrow anything from the Krampus world.']},
  {v:'0.11.0', d:'2026-11-17', notes:['📱 Phone: a Knock Knock inbox in the chat. Texts from characters land there with an unread badge, and you can text anyone back. They reply in their own texting style, on their own time: fast if they\'re free, slower at work, and not until they wake up if they\'re asleep.','The narrator and off-screen scenes know about recent texts, so people can bring them up in person.','Relationships between characters: everyone in a world now has a closeness score and a description with each other (Krampus starts from their real history). Scenes on and off screen change them, and the narrator plays them that way. See and edit them under 📅 Events → Relationships.','Races: characters and personas can be Human, Thiren (pick the animal), an Intelligent Construct / robot, or anything you type. The AI is told everyone\'s race; constructs never get cycles.']},
  {v:'0.10.1', d:'2026-11-17', notes:['Characters now have genders, and the AI is told each one.','Cycles only appear for characters who could have one: Banyue is no longer offered a period.','The character creator asks for gender (required, including transgender options) and whether they are a robot or construct; the cycle option hides when it doesn\'t apply.']},
@@ -1815,7 +1816,7 @@ $('#rmSave').onclick=()=>{ rmCollect(); if(!RM.name||!RM.summary){ $('#rmMsg').t
 $('#rmDelete').onclick=()=>{ if(!confirm(`Delete ${RM.name} from your races? Characters already using it keep the name.`)) return; setRaces(getRaces().filter(x=>x.id!==RM.id)); $('#raceModal').classList.remove('on'); if(SCREEN==='studio') renderStudio(); };
 
 // ======================= Studio: share races, characters and worlds =======================
-const STUDIO={url:'', key:''};
+const STUDIO={url:'https://nqpxtbyvvwrzytbyukxv.supabase.co', key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcHh0Ynl2dndyenl0Ynl1a3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5NjkxNTMsImV4cCI6MjExMDU0NTE1M30.eCcFvQXdJVDx2IpjqLczZgM506Uc-BJ38E4p7r8OX8A'};
 const studioReady=()=>/^https:\/\//.test(STUDIO.url)&&STUDIO.key.length>20;
 const AUTH_KEY='livingworld_auth', PUB_KEY='livingworld_published';
 let AUTH=null; try{ AUTH=JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){}
