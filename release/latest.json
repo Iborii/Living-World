@@ -1,13 +1,14 @@
 {
- "version": "0.6.0",
+ "version": "0.7.0",
  "date": "2026-11-17",
  "notes": [
-  "Living World now installs like a normal Windows program (Start menu, desktop shortcut, and Settings > Apps to remove it).",
-  "New in Settings > Data & privacy: wipe all your data automatically when the app is uninstalled.",
-  "New \"Wipe all data now\" button to erase every story, persona, setting and your API key.",
-  "Automatic updates are now connected."
+  "1-on-1 chats: start a private story with any single character from their page. Have as many as you like; they show up under \"Your 1-on-1 chats\" on the main menu.",
+  "New Lorebook (\ud83d\udcd6 Lore) with two kinds of lore: World lore (keyword entries, like before) and Memories.",
+  "Memories are written automatically after every scene. Each one belongs to the characters who were there, so characters only remember what actually happened to them.",
+  "View, edit, pin or forget any memory, and add, edit or switch off world lore entries.",
+  "For testing, only the Krampus world is on the menu for now."
  ],
  "file": "index.html",
- "sha256": "bc2dedf00471d632f39d7a470777c6ee089245e521d3eb16b672a701759a40c9",
+ "sha256": "38123806f47d9ce5d1d05a3cba665fb36c69a6768d9d04eb9ad9652cffc404a1",
  "minShell": "0.5.0"
 }
