@@ -184,6 +184,36 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .ph-typing{font-size:12px;color:var(--muted);padding:2px 14px 8px}
 .ph-send{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);background:#16171e}
 .ph-send input{border-radius:20px}
+#phoneModal .ph-bar{display:flex;justify-content:space-between;padding:7px 18px 0;font-size:11.5px;color:var(--muted)}
+.ph-av{position:relative}
+.ph-dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;border:2px solid #111218}
+.ph-st{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;margin-right:5px;text-transform:uppercase;letter-spacing:.4px}
+.ph-st.free{background:#1f4a33;color:#9ff0c0}.ph-st.busy{background:#5a1f2a;color:#ffb3c0}.ph-st.asleep{background:#2f2856;color:#cbbfff}.ph-st.with{background:#4a3a14;color:#f6d07a}
+.ph-stsub{font-size:11.5px;color:var(--muted)}
+.ph-item .stl{margin:2px 0}
+.ph-home{padding:22px 18px}
+.ph-clock{font-family:var(--serif);font-size:56px;text-align:center;line-height:1}
+.ph-date{text-align:center;color:var(--muted);font-size:13px;margin:6px 0 24px}
+.ph-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px}
+.ph-app{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative;color:var(--text);padding:0}
+.ph-app .ic{width:54px;height:54px;border-radius:16px;background:#22242e;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #2e313d}
+.ph-app:hover .ic{border-color:var(--accent)}
+.ph-app .lb{font-size:11px;color:#cfd2dc}
+.ph-app .bd{position:absolute;top:-4px;right:8px;background:#d94a5b;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px}
+.ph-sec{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:12px 16px 4px}
+.bub.invite{background:#4a3a14;color:#f6d07a}.bub.call{background:#22242e;color:var(--muted);font-size:12.5px}
+.ph-call{padding:0 16px;display:flex;flex-direction:column;height:100%}
+.ph-call .cn{text-align:center;font-size:20px;font-weight:700;margin-top:10px}.ph-call .cs{text-align:center;color:var(--muted);font-size:13px;margin-bottom:10px}
+.ph-cl{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.ph-cl .cl{background:#1c1e26;border-radius:10px;padding:7px 10px}.ph-cl .cl.me{background:#22305a}
+.ph-hang{background:#c0392b;color:#fff;border:0;border-radius:30px;padding:10px 26px;font-weight:700;cursor:pointer}
+.ph-area{padding:8px 14px;border-bottom:1px solid #1f2129}.ph-area .an{font-weight:700;color:var(--accent);font-size:13px;margin-bottom:4px}
+.ph-pin{display:flex;gap:8px;align-items:center;padding:4px 0;cursor:pointer}.ph-pin.you{color:#f6d07a;cursor:default;font-size:13px}
+.ph-post-new{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}.ph-post-new textarea{flex:1}
+.ph-post{padding:10px 14px;border-bottom:1px solid #1f2129}.ph-post .tx{margin:7px 0 5px;white-space:pre-wrap;line-height:1.45}
+.ph-post .cm{font-size:13px;padding:3px 0 3px 10px;border-left:2px solid #2e313d;margin:3px 0}
+.ph-cmnew{display:flex;gap:6px;margin-top:6px}.ph-cmnew input{padding:4px 10px;border-radius:20px;font-size:13px}
+.ph-wx{min-width:74px;background:#1c1e26;border-radius:12px;padding:8px;text-align:center}
 #phBadge{background:#d94a5b;color:#fff;font-size:10px;border-radius:20px;padding:0 6px;margin-left:3px;display:none}
 /* relationships */
 .rel-card{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px}
@@ -366,7 +396,8 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 </div></div>
 
 <div class="modal" id="phoneModal"><div class="box">
-  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><b id="phTitle">Messages</b><span class="small" id="phSub"></span><button class="ghost" id="phClose" style="margin-left:auto;padding:4px 10px">✕</button></div>
+  <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
+  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
   <div class="ph-body" id="phBody"></div>
   <div class="ph-send" id="phSendRow" style="display:none"><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
 </div></div>
@@ -618,43 +649,130 @@ function saveCfg(){ try{ localStorage.setItem(SET_KEY, JSON.stringify(CFG)); }ca
 // ======================= schedule engine =======================
 // ---- phone ----
 function phoneApp(){ return (W&&W.phoneApp)||(W&&!W.custom&&W.id==='krampus'?'Knock Knock':'Messages'); }
-function phone(){ if(!S.phone) S.phone={threads:{}, pending:{}}; return S.phone; }
+function feedApp(){ return (W&&W.feedApp)||(W&&!W.custom&&W.id==='krampus'?'Inter-Knot':'Feed'); }
+function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads||{}; P.pending=P.pending||{}; P.calls=P.calls||[]; P.invites=P.invites||[]; P.feed=P.feed||[]; P.err=P.err||{}; P.extra=P.extra||{}; return P; }
 function thread(id){ const P=phone(); return P.threads[id]||(P.threads[id]=[]); }
-function addText(id, me, text){ const m={me, text:String(text).trim(), t:S.clock, read:me||(phoneOpenId===id&&$('#phoneModal').classList.contains('on'))}; if(!m.text) return; thread(id).push(m); if(thread(id).length>400) thread(id).splice(0,100); renderPhoneBadge(); if(phoneOpenId===id) renderPhone(); save(); }
-function unreadCount(){ const P=phone(); let n=0; for(const id in P.threads) n+=P.threads[id].filter(m=>!m.me&&!m.read).length; return n; }
-function textSnippet(id,n){ return (phone().threads[id]||[]).slice(-n).map(m=>`[${mmdd(m.t)} ${hhmm(m.t)}] ${m.me?(persona().name||'User'):charById(id).name}: ${m.text.replace(/\n+/g,' / ')}`).join(' | '); }
-function recentTextsBlock(){ const out=[]; const P=phone(); for(const id in P.threads){ const c=charById(id); if(!c) continue; const recent=P.threads[id].filter(m=>S.clock-m.t<12*60*MIN).slice(-6); if(recent.length) out.push(`With ${c.name}:\n`+recent.map(m=>`  [${hhmm(m.t)}] ${m.me?(persona().name||'User'):c.name}: ${m.text.replace(/\n+/g,' / ')}`).join('\n')); } return out.join('\n'); }
+function phoneOn(){ return $('#phoneModal').classList.contains('on'); }
+function addText(id, me, text, kind){ const m={me, text:String(text).trim(), t:S.clock, read:me||(phoneOn()&&phView==='chat'&&phoneOpenId===id)}; if(kind) m.kind=kind; if(!m.text) return; thread(id).push(m); if(thread(id).length>400) thread(id).splice(0,100); renderPhoneBadge(); if(phoneOn()) renderPhone(); save(); }
+function unreadCount(){ const P=phone(); let n=0; for(const id in P.threads) n+=P.threads[id].filter(m=>!m.me&&!m.read).length; n+=P.calls.filter(c=>c.missed&&!c.out&&!c.seen).length; n+=P.feed.filter(f=>!f.seen).length?1:0; return n; }
+const uN=()=>persona().name||'User';
+function textSnippet(id,n){ return (phone().threads[id]||[]).slice(-n).map(m=>`[${mmdd(m.t)} ${hhmm(m.t)}] ${m.me?uN():charById(id).name}: ${m.text.replace(/\n+/g,' / ')}`).join(' | '); }
+function recentTextsBlock(){ const out=[]; const P=phone(); const since=S.clock-12*60*MIN;
+  for(const id in P.threads){ const c=charById(id); if(!c) continue; const recent=P.threads[id].filter(m=>m.t>since).slice(-6); if(recent.length) out.push(`Texts with ${c.name}:\n`+recent.map(m=>`  [${hhmm(m.t)}] ${m.me?uN():c.name}: ${m.text.replace(/\n+/g,' / ')}`).join('\n')); }
+  for(const k of P.calls.filter(k=>k.t>since).slice(-4)){ const c=charById(k.id); if(c) out.push(`Call ${k.out?'to':'from'} ${c.name} at ${hhmm(k.t)}: ${k.missed?'missed':`${k.dur||1} min${k.sum?' – '+k.sum:''}`}`); }
+  for(const f of P.feed.filter(f=>f.t>since).slice(-4)){ const who=f.who==='user'?uN():(charById(f.who)?.name||'?'); out.push(`${feedApp()} post by ${who} at ${hhmm(f.t)}: ${f.text}${f.comments.length?` (comments: ${f.comments.slice(-3).map(x=>(x.who==='user'?uN():charById(x.who)?.name)+': '+x.text).join(' / ')})`:''}`); }
+  return out.join('\n'); }
+function plansBlock(){ const P=phone(); const l=P.invites.filter(v=>v.status==='accepted').map(v=>{ const c=charById(v.id); return c?`- ${c.name} agreed to meet ${uN()} at ${v.loc}, ${v.date===isoDate(S.clock)?'today':wdName(parseStart(v.date,'12:00'))+' '+v.date.slice(5).replace('-','/')} at ${v.start} (${v.what}).`:''; }).filter(Boolean); return l.join('\n'); }
 const SLEEPY=/asleep|sleep|in bed|nap|lights out|dozing/i, BUSY=/work|shift|class|meeting|training|teaching|judg|mission|patrol|case|operation|lesson|duty|investigat/i;
-function replyDelay(c){ const st=S.chars[c.id]; if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return 0.3+Math.random()*0.7; if(BUSY.test(st.act)) return 4+Math.random()*10; return 0.5+Math.random()*3.5; }
+function contactStatus(c){ const st=S.chars[c.id]; const area=(st.loc||'').split(',')[0].trim();
+  if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return {k:'with',label:'With you',sub:area};
+  if(SLEEPY.test(st.act)) return {k:'asleep',label:'Asleep',sub:'Do not disturb'};
+  if(BUSY.test(st.act)) return {k:'busy',label:'Busy',sub:st.act.split(/[,(]/)[0].trim()};
+  return {k:'free',label:'Available',sub:area}; }
+function replyDelay(c){ const k=contactStatus(c).k; if(k==='with') return 0.3+Math.random()*0.7; if(k==='busy') return 4+Math.random()*10; return 0.5+Math.random()*3.5; }
 let phoneBusy=new Set();
-function processPhone(){ const P=phone(); for(const id in P.pending){ const at=P.pending[id]; const c=charById(id); if(!c){ delete P.pending[id]; continue; }
-  if(S.clock<at||phoneBusy.has(id)) continue; if(SLEEPY.test(S.chars[id].act)) continue; // they'll see it when they wake up
-  delete P.pending[id]; phoneBusy.add(id); P.err=P.err||{}; delete P.err[id]; renderPhone(); textReply(c).catch(e=>{ P.err[id]=e.message; notice('Text reply failed: '+e.message,true); }).finally(()=>{ phoneBusy.delete(id); renderPhone(); }); } }
-async function textReply(c){
-  const st=S.chars[c.id]; const th=thread(c.id).slice(-24); const pn=persona().name||'the user';
-  const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
-${idLine(c)}${c.sheet.slice(0,9000)}
+function processPhone(){ const P=phone();
+  for(const id in P.pending){ const at=P.pending[id]; const c=charById(id); if(!c){ delete P.pending[id]; continue; }
+    if(S.clock<at||phoneBusy.has(id)) continue; if(SLEEPY.test(S.chars[id].act)) continue; // they'll see it when they wake up
+    delete P.pending[id]; phoneBusy.add(id); delete P.err[id]; if(phoneOn()) renderPhone();
+    const extra=P.extra[id]; delete P.extra[id];
+    textReply(c, extra).then(d=>resolveInvite(c,d)).catch(e=>{ P.err[id]=e.message; notice('Text reply failed: '+e.message,true); }).finally(()=>{ phoneBusy.delete(id); if(phoneOn()) renderPhone(); }); }
+  // invitations: did the user show up?
+  for(const v of P.invites){ if(v.status!=='accepted') continue; const t0=parseStart(v.date,v.start); const c=charById(v.id); if(!c) continue;
+    const here=sameLoc(baseLoc(S.user.loc),baseLoc(v.loc))||S.user.loc.toLowerCase().includes(v.loc.split(',').pop().trim().toLowerCase())||S.user.companions.includes(v.id);
+    if(S.clock>=t0-10*MIN&&S.clock<=t0+45*MIN&&here){ v.status='met'; addMemory({who:[v.id], text:`${uN()} kept their invitation and met ${c.name} at ${v.loc} (${v.what})`, imp:2, src:'invite'}); save(); }
+    else if(S.clock>t0+45*MIN){ v.status='stood-up'; S.events=S.events.filter(e=>e.invite!==v.vid); updateSchedules(); S.chars[v.id].trust=Math.max(0,S.chars[v.id].trust-2);
+      addMemory({who:[v.id], text:`${uN()} invited ${c.name} to ${v.loc} at ${v.start} (${v.what}) and never showed up; ${c.name} waited`, imp:3, src:'invite'});
+      P.extra[v.id]=`${uN()} invited you to ${v.loc} at ${v.start} (${v.what}). You went and waited, and ${uN()} never showed up. Text them about it, in character (hurt, annoyed, worried or teasing, whatever fits you).`; P.pending[v.id]=S.clock+2*MIN; save(); } }
+  // feed comments waiting for an answer
+  for(const f of P.feed){ if(f.replyAt&&S.clock>=f.replyAt&&!phoneBusy.has('feed:'+f.id)){ delete f.replyAt; feedReact(f).catch(e=>notice('Feed update failed: '+e.message,true)); } }
+}
+function charVoice(c, focusText){ const st=S.chars[c.id]; const pn=uN();
+  return `${idLine(c)}${c.sheet.slice(0,9000)}
 
 What ${c.name} remembers about ${pn} and recent life:
-${memLines(c.id, th.map(m=>m.text).join(' '), 10)||'(nothing yet)'}
+${memLines(c.id, focusText||'', 10)||'(nothing yet)'}
 ${relLines([c].concat(W.characters.filter(x=>x.id!==c.id)), c.id)}
 Trust toward ${pn}: ${st.trust}/100.
-${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}
-Right now (${timeLine(S.clock)}) ${c.name} is at ${st.loc}, ${st.act}.
+${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}${(()=>{ const p=plansBlock(); return p?`Plans:\n${p}\n`:''; })()}
+Right now (${timeLine(S.clock)}) ${c.name} is at ${st.loc}, ${st.act}.`; }
+function threadMsgs(th){ const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text}));
+  while(msgs.length&&msgs[0].role==='assistant') msgs.shift();
+  const merged=[]; for(const m of msgs){ const L=merged[merged.length-1]; if(L&&L.role===m.role) L.content+='\n'+m.content; else merged.push({...m}); } return merged; }
+const cleanLines=(out,c)=>out.replace(/^\s*\|.*\|\s*$/mg,'').split('\n').map(l=>l.replace(/^\s*(\*|-)\s*/,'').replace(new RegExp('^'+c.name+':\\s*','i'),'').replace(/^"|"$/g,'').trim()).filter(l=>l&&!/^(ACCEPT|DECLINE)$/i.test(l));
+async function textReply(c, extra){
+  const th=thread(c.id).slice(-24); const pn=uN();
+  const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
+${charVoice(c, th.map(m=>m.text).join(' '))}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. If they are busy they may answer briefly or say they'll text later. They can bring up what they're doing. Never speak for ${pn}.`;
-  const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text}));
-  while(msgs.length&&msgs[0].role==='assistant') msgs.shift(); if(!msgs.length) return;
-  // merge consecutive same-role turns
-  const merged=[]; for(const m of msgs){ const L=merged[merged.length-1]; if(L&&L.role===m.role) L.content+='\n'+m.content; else merged.push({...m}); }
-  if(merged[merged.length-1].role!=='user') return;
-  const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:300});
-  const lines=out.replace(/^\s*\|.*\|\s*$/mg,'').split('\n').map(l=>l.replace(/^\s*(\*|-)\s*/,'').replace(new RegExp('^'+c.name+':\\s*','i'),'').replace(/^"|"$/g,'').trim()).filter(Boolean).slice(0,4);
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. If they are busy they may answer briefly or say they'll text later. They can bring up what they're doing. Never speak for ${pn}.${extra?`\n\nSITUATION: ${extra}`:''}`;
+  let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
+  const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
+  const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
+  const lines=cleanLines(out,c).slice(0,4);
   for(const l of lines) addText(c.id,false,l);
   const lastMe=[...th].reverse().find(m=>m.me);
-  addMemory({who:[c.id], text:`Texted with ${pn}: ${pn} wrote "${(lastMe?.text||'').slice(0,120)}"; ${c.name} replied "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
-  if(!$('#phoneModal').classList.contains('on')||phoneOpenId!==c.id) notice(`📱 New text from ${c.name}`);
+  addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
+  if(!phoneOn()||phoneOpenId!==c.id) notice(`📱 New text from ${c.name}`);
+  return decision?decision.toUpperCase():null;
 }
+// ---- invitations (like Knock Knock invites) ----
+function invitesToday(){ const d=isoDate(S.clock); return phone().invites.filter(v=>v.sentDay===d).length; }
+function sendInvite(c, v){ const P=phone();
+  const when=`${v.date===isoDate(S.clock)?'today':wdName(parseStart(v.date,'12:00'))} at ${v.start}`;
+  addText(c.id,true,`📅 Invitation: ${v.what} at ${v.loc}, ${when}`,'invite');
+  const inv={...v, id:c.id, vid:'v'+Date.now().toString(36), sentDay:isoDate(S.clock), sentAt:S.clock, status:'waiting'}; P.invites.push(inv);
+  const slot=slotFor(c, parseStart(v.date,v.start)); const sched=slot?`${slot.act} at ${slot.loc}`:'nothing scheduled';
+  P.extra[c.id]=`${uN()} just sent an invitation: ${v.what} at ${v.loc}, ${when}. At that time your schedule says: ${sched}. Decide like the real ${c.name}: accept if you can and want to (you may move plans around, but don't skip real duties), or decline (you can suggest another time). Answer in your texts, then on the very last line write only ACCEPT or DECLINE.`;
+  if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; save(); }
+function resolveInvite(c, d){ const P=phone(); const inv=[...P.invites].reverse().find(v=>v.id===c.id&&v.status==='waiting'); if(!inv||!d) return;
+  inv.status=d==='ACCEPT'?'accepted':'declined';
+  if(inv.status==='accepted'){ const end=Math.min(1439,toMin(inv.start)+120); S.events.push({id:'e'+inv.vid, who:c.id, date:inv.date, start:inv.start, end:`${pad(Math.floor(end/60))}:${pad(end%60)}`, loc:inv.loc, act:`meeting ${uN()}: ${inv.what}`, invite:inv.vid}); updateSchedules();
+    addMemory({who:[c.id], text:`Agreed to meet ${uN()} at ${inv.loc} on ${inv.date} at ${inv.start} (${inv.what})`, imp:2, src:'invite'}); }
+  save(); if(phoneOn()) renderPhone(); }
+// ---- calls ----
+let CALL=null;
+async function callTurn(c){ const pn=uN();
+  const sys=`You are ${c.full}, on a voice call with ${pn} (a ${phoneApp()} call). Stay completely in character.
+${charVoice(c, CALL.lines.map(l=>l.text).join(' '))}
+
+Write only what ${c.name} says out loud on the phone, plus small sounds you can hear through the phone (background noise, a sigh) in *italics*. Spoken words in "quotes". Keep it to 1 to 4 short lines. They react to where they are and what they're doing. If they need to go, they say so and you add a final line: [[HANGUP]]. Never speak for ${pn}.`;
+  const msgs=CALL.lines.map(l=>({role:l.me?'user':'assistant',content:l.text})); const merged=threadMsgs(CALL.lines.map(l=>({me:l.me,text:l.text})));
+  if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:'(picks up the call)'});
+  const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:300});
+  const hang=/\[\[HANGUP\]\]/i.test(out); const txt=out.replace(/\[\[HANGUP\]\]/ig,'').replace(/^\s*\|.*\|\s*$/mg,'').trim();
+  return {txt, hang}; }
+async function startCall(c){
+  const P=phone(); const k=contactStatus(c).k;
+  CALL={id:c.id, t:S.clock, lines:[], state:'ringing'}; phView='call'; phoneOpenId=c.id; renderPhone();
+  await new Promise(r=>setTimeout(r,1800+Math.random()*1500)); if(!CALL||CALL.id!==c.id) return;
+  const answers=k==='asleep'?false:k==='busy'?Math.random()<0.45:Math.random()<0.92;
+  if(!answers){ P.calls.push({id:c.id, t:S.clock, out:true, missed:true}); addText(c.id,true,'📞 Missed call','call');
+    CALL.state='missed'; renderPhone(); P.extra[c.id]=`${uN()} just tried to call you and you couldn't pick up (${S.chars[c.id].act}). Text them back about it when you can.`; P.pending[c.id]=S.clock+replyDelay(c)*MIN; save(); return; }
+  CALL.state='live'; renderPhone(); await callSay(c, null);
+}
+async function callSay(c, text){ if(!CALL) return; if(text) CALL.lines.push({me:true,text}); CALL.thinking=true; renderPhone();
+  try{ const r=await callTurn(c); CALL.lines.push({me:false,text:r.txt}); S.clock+=MIN*(0.5+Math.random()); if(r.hang){ CALL.thinking=false; endCall(true); return; } }catch(e){ CALL.lines.push({me:false,text:'*The line crackles.* (Call failed: '+e.message+')'}); }
+  CALL.thinking=false; renderPhone(); }
+async function endCall(theyHungUp){ if(!CALL) return; const c=charById(CALL.id); const P=phone(); const C=CALL; CALL=null;
+  const dur=Math.max(1,Math.round((S.clock-C.t)/MIN)); const rec={id:c.id, t:C.t, out:true, dur}; P.calls.push(rec);
+  addText(c.id,true,`📞 Call · ${dur} min`,'call'); phView='chat'; renderPhone();
+  if(C.lines.length>1){ try{ const s=await callAI({system:'Summarize this phone call in one short sentence (who said what that matters: plans, promises, feelings, news). No preamble.', messages:[{role:'user',content:C.lines.map(l=>(l.me?uN():c.name)+': '+l.text).join('\n')}], model:CFG.bg, maxTokens:90});
+    rec.sum=s.trim(); addMemory({who:[c.id], text:`Phone call with ${uN()}: ${rec.sum}`, imp:2, src:'call'}); save(); }catch(e){} }
+}
+// ---- feed (Inter-Knot style) ----
+async function feedReact(f){ const key='feed:'+f.id; phoneBusy.add(key);
+  try{ const poster=f.who==='user'?uN():charById(f.who)?.name;
+    const cands=W.characters.filter(c=>c.id!==f.who&&!SLEEPY.test(S.chars[c.id].act));
+    const out=await callAI({system:`You decide how characters react on ${feedApp()} (a social feed) to a post. Return ONLY JSON: [{"name":"...","like":true,"comment":"text or empty"}]. Only include characters who would actually see and react right now, true to their personalities and their feelings about the poster; most posts get 0-3 reactions and few comments. Comments are short, in each character's own texting style.`,
+      messages:[{role:'user',content:`Post by ${poster} at ${timeLine(S.clock)}: "${f.text}"\n${f.comments.length?'Existing comments:\n'+f.comments.map(x=>(x.who==='user'?uN():charById(x.who)?.name)+': '+x.text).join('\n')+'\n':''}Characters who could react:\n${cands.map(c=>`- ${c.name}: ${c.brief.slice(0,200)} Now: ${S.chars[c.id].act}. Trust toward ${uN()}: ${S.chars[c.id].trust}/100`).join('\n')}`}], model:CFG.bg, maxTokens:500});
+    const arr=JSON.parse((out.match(/\[[\s\S]*\]/)||['[]'])[0]);
+    for(const r of arr){ const c=charByName(r.name); if(!c||c.id===f.who) continue; if(r.like&&!f.likes.includes(c.id)) f.likes.push(c.id); if(r.comment&&String(r.comment).trim()) f.comments.push({who:c.id, text:String(r.comment).trim().slice(0,300), t:S.clock}); }
+    f.seen=false; save(); if(phoneOn()) renderPhone(); renderPhoneBadge();
+  }finally{ phoneBusy.delete(key); } }
+function addPost(who, text){ const P=phone(); const f={id:'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,4), who, text:String(text).trim().slice(0,500), t:S.clock, likes:[], comments:[], seen:who==='user'}; if(!f.text) return;
+  P.feed.push(f); if(P.feed.length>200) P.feed.splice(0,P.feed.length-200); if(who!=='user'||true) f.replyAt=S.clock+(2+Math.random()*12)*MIN; save(); renderPhoneBadge(); }
+
 // ---- relationships between characters ----
 const BUILTIN_REL={krampus:{
  'dialyn|phoenix':[55,"Phoenix tells Dialyn before she sneaks out 'to have fun'. Dialyn tricked her into long-term health training. Dialyn calls her 'Senior Phoenix'."],
@@ -676,7 +794,7 @@ function relLines(chars, onlyId){ const out=[]; for(let i=0;i<chars.length;i++) 
   return out.length?`BETWEEN THEM (how they feel about each other; let it show):\n${out.join('\n')}\n`:''; }
 function applyBond(arg, only){ const mm=arg.match(/^(.+?)\s*[\/&]\s*(.+?)\s*([+-]\s*\d+)\s*:?\s*(.*)$/); if(!mm) return; const a=charByName(mm[1]), b=charByName(mm[2]); if(!a||!b||a.id===b.id) return; if(only&&!(only.includes(a.id)&&only.includes(b.id))) return;
   const r=S.rel[relKey(a.id,b.id)]; if(!r) return; const d=Math.max(-8,Math.min(8,parseInt(mm[3].replace(/\s/g,'')))); r.score=Math.max(0,Math.min(100,r.score+d)); r.log.push({t:S.clock,d,why:(mm[4]||'').trim().slice(0,160)}); if(r.log.length>30) r.log.splice(0,r.log.length-30); }
-function allEvents(){ return [...(W.events||[]), ...((S&&S.events)||[])]; }
+function allEvents(){ return [...((S&&S.events)||[]), ...(W.events||[])]; } // plans you make win over story events
 const DAYMS=1440*MIN;
 // ---- menstrual cycles ----
 const BUILTIN_RACE={phoenix:{race:'Human'}, dialyn:{race:'Human'}, zhao:{race:'Thiren',animal:'rabbit'}, promeia:{race:'Human'}, banyue:{race:'Intelligent Construct',animal:'stone lion, four-armed'}};
@@ -878,7 +996,7 @@ USER'S LOCATION: ${S.user.loc}
 CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
 TRUST TOWARD THE USER: ${trustLine()}
 LAST WASHED: ${washedLine()}
-${pres.length>1?relLines(pres):''}${(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE TEXTS (${phoneApp()}, last 12 hours; the people involved know about these):\n${t}\n`:''; })()}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
+${pres.length>1?relLines(pres):''}${(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()}${(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })()}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
   const ctx=recentContext(4);
   for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\nWHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What they were just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
@@ -1012,11 +1130,13 @@ ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a statu
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
-Only if a character would genuinely text ${persona().name||'the user'} right now, add a final line: TEXT TO USER: Name: message. Usually do not.`;
+Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not.
+Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:450});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -1256,8 +1376,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.12.2';
+const APP_VERSION = '0.13.0';
 const CHANGELOG = [
+ {v:'0.13.0', d:'2026-11-17', notes:['📱 The phone is now a real phone with a home screen and apps: Messages, Calls, Invite, Map, Feed, Calendar and Weather.','Contacts show live status like Knock Knock: Available, Busy (with what they\'re doing), Asleep, or With you, plus a colored dot on their picture.','Calls: ring someone and talk live. Free people usually pick up; busy people often can\'t and text you back; asleep means a missed call. What was said is remembered.','Invitations, ZZZ-style: invite someone somewhere at a time (3 a day). They check their schedule and accept or decline. If they accept they really go there, and if you don\'t show up they\'ll let you know (and trust drops).','Map: see which district everyone is in right now and what they\'re doing.','Feed (Inter-Knot in Krampus): characters sometimes post about their day; you can like, comment and post, and they react and reply.','The narrator knows about your calls, plans and posts.']},
  {v:'0.12.2', d:'2026-11-17', notes:['Texts get answered much sooner: within a minute or so if they\'re with you, a few minutes if they\'re free, and about 5 to 15 minutes if they\'re at work. Asleep still means they answer when they wake up.','The phone shows why someone hasn\'t answered yet (busy, asleep, or the story is paused), and shows an error with a Try again link if a reply fails.']},
  {v:'0.12.1', d:'2026-11-17', notes:['The Studio is now connected to its server: sign up, publish, like, report and download for real.']},
  {v:'0.12.0', d:'2026-11-17', notes:['✦ The Studio: browse races, characters and worlds other people have shared, download them into your app, and like the ones you love. Sort by most liked, newest or most downloaded, and search.','Publish your own races, characters and worlds for everyone (free account needed to publish, like or report; browsing and downloading need no account).','Make your own races in Studio → My races: looks, biology, culture, whether they have cycles, an optional "what kind?" question (like which animal), and race lore entries. Their lore reaches the narrator whenever someone of that race is in a scene.','Race lists in the character creator and personas now use your races instead of a fixed list.','Content rules: 18+ items are hidden unless you turn them on; anything with a character under 18 can never be marked 18+; anything reported several times is hidden until reviewed.','Your own worlds no longer borrow anything from the Krampus world.']},
@@ -1466,34 +1587,113 @@ $('#loreModal').onclick=e=>{ if(e.target.id==='loreModal') $('#loreModal').class
 $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 
 // ======================= phone UI =======================
-let phoneOpenId=null;
+let phoneOpenId=null, phView='home';
+const ST_COL={with:'#d9a441',free:'#5fcf8a',busy:'#e0566b',asleep:'#8b7bd8'};
 function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; b.textContent=n; b.style.display=n?'inline-block':'none'; }
-function openPhone(id){ if(!S) return; phoneOpenId=id||null; $('#phoneModal').classList.add('on'); renderPhone(); if(id) setTimeout(()=>$('#phInput').focus(),50); }
-function renderPhone(){ if(!S||!$('#phoneModal').classList.contains('on')) { renderPhoneBadge(); return; }
-  const B=$('#phBody'); const P=phone();
-  if(!phoneOpenId){
-    $('#phTitle').textContent=phoneApp(); $('#phSub').textContent=`${hhmm(S.clock)}`; $('#phBack').style.display='none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none';
-    const cs=[...W.characters].sort((a,b)=>((P.threads[b.id]||[]).slice(-1)[0]?.t||0)-((P.threads[a.id]||[]).slice(-1)[0]?.t||0));
-    B.innerHTML=cs.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
-      return `<div class="ph-item" data-c="${c.id}"><div class="ph-av" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div><div class="nm">${esc(c.full)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small" style="margin-left:auto">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
-    B.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>openPhone(d.dataset.c));
-  } else {
-    const c=charById(phoneOpenId); const th=thread(c.id); th.forEach(m=>m.read=true);
-    $('#phTitle').textContent=c.full; const st=S.chars[c.id]; $('#phSub').textContent=SLEEPY.test(st.act)?'probably asleep':''; $('#phBack').style.display=''; $('#phSendRow').style.display='';
+function openPhone(view, id){ if(!S) return; phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
+function avHTML(c,size=42,dot=true){ const s=contactStatus(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
+function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
+function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
+function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); return; }
+  const B=$('#phBody'); const P=phone(); const cs=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
+  $('#phTime').textContent=`${hhmm(S.clock)} · ${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)}`; $('#phWx').textContent=`${weather(S.clock).temp}°F`;
+  if(phView==='home'){ phHeader(esc(phoneApp()==='Knock Knock'?'Phone':'Phone'),'',false);
+    const unr=Object.values(P.threads).reduce((n,t)=>n+t.filter(m=>!m.me&&!m.read).length,0), mc=P.calls.filter(c=>c.missed&&!c.out&&!c.seen).length, fu=P.feed.filter(f=>!f.seen).length;
+    const app=(k,ic,l,badge)=>`<button class="ph-app" data-app="${k}"><span class="ic">${ic}</span>${badge?`<span class="bd">${badge}</span>`:''}<span class="lb">${l}</span></button>`;
+    B.innerHTML=`<div class="ph-home"><div class="ph-clock">${hhmm(S.clock)}</div><div class="ph-date">${wdName(S.clock)}, ${mmdd(S.clock)} · ${esc(weather(S.clock).desc)}, ${weather(S.clock).temp}°F</div>
+      <div class="ph-grid">${app('msgs','💬',esc(phoneApp()),unr)}${app('calls','📞','Calls',mc)}${app('invite','📅','Invite','')}${app('map','🗺️','Map','')}${app('feed','#️⃣',esc(feedApp()),fu)}${app('cal','🗓️','Calendar','')}${app('wx','🌦️','Weather','')}</div></div>`;
+    B.querySelectorAll('[data-app]').forEach(b=>b.onclick=()=>{ const a=b.dataset.app; if(a==='cal'){ $('#phoneModal').classList.remove('on'); evTab='events'; openEvents(); return; } openPhone(a); });
+  }
+  else if(phView==='msgs'){ phHeader(esc(phoneApp()),'',true);
+    const sorted=[...cs].sort((a,b)=>((P.threads[b.id]||[]).slice(-1)[0]?.t||0)-((P.threads[a.id]||[]).slice(-1)[0]?.t||0));
+    B.innerHTML=sorted.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
+      return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(c.full)}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
+    B.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
+  }
+  else if(phView==='chat'){ const c=charById(phoneOpenId); if(!c){ phView='msgs'; return renderPhone(); } const th=thread(c.id); th.forEach(m=>m.read=true);
+    phHeader(esc(c.full), statusPill(c), true); $('#phSendRow').style.display='';
     const av=$('#phAv'); av.style.display='flex'; av.style.background=avatarBg(c.color,c.img); av.textContent=c.img?'':c.name[0];
     let lastDay='', html='';
-    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
-    const waiting=phoneBusy.has(c.id)?`<div class="ph-typing">${esc(c.name)} is typing…</div>`:(P.pending[c.id]&&SLEEPY.test(st.act)?`<div class="ph-typing">Delivered. ${esc(c.name)} seems to be asleep.</div>`:(P.pending[c.id]?`<div class="ph-typing">Delivered${S.paused?' · the story is paused, so time isn\'t passing':BUSY.test(st.act)?` · ${esc(c.name)} is busy (${esc(st.act)}), so it may take a few minutes`:''}</div>`:(P.err&&P.err[c.id]?`<div class="ph-typing" style="color:var(--danger)">Couldn't get a reply: ${esc(P.err[c.id])} <a href="#" id="phRetry">Try again</a></div>`:'')));
+    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
+    const s=contactStatus(c); let waiting='';
+    if(phoneBusy.has(c.id)) waiting=`<div class="ph-typing">${esc(c.name)} is typing…</div>`;
+    else if(P.pending[c.id]) waiting=`<div class="ph-typing">Delivered${S.paused?' · the story is paused, so time isn\'t passing':s.k==='asleep'?` · ${esc(c.name)} is asleep and will see it when they wake up`:s.k==='busy'?` · ${esc(c.name)} is busy (${esc(S.chars[c.id].act)}), so it may take a few minutes`:''}</div>`;
+    else if(P.err[c.id]) waiting=`<div class="ph-typing" style="color:var(--danger)">Couldn't get a reply: ${esc(P.err[c.id])} <a href="#" id="phRetry">Try again</a></div>`;
     B.innerHTML=`<div class="ph-msgs">${html||'<div class="bub-t">Say hi.</div>'}</div>${waiting}`; B.scrollTop=B.scrollHeight;
     const rt=$('#phRetry'); if(rt) rt.onclick=e=>{ e.preventDefault(); delete P.err[c.id]; P.pending[c.id]=S.clock; renderPhone(); };
+    $('#phCallBtn').style.display=''; $('#phInvBtn').style.display='';
   }
+  else if(phView==='calls'){ phHeader('Calls','',true); P.calls.forEach(k=>k.seen=true);
+    B.innerHTML=`<div class="ph-sec">Call someone</div>`+cs.map(c=>`<div class="ph-item" data-call="${c.id}">${avHTML(c,36)}<div style="flex:1"><div class="nm">${esc(c.full)}</div><div class="stl">${statusPill(c)}</div></div><span style="font-size:20px">📞</span></div>`).join('')+
+      `<div class="ph-sec">Recent</div>`+([...P.calls].reverse().slice(0,30).map(k=>{ const c=charById(k.id); return c?`<div class="ph-item" style="cursor:default"><span style="width:22px;text-align:center;color:${k.missed?'var(--danger)':'var(--muted)'}">${k.out?'↗':'↙'}</span><div style="flex:1"><div class="nm" style="${k.missed?'color:var(--danger)':''}">${esc(c.name)}</div><div class="lm">${k.missed?'Missed':`${k.dur} min${k.sum?' · '+esc(k.sum):''}`}</div></div><span class="small">${mmdd(k.t)} ${hhmm(k.t)}</span></div>`:''; }).join('')||'<div class="small" style="padding:10px 16px">No calls yet.</div>');
+    B.querySelectorAll('[data-call]').forEach(d=>d.onclick=()=>startCall(charById(d.dataset.call)));
+  }
+  else if(phView==='call'){ const c=charById(phoneOpenId); phHeader('', '', false); $('#phBack').style.display='none';
+    const C=CALL; const state=!C?'ended':C.state;
+    B.innerHTML=`<div class="ph-call"><div style="display:flex;justify-content:center;margin-top:18px">${avHTML(c,96,false)}</div><div class="cn">${esc(c.full)}</div>
+      <div class="cs">${state==='ringing'?'Ring— Ring— Ring—…':state==='missed'?'No answer':state==='live'?`${phoneApp()} call · ${Math.max(0,Math.round((S.clock-C.t)/MIN))} min`:'Call ended'}</div>
+      <div class="ph-cl" id="phCallLines">${C?C.lines.map(l=>`<div class="cl ${l.me?'me':''}">${l.me?'<b>You:</b> ':''}${fmt(subUser(l.text))}</div>`).join(''):''}${C&&C.thinking?'<div class="cl"><i>…</i></div>':''}</div>
+      ${state==='live'?`<div class="ph-send" style="border:0;background:none;padding:6px 0"><input id="phCallIn" placeholder="Say something…" autocomplete="off"><button class="primary" id="phCallSay">Say</button></div>`:''}
+      <div style="display:flex;justify-content:center;margin:12px 0 18px"><button class="ph-hang" id="phHang">${state==='live'||state==='ringing'?'End call':'Close'}</button></div></div>`;
+    const cl=$('#phCallLines'); if(cl) cl.scrollTop=cl.scrollHeight;
+    $('#phHang').onclick=()=>{ if(CALL&&CALL.state==='live') endCall(false); else { CALL=null; openPhone('chat',c.id); } };
+    const say=()=>{ const v=$('#phCallIn').value.trim(); if(!v||CALL.thinking) return; callSay(c,v); };
+    if($('#phCallSay')){ $('#phCallSay').onclick=say; $('#phCallIn').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); say(); } }; setTimeout(()=>{ const i=$('#phCallIn'); if(i&&!CALL?.thinking) i.focus(); },30); }
+  }
+  else if(phView==='invite'){ phHeader('Invite someone',`${3-invitesToday()} of 3 invitations left today`,true);
+    const pre=phoneOpenId&&charById(phoneOpenId)?phoneOpenId:cs[0]?.id; const today=isoDate(S.clock), tmr=isoDate(S.clock+DAYMS);
+    const mine=P.invites.filter(v=>['waiting','accepted'].includes(v.status));
+    B.innerHTML=`<div style="padding:12px 16px"><label>Who</label><select id="ivWho">${cs.map(c=>`<option value="${c.id}" ${c.id===pre?'selected':''}>${esc(c.full)} · ${contactStatus(c).label}</option>`).join('')}</select>
+      <label>What</label><input id="ivWhat" placeholder="e.g. watch a movie, get hot pot, see the animals">
+      <label>Where</label><input id="ivLoc" list="ivLocs" placeholder="District, exact spot"><datalist id="ivLocs">${W.locations.map(l=>`<option>${esc(l)}</option>`).join('')}</datalist>
+      <div class="grid2"><div><label>Day</label><select id="ivDay"><option value="${today}">Today</option><option value="${tmr}">Tomorrow (${wdName(S.clock+DAYMS).slice(0,3)})</option></select></div><div><label>Time</label><input id="ivTime" type="time" value="${pad(Math.min(22,dt(S.clock).h+2))}:00"></div></div>
+      <div class="small" id="ivBusy" style="margin-top:6px"></div>
+      <div class="rowbtns"><button class="primary" id="ivSend" ${invitesToday()>=3?'disabled':''}>Send invitation</button><span class="small" id="ivMsg"></span></div>
+      <div class="hint">They answer on their own time and can say no. If they accept, they'll go there at that time, so show up: standing someone up hurts their trust in you.</div>
+      ${mine.length?`<div class="ph-sec" style="padding-left:0">Your plans</div>${mine.map(v=>{ const c=charById(v.id); return c?`<div class="small" style="padding:4px 0">${v.status==='accepted'?'✅':'⏳'} <b>${esc(c.name)}</b>: ${esc(v.what)} at ${esc(v.loc)}, ${v.date===today?'today':wdName(parseStart(v.date,'12:00')).slice(0,3)} ${v.start}</div>`:''; }).join('')}`:''}</div>`;
+    const chk=()=>{ const c=charById($('#ivWho').value); const t=$('#ivTime').value; if(!c||!t) return; const sl=slotFor(c,parseStart($('#ivDay').value,t)); $('#ivBusy').textContent=sl?`${c.name}'s schedule then: ${sl.act} (${sl.loc}).`:`${c.name} has nothing scheduled then.`; };
+    ['ivWho','ivDay','ivTime'].forEach(id=>$('#'+id).onchange=chk); chk();
+    $('#ivSend').onclick=()=>{ const c=charById($('#ivWho').value); const v={what:$('#ivWhat').value.trim()||'hang out', loc:$('#ivLoc').value.trim(), date:$('#ivDay').value, start:$('#ivTime').value};
+      if(!v.loc) return $('#ivMsg').textContent='Say where.'; if(parseStart(v.date,v.start)<S.clock+15*MIN) return $('#ivMsg').textContent='Pick a time at least 15 minutes from now.';
+      if(invitesToday()>=3) return $('#ivMsg').textContent='That\'s 3 invitations today. Try again tomorrow.';
+      if(P.invites.some(x=>x.id===c.id&&x.status==='waiting')) return $('#ivMsg').textContent=`${c.name} hasn't answered your last invitation yet.`;
+      sendInvite(c,v); openPhone('chat',c.id); };
+  }
+  else if(phView==='map'){ phHeader('Map','Where everyone is right now',true);
+    const groups={}; const add=(area,html)=>{ (groups[area]=groups[area]||[]).push(html); };
+    add((S.user.loc||'').split(',')[0].trim()||'Unknown',`<div class="ph-pin you">📍 You · ${esc(S.user.loc)}</div>`);
+    for(const c of cs){ const st=S.chars[c.id]; add((st.loc||'').split(',')[0].trim()||'Unknown',`<div class="ph-pin" data-c="${c.id}">${avHTML(c,26)}<div><b>${esc(c.name)}</b> <span class="small">${esc((st.loc.split(',').slice(1).join(',')||'').trim())}</span><div class="small">${esc(st.act)}</div></div></div>`); }
+    B.innerHTML=Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).map(([a,l])=>`<div class="ph-area"><div class="an">${esc(a)}</div>${l.join('')}</div>`).join('');
+    B.querySelectorAll('.ph-pin[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
+  }
+  else if(phView==='feed'){ phHeader(esc(feedApp()),'',true); P.feed.forEach(f=>f.seen=true);
+    const name=w=>w==='user'?uN():(charById(w)?.name||'?'); const avw=w=>w==='user'?`<div class="ph-av" style="width:34px;height:34px;font-size:15px;background:${avatarBg(persona().color||'#d9a441')}">${esc((uN()||'?')[0])}</div>`:avHTML(charById(w),34,false);
+    B.innerHTML=`<div class="ph-post-new"><textarea id="fdNew" rows="2" placeholder="Post something…"></textarea><button class="primary" id="fdPost">Post</button></div>`+
+      ([...P.feed].reverse().map(f=>`<div class="ph-post"><div style="display:flex;gap:8px;align-items:center">${avw(f.who)}<div><b>${esc(name(f.who))}</b><div class="small">${wdName(f.t).slice(0,3)} ${mmdd(f.t)} ${hhmm(f.t)}</div></div></div>
+        <div class="tx">${esc(subUser(f.text))}</div><div class="small">♥ ${f.likes.length}${f.likes.length?' · '+f.likes.map(x=>esc(name(x))).join(', '):''}${phoneBusy.has('feed:'+f.id)?' · <i>people are reacting…</i>':''}</div>
+        ${f.comments.map(x=>`<div class="cm"><b>${esc(name(x.who))}</b> ${esc(subUser(x.text))}</div>`).join('')}
+        <div class="ph-cmnew"><button class="likebtn ${f.likes.includes('user')?'on':''}" data-fl="${f.id}">${f.likes.includes('user')?'♥':'♡'}</button><input data-fc="${f.id}" placeholder="Comment…"></div></div>`).join('')||'<div class="small" style="padding:12px 16px">Nothing posted yet. When people post about their day, it shows up here.</div>');
+    $('#fdPost').onclick=()=>{ const v=$('#fdNew').value.trim(); if(!v) return; addPost('user',v); renderPhone(); };
+    B.querySelectorAll('[data-fl]').forEach(b=>b.onclick=()=>{ const f=P.feed.find(x=>x.id===b.dataset.fl); const i=f.likes.indexOf('user'); if(i>=0) f.likes.splice(i,1); else f.likes.push('user'); save(); renderPhone(); });
+    B.querySelectorAll('[data-fc]').forEach(inp=>inp.onkeydown=e=>{ if(e.key!=='Enter') return; const v=inp.value.trim(); if(!v) return; const f=P.feed.find(x=>x.id===inp.dataset.fc); f.comments.push({who:'user',text:v,t:S.clock}); f.replyAt=S.clock+(1+Math.random()*8)*MIN; save(); renderPhone(); });
+  }
+  else if(phView==='wx'){ phHeader('Weather',esc(W.setting||''),true);
+    const hrs=[...Array(8)].map((_,i)=>S.clock+i*3*60*MIN); const days=[...Array(5)].map((_,i)=>Math.floor(S.clock/DAYMS)*DAYMS+i*DAYMS+12*60*MIN);
+    B.innerHTML=`<div style="padding:16px"><div class="ph-clock" style="font-size:44px">${weather(S.clock).temp}°F</div><div class="ph-date">${esc(weather(S.clock).desc)}</div>
+      <div class="ph-sec" style="padding-left:0">Next hours</div><div style="display:flex;gap:10px;overflow:auto">${hrs.map(t=>`<div class="ph-wx"><div class="small">${hhmm(t)}</div><b>${weather(t).temp}°</b><div class="small">${esc(weather(t).desc)}</div></div>`).join('')}</div>
+      <div class="ph-sec" style="padding-left:0">Next days</div>${days.map(t=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f2129"><span>${wdName(t)}</span><span class="small">${esc(weather(t).desc)}</span><b>${weather(t).temp}°F</b></div>`).join('')}</div>`;
+  }
+  if(phView!=='chat'){ $('#phCallBtn').style.display='none'; $('#phInvBtn').style.display='none'; }
   renderPhoneBadge(); save();
 }
 function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v);
   const P=phone(); if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; renderPhone(); }
 $('#phSend').onclick=sendText; $('#phInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } };
-$('#phBack').onclick=()=>openPhone(null); $('#phClose').onclick=()=>{ $('#phoneModal').classList.remove('on'); phoneOpenId=null; };
-$('#phoneBtn').onclick=()=>openPhone(null);
+$('#phBack').onclick=()=>openPhone(phView==='chat'?'msgs':'home');
+$('#phClose').onclick=()=>{ if(CALL&&CALL.state==='live'){ if(!confirm('Hang up?')) return; endCall(false); } $('#phoneModal').classList.remove('on'); };
+$('#phCallBtn').onclick=()=>startCall(charById(phoneOpenId));
+$('#phInvBtn').onclick=()=>openPhone('invite');
+$('#phoneBtn').onclick=()=>openPhone('home');
 
 // ======================= events panel =======================
 let evTab='sched', evDate=null;
