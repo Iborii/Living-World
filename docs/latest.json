@@ -1,10 +1,13 @@
 {
- "version": "0.19.1",
+ "version": "0.20.0",
  "date": "2026-11-18",
  "notes": [
-  "Import from Clank World: in + Create, paste a bot's character prompt, dialogue example, scene, initial message and lorebook entries. The app works out their details and schedule, builds their world from the scene (start time and place from the time stamp), adds the lorebook, and lets you check everything before saving."
+  "New look: a deep dusk-blue theme with lantern gold and tide teal, new fonts made for reading long stories, and calmer menus and windows.",
+  "Every reply opens with a big clock ribbon showing the time, place, date and weather, so you always know where the world is.",
+  "Your turns now read like notes in the margin instead of chat bubbles, and off-screen scenes have their own teal edge.",
+  "Clearer keyboard focus, and animations calm down if your device asks for reduced motion."
  ],
  "file": "index.html",
- "sha256": "af9ff7f11f346487a001bd05d94ed180d1fbdc48469c988c08f57a98e5fbcf10",
+ "sha256": "a9bebd7ce26feb4b2929b65ebc892948a99900b5d68ad7ea73a740d7ede39e40",
  "minShell": "0.5.0"
 }
