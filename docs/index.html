@@ -160,6 +160,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .tl-item{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.tl-item .tw{font-size:12px;color:var(--muted)}.tl-item .tt b{display:block}
 .ugroup{margin-bottom:22px}.uname{font-family:var(--serif);font-weight:600;font-size:17px;margin:4px 0 10px;color:var(--accent)}
 .wcard{cursor:pointer}
+#wmBody .wgrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .wm-head{padding:22px 24px 18px;background:var(--wbg);border-bottom:1px solid var(--line)}
 .wm-head h2{font-family:var(--serif);font-size:28px;margin:2px 0}
 .wm-head p{max-width:62ch;line-height:1.55}
@@ -558,7 +559,7 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
     <div class="sec" id="searchSec" style="display:none"><h3>Search results</h3><div class="sub" id="searchSub"></div><div class="cgrid" id="searchGrid"></div></div>
     <div id="homeSecs">
       <div class="sec" id="studioSec" style="display:none"><h3>Popular in the Studio <button class="ghost" id="homeStudioMore" style="font-size:12px;padding:3px 10px">See all</button></h3><div class="sub">Races, characters and worlds shared by other people.</div><div class="cgrid" id="homeStudioGrid"></div></div>
-      <div class="sec"><h3>Worlds</h3><div class="sub">Open a world to chat with everyone, start a 1-on-1 with one character, or pick up a timeline.</div><div id="worldGrid"></div></div>
+      <div class="sec"><h3>Universes</h3><div class="sub">Enter a universe to see its worlds. Open a world to chat with everyone, start a 1-on-1, or pick up a timeline.</div><div id="worldGrid"></div></div>
       <div class="sec" id="branchSec" style="display:none"><h3>Your 1-on-1 chats &amp; timelines</h3><div class="sub">Private stories with one character, and alternate timelines you branched off a story.</div><div class="bgrid" id="branchGrid"></div></div>
       <div class="sec"><h3>Top characters</h3><div class="sub">The most loved characters, boosted by who you spend time with.</div><div class="cgrid" id="topGrid"></div></div>
       <div class="sec"><h3>Recommended for you</h3><div class="sub" id="recSub"></div><div class="cgrid" id="recGrid"></div></div>
@@ -1943,15 +1944,14 @@ function renderHomeHero(st){
 function renderHomeRest(st){
   const top=topChars(); $('#topGrid').innerHTML=top.map((c,i)=>charCardHTML(c,i,{rank:true})).join(''); bindCards($('#topGrid'));
   const rec=recommendations(); $('#recSub').textContent=rec.sub; $('#recGrid').innerHTML=rec.list.map((r,i)=>charCardHTML(r.c,i,{why:r.why})).join(''); bindCards($('#recGrid'));
-  const groups={}; for(const w of WORLDS) (groups[universeOf(w)]=groups[universeOf(w)]||[]).push(w);
-  $('#worldGrid').innerHTML=Object.entries(groups).map(([u,ws])=>`<div class="ugroup"><h4 class="uname">${esc(u)}</h4><div class="wgrid">${ws.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1; const subs=getBranches().filter(b=>b.world===w.id).length;
-    return `<div class="wcard" data-wopen="${w.id}"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.title.split(': ')[1]||w.setting)}</div><div class="bl">${esc(w.blurb)}</div>
-      <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
-      <div class="bot"><span class="prog">${started?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}${subs?` · ${subs} more chat${subs>1?'s':''}`:''}</span><button data-wopen="${w.id}" class="ghost">Open</button><button class="primary" data-go="${w.id}">${started?'Chat now':'Start'}</button></div></div>`; }).join('')}</div></div>`).join('');
-  $('#worldGrid').querySelectorAll('.wcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-go]')) return; openWorldPage(el.dataset.wopen); });
-  $('#worldGrid').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>enterWorld(b.dataset.go));
+  const groups=universeGroups();
+  $('#worldGrid').innerHTML=`<div class="wgrid">${Object.entries(groups).map(([u,ws])=>{ const cast=ws.flatMap(w=>w.characters); const a=cast[0]||{color:'#888'}, b=cast[1]||a;
+    const played=ws.filter(w=>{ const s=worldProgress(w); return s&&s.chat?.length>1; }).length;
+    return `<div class="wcard ucard" data-uopen="${esc(u)}"><div class="top" style="--wbg:linear-gradient(135deg,${a.color}44,${b.color}22 60%,transparent)"><h4>${esc(u)}</h4><div class="set">${ws.length} world${ws.length>1?'s':''} · ${cast.length} character${cast.length>1?'s':''}</div><div class="bl">${ws.map(w=>esc(w.title.split(':')[0])).join(', ')}</div>
+      <div class="cast">${cast.slice(0,10).map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
+      <div class="bot"><span class="prog">${played?`${played} in progress`:'Not started'}</span><button class="primary" data-uopen="${esc(u)}">Enter</button></div></div>`; }).join('')}</div>`;
+  $('#worldGrid').querySelectorAll('.ucard').forEach(el=>el.onclick=()=>openUniversePage(el.dataset.uopen));
   [['#topGrid',top.length],['#recGrid',rec.list.length],['#worldGrid',WORLDS.length]].forEach(([s,n])=>{ $(s).closest('.sec').style.display=n?'':'none'; });
-  $('#worldGrid').querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{ if(confirm('Start this world over from the beginning? (Export first in Settings if you want to keep it.)')){ LS.removeItem('livingworld_save_'+b.dataset.new); enterWorld(b.dataset.new); } });
   doSearch();
 }
 function doSearch(){
@@ -1963,24 +1963,37 @@ function doSearch(){
   $('#searchGrid').innerHTML=res.map((c,i)=>charCardHTML(c,i)).join(''); bindCards($('#searchGrid'));
 }
 let cmKey=null;
-function openWorldPage(wid){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
+function universeGroups(){ const g={}; for(const w of WORLDS) (g[universeOf(w)]=g[universeOf(w)]||[]).push(w); return g; }
+function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; const cast=ws.flatMap(w=>w.characters); const a=cast[0]||{color:'#888'}, b=cast[1]||a;
+  $('#wmBody').innerHTML=`<div class="wm-head" style="--wbg:linear-gradient(135deg,${a.color}55,${b.color}22 60%,transparent)">
+      <button class="ghost" id="wmClose" style="float:right">Close</button><div class="small">Universe</div><h2>${esc(u)}</h2><div class="small">${ws.length} world${ws.length>1?'s':''} · ${cast.length} character${cast.length>1?'s':''}</div></div>
+    <div class="wm-sec"><h3>Worlds</h3><div class="wgrid">${ws.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1; const subs=getBranches().filter(x=>x.world===w.id).length;
+      return `<div class="wcard" data-wopen="${w.id}"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.title.split(': ')[1]||w.setting)}</div><div class="bl">${esc(w.blurb)}</div>
+        <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
+        <div class="bot"><span class="prog">${started?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}${subs?` · ${subs} more chat${subs>1?'s':''}`:''}</span><button data-wopen="${w.id}" class="ghost">Open</button><button class="primary" data-go="${w.id}">${started?'Chat now':'Start'}</button></div></div>`; }).join('')}</div></div>`;
+  $('#worldModal').classList.add('on');
+  const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close;
+  $('#wmBody').querySelectorAll('.wcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-go]')) return; openWorldPage(el.dataset.wopen,u); });
+  $('#wmBody').querySelectorAll('[data-go]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.go); });
+}
+function openWorldPage(wid,fromU){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
   const subs=getBranches().filter(b=>b.world===w.id);
   const subRow=b=>{ let bs=null; try{ bs=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c=b.charId&&w.characters.find(x=>x.id===b.charId);
     return `<div class="wm-row"><div class="wm-av" style="background:${c?avatarBg(c.color,c.img):`radial-gradient(circle at 30% 25%,${w.characters[0].color},#1a1b22)`}">${c?(c.img?'':esc(c.name[0])):'⑂'}</div><div class="wm-tx"><b>${esc(b.kind==='timeline'?b.title:(c?c.full+': '+b.title:b.title))}</b><span>${b.kind==='timeline'?'Timeline':'1-on-1'}${bs?` · ${wdName(bs.clock).slice(0,3)} ${mmdd(bs.clock)} ${hhmm(bs.clock)}`:''}</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`; };
   $('#wmBody').innerHTML=`<div class="wm-head" style="--wbg:linear-gradient(135deg,${w.characters[0].color}55,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)">
-      <button class="ghost" id="wmClose" style="float:right">Close</button><div class="small">${esc(universeOf(w))}</div><h2>${esc(w.title.split(':')[0])}</h2><div class="small">${esc(w.title.split(': ')[1]||'')}${w.setting?' · '+esc(w.setting):''}</div><p>${esc(w.blurb||'')}</p>
+      <button class="ghost" id="wmClose" style="float:right">Close</button><button class="ghost" id="wmBack" style="padding-left:0">← ${esc(universeOf(w))}</button><h2>${esc(w.title.split(':')[0])}</h2><div class="small">${esc(w.title.split(': ')[1]||'')}${w.setting?' · '+esc(w.setting):''}</div><p>${esc(w.blurb||'')}</p>
       <div class="rowbtns"><button class="primary" id="wmGo">${started?'Chat now with everyone':'Start the story'}</button>${started?`<span class="small" style="align-self:center">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span><button class="ghost" id="wmNew">Start over</button>`:''}<button class="ghost" id="wmLore">Lorebook</button></div></div>
     <div class="wm-sec"><h3>Characters</h3>${w.characters.map(c=>`<div class="wm-row"><div class="wm-av" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div class="wm-tx"><b>${esc(c.full)}</b><span>${esc(c.tagline||'')}</span></div><button data-wmsolo="${c.id}">1-on-1</button><button class="ghost" data-wmchar="${c.id}">Profile</button></div>`).join('')}</div>
     ${subs.length?`<div class="wm-sec"><h3>Your 1-on-1 chats and timelines here</h3>${subs.map(subRow).join('')}</div>`:''}`;
   $('#worldModal').classList.add('on');
-  const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close;
+  const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close; $('#wmBack').onclick=()=>openUniversePage(universeOf(w));
   $('#wmGo').onclick=()=>{ close(); enterWorld(w.id); };
   const nw=$('#wmNew'); if(nw) nw.onclick=()=>{ if(confirm('Start this world over from the beginning? The current story is deleted (your 1-on-1s and timelines stay).')){ LS.removeItem('livingworld_save_'+w.id); close(); enterWorld(w.id); } };
   $('#wmLore').onclick=()=>{ close(); LORE_WORLD=w.id; openLore(); };
   $('#wmBody').querySelectorAll('[data-wmsolo]').forEach(b=>b.onclick=()=>{ close(); openSolo(w.id+':'+b.dataset.wmsolo); });
   $('#wmBody').querySelectorAll('[data-wmchar]').forEach(b=>b.onclick=()=>{ close(); openChar(w.id+':'+b.dataset.wmchar); });
   $('#wmBody').querySelectorAll('[data-wmb]').forEach(b=>b.onclick=()=>{ close(); openBranch(b.dataset.wmb); });
-  $('#wmBody').querySelectorAll('[data-wmdel]').forEach(b=>b.onclick=()=>{ deleteBranch(b.dataset.wmdel); openWorldPage(w.id); renderHome(); });
+  $('#wmBody').querySelectorAll('[data-wmdel]').forEach(b=>b.onclick=()=>{ deleteBranch(b.dataset.wmdel); openWorldPage(w.id,fromU); renderHome(); });
 }
 function openChar(key){
   const c=allChars().find(x=>x.key===key); if(!c) return; cmKey=key; const st=getStats(); const s=worldProgress(c.world);
@@ -2009,8 +2022,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.22.0';
+const APP_VERSION = '0.22.1';
 const CHANGELOG = [
+ {v:'0.22.1', d:'2026-11-18', notes:['Main menu now shows universes first. Enter Zenless Zone Zero to see all its worlds, then open a world for its characters, 1-on-1s and timelines.','When making a world, pick an existing universe from the list so it lands in the same place.']},
  {v:'0.22.0', d:'2026-11-18', notes:['Main menu reorganized: worlds are grouped by universe (like Zenless Zone Zero). Open a world to chat with everyone, start a 1-on-1 with any of its characters, see its cast, or pick up your 1-on-1s and timelines there.','Only a character\'s creator can edit them. Built-in characters can only be edited by the app owner\'s account. Everyone else can make their own copy to change.','New worlds can be given a universe or series name.']},
  {v:'0.21.1', d:'2026-11-18', notes:['When you untick "Can die" for a character, you can now explain why they can\'t die. The AI reads it and plays it that way (for example, regenerating painfully, or coming back days later).']},
  {v:'0.21.0', d:'2026-11-18', notes:['Characters can die now. If the story truly leads there (a fight gone too far, an accident, an illness), a character can die and stays gone; everyone who knew them grieves. Off-screen scenes can end that way too.','Each character has a "Can die" option in the creator (and when editing built-ins). Characters who can\'t die, like Phoenix, survive or come back the way their sheet says, but still get hurt.','Settings has a switch to turn deaths off for everything. Events → Timeline lists who has died, with Undo death.','More alive on screen: rain, snow, fog, stars or drifting dust behind the story to match the weather, light that shifts with the hour, new messages and the clock ribbon slide in, the text cursor blinks while a reply is written, and a character\'s card flashes when they move somewhere new. Turn the effects off in Settings; they also stay off if your device asks for less motion.']},
@@ -2626,7 +2640,7 @@ function renderCreator(){
       <div class="hint">Joining a world means they share its clock and city with everyone there, run into them, and get their own off-screen life. A new world starts its own story with this character.</div>
       ${isNew?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div class="grid2"><div><label>World title</label><input id="nwTitle" value="${esc(nw.title)}" placeholder="e.g. Rainy Season at the Café"></div><div><label>Setting (City, District)</label><input id="nwSetting" value="${esc(nw.setting)}" placeholder="e.g. Harbor City, Old Market, or any world you like"></div></div>
-        <label>Universe or series (groups your worlds on the main menu; optional)</label><input id="nwUniverse" value="${esc(nw.universe||'')}" placeholder="e.g. Zenless Zone Zero, or my own fantasy series">
+        <label>Universe or series (groups your worlds on the main menu; optional)</label><input id="nwUniverse" list="nwUniList" value="${esc(nw.universe||'')}" placeholder="e.g. Zenless Zone Zero, or my own fantasy series"><datalist id="nwUniList">${Object.keys(universeGroups()).map(u=>`<option value="${esc(u)}">`).join('')}</datalist>
         <label>One-line blurb for the world card</label><input id="nwBlurb" value="${esc(nw.blurb)}">
         <label>Scenario: who you are, how you know them, what's going on right now</label><textarea id="nwScenario" rows="5">${esc(nw.scenario)}</textarea>
         <label>Opening message (optional: leave empty and the AI writes it when you start)</label><textarea id="nwOpening" rows="5">${esc(nw.opening)}</textarea>
