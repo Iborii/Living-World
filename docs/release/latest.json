@@ -1,11 +1,10 @@
 {
- "version": "0.22.2",
+ "version": "0.22.3",
  "date": "2026-11-18",
  "notes": [
-  "Replies no longer stop half-way through a sentence. If the AI hits its length limit or the connection drops, the app has it pick up exactly where it left off.",
-  "Longer default reply length (3000 tokens). You only pay for what is actually written."
+  "Owner build only: Yunkui Summit is back, Suibian Temple with Yixuan, Ju Fufu, Ye Shunguang, Pan Yinhu, Belle and Wise. It sits in the Zenless Zone Zero universe next to Krampus, with Knock Knock and the Inter-Knot."
  ],
  "file": "index.html",
- "sha256": "b68bfae4e520d51a7c7d5d2cf29a2b3c1c36763f579bc02d9b928380013d6ad7",
+ "sha256": "58c8270a3cd0117b29a3cdc169f80836f09bea37961bdf79e144d83d544c5690",
  "minShell": "0.5.0"
 }
