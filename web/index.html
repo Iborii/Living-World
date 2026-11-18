@@ -160,6 +160,10 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .tl-item{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.tl-item .tw{font-size:12px;color:var(--muted)}.tl-item .tt b{display:block}
 .ugroup{margin-bottom:22px}.uname{font-family:var(--serif);font-weight:600;font-size:17px;margin:4px 0 10px;color:var(--accent)}
 .wcard{cursor:pointer}
+.everyone{display:flex;gap:16px;align-items:center;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:16px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%);flex-wrap:wrap}
+.ev-av{display:flex;flex-wrap:wrap;width:132px;gap:0}.ev-av span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;border:2px solid var(--panel);margin:-3px -4px 0 0;animation:cardIn .5s var(--ease-out,ease) backwards;animation-delay:calc(var(--k)*30ms)}
+.ev-tx{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px}.ev-tx span{font-size:13px;color:var(--muted);line-height:1.45}.ev-tx b{font-family:var(--serif);font-size:19px;font-weight:600}
+.ev-btns{display:flex;gap:8px}
 .scopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 6px}
 .scopt{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);cursor:pointer;font:inherit}
 .scopt span{font-size:12.5px;color:var(--muted);line-height:1.4}.scopt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
@@ -1008,7 +1012,24 @@ function rebuildWorlds(){
   // a world with no characters can't be played; hide it from menus
   for(let i=WORLDS.length-1;i>=0;i--) if(!WORLDS[i].characters.length) WORLDS.splice(i,1);
 }
-rebuildWorlds();
+// "Everyone" stories: every world in a universe played together (Krampus + Yunkui Summit in one New Eridu)
+const COMBINED=[];
+function commonPrefix(a,b){ let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++; const cut=a.lastIndexOf('\n\n',i); return cut>0?cut:i; }
+function buildCombined(){ COMBINED.length=0; const g={}; for(const w of WORLDS) (g[universeOf(w)]=g[universeOf(w)]||[]).push(w);
+  for(const [u,ws] of Object.entries(g)){ if(ws.length<2) continue; const first=ws[0]; const seen=new Set(); const chars=[];
+    for(const w of ws) for(const c of w.characters){ if(seen.has(c.id)) continue; seen.add(c.id); chars.push({...JSON.parse(JSON.stringify(c)), home:w.id}); }
+    let rules=first.rules; for(const w of ws.slice(1)){ const k=commonPrefix(first.rules,w.rules); const extra=w.rules.slice(k).trim(); if(extra&&!rules.includes(extra)) rules+='\n\n'+extra; }
+    const starts=ws.map(w=>w.start).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)); const washed={}; for(const w of ws) Object.assign(washed,(w.opening&&w.opening.washed)||{}); delete washed.user;
+    const names=ws.map(w=>w.title.split(':')[0]);
+    COMBINED.push({id:'all_'+u.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''), combined:true, parts:ws.map(w=>w.id), universe:u,
+      title:`${u}: Everyone`, setting:[...new Set(ws.map(w=>w.setting).filter(Boolean))].join(' · '), blurb:`Everyone from ${names.join(' and ')} living in the same world at the same time. No set story: go anywhere and meet anyone.`,
+      tags:[u,'Everyone','Open world'], start:{...starts[0]}, rules, realismCore:first.realismCore, climate:first.climate, phone:first.phone, custom:ws.every(w=>w.custom),
+      scenario:`OPEN WORLD\nThere is no set storyline. Everyone from ${names.join(', ')} lives in this same world at the same time, each following their own schedule, job, home and relationships exactly as their own world describes. The groups only know each other as much as their own sheets and lore say; don't invent shared history between people from different groups, but they can meet now if their lives cross.\nWho {{user}} is, where they start and who they already know is up to the user. If they haven't said, {{user}} is a newcomer who knows nobody yet and has nobody's number.`,
+      characters:chars, events:ws.flatMap(w=>w.events||[]), locations:[...new Set(ws.flatMap(w=>w.locations||[]))].sort(),
+      opening:{userLoc:first.setting||(first.opening&&first.opening.userLoc)||'', companions:[], contacts:[], trust:{}, text:'', washed}}); } }
+function findWorld(id){ return WORLDS.find(x=>x.id===id)||COMBINED.find(x=>x.id===id); }
+function partsOf(w){ return w&&w.combined?w.parts:[w&&w.id]; }
+rebuildWorlds(); buildCombined();
 let W = null, SAVE_KEY = '', SCREEN = 'splash';
 const STATS_KEY = 'livingworld_stats';
 const SET_KEY = 'livingworld_settings';
@@ -1106,7 +1127,7 @@ function saveCfg(){ try{ LS.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 const PHONE_APPS=[['msgs','💬'],['calls','📞'],['invite','📅'],['map','🗺️'],['feed','#️⃣'],['cal','🗓️'],['wx','🌦️']];
 const PH_ACCENTS=['#d9a441','#3a5bb8','#c0475f','#3f9a6a','#8a63d2','#e07a2f','#2fa3b0','#6b6f80'];
 const PH_WALLS=['','linear-gradient(160deg,#1b2a4a,#0e0f14)','linear-gradient(160deg,#3a1d3f,#0e0f14)','linear-gradient(160deg,#173d33,#0e0f14)','linear-gradient(160deg,#4a3514,#0e0f14)','radial-gradient(circle at 30% 20%,#2c2f3d,#0e0f14)'];
-function isZZZ(w){ return !!w&&(w.id==='krampus'||w.id==='yunkui'||/new eridu|zenless/i.test((w.setting||'')+' '+(w.title||''))); }
+function isZZZ(w){ return !!w&&((w.combined&&w.parts.some(id=>isZZZ(WORLDS.find(x=>x.id===id))))||w.id==='krampus'||w.id==='yunkui'||/new eridu|zenless/i.test((w.setting||'')+' '+(w.title||''))); }
 function phoneCfg(w){ w=w||W; if(!w) return {style:'none'}; let o={}; try{ o=JSON.parse(LS.getItem('livingworld_phone_'+w.id)||'{}')||{}; }catch(e){}
   return {style:isZZZ(w)?'zzz':'standard', msgName:'', feedName:'', accent:'#d9a441', wall:'', hidden:[], ...(w.phone||{}), ...o}; }
 function savePhoneCfg(c,w){ w=w||W; try{ LS.setItem('livingworld_phone_'+w.id, JSON.stringify(c)); return true; }catch(e){ alert('Could not save: storage is full (try a smaller wallpaper).'); return false; } }
@@ -1275,7 +1296,7 @@ const BUILTIN_REL={krampus:{
  'belle|wise':[90,"Siblings and co-owners of Random Play. Belle teases her older brother; Wise is protective of her."]}};
 const relKey=(a,b)=>[a,b].sort().join('|');
 function initRel(){ S.rel=S.rel||{}; const cs=W.characters; for(let i=0;i<cs.length;i++) for(let j=i+1;j<cs.length;j++){ const k=relKey(cs[i].id,cs[j].id); if(S.rel[k]) continue;
-  const seed=(BUILTIN_REL[W.id]||{})[k]; S.rel[k]=seed?{score:seed[0], note:seed[1], log:[]}:{score:10, note:'They barely know each other yet.', log:[]}; } }
+  const seed=Object.assign({},...partsOf(W).map(id=>BUILTIN_REL[id]||{}))[k]; S.rel[k]=seed?{score:seed[0], note:seed[1], log:[]}:{score:10, note:'They barely know each other yet.', log:[]}; } }
 function relLines(chars, onlyId){ const out=[]; for(let i=0;i<chars.length;i++) for(let j=i+1;j<chars.length;j++){ const a=chars[i], b=chars[j]; if(onlyId&&a.id!==onlyId&&b.id!==onlyId) continue; const r=S.rel?.[relKey(a.id,b.id)]; if(!r) continue;
   const lately=r.log.slice(-3).map(x=>`${mmdd(x.t)}: ${x.d>0?'+':''}${x.d} ${x.why}`).join('; ');
   out.push(`- ${a.name} & ${b.name} (closeness ${r.score}/100): ${r.note}${lately?` Lately: ${lately}.`:''}`); }
@@ -1287,7 +1308,7 @@ const DAYMS=1440*MIN;
 // ---- menstrual cycles ----
 const BUILTIN_RACE={phoenix:{race:'Human'}, dialyn:{race:'Human'}, zhao:{race:'Thiren',animal:'rabbit'}, promeia:{race:'Human'}, banyue:{race:'Intelligent Construct',animal:'stone lion, four-armed'},
  yixuan:{race:'Human'}, fufu:{race:'Thiren',animal:'tiger'}, shunguang:{race:'Thiren',animal:'fox-like, big fluffy tail'}, belle:{race:'Human'}, wise:{race:'Human'}, yinhu:{race:'Thiren',animal:'panda'}};
-function raceOf(c){ const b=BUILTIN_RACE[c.id]&&!c.custom&&!c.edited&&W&&(W.id==='krampus'||W.id==='yunkui')?BUILTIN_RACE[c.id]:{race:(raceDefOf(c)||{}).name||c.race||'',animal:c.animal||''}; return b; }
+function raceOf(c){ const b=BUILTIN_RACE[c.id]&&!c.custom&&!c.edited&&W&&partsOf(W).some(id=>id==='krampus'||id==='yunkui')?BUILTIN_RACE[c.id]:{race:(raceDefOf(c)||{}).name||c.race||'',animal:c.animal||''}; return b; }
 function raceText(c){ const r=raceOf(c); if(!r.race) return ''; return r.race+(r.animal?` (${r.animal})`:''); }
 function isConstruct(c){ const d=raceDefOf(c); if(d) return d.cycle==='none'; return /construct|robot|android/i.test(raceOf(c).race)||!!c.construct; }
 function idLine(c){ const g=genderOf(c), r=raceText(c); return (g||r)?[g&&'Gender: '+g, r&&'Race: '+r].filter(Boolean).join(' · ')+'\n':''; }
@@ -1527,15 +1548,16 @@ function memoriesFor(id, context, n){
 function memLines(id, context, n){ return memoriesFor(id,context,n).map(m=>`- [${wdName(m.t).slice(0,3)} ${mmdd(m.t)} ${hhmm(m.t)}] ${m.text}${m.who.length>1?` (also there: ${m.who.filter(x=>x!==id).map(x=>charById(x)?.name).filter(Boolean).join(', ')})`:''}`).join('\n'); }
 // world lore: a per-world, editable copy of the built-in keyword entries
 function loreKey(){ return 'livingworld_lore_'+W.id; }
-function getLore(w){ w=w||W; let L=null; try{ L=JSON.parse(LS.getItem('livingworld_lore_'+w.id)||'null'); }catch(e){}
+function getLore(w){ w=w||W; if(w&&w.combined){ const seen=new Set(); return w.parts.map(id=>WORLDS.find(x=>x.id===id)).filter(Boolean).flatMap(x=>getLore(x)).filter(e=>{ const k=e.id||e.title; if(seen.has(k)) return false; seen.add(k); return true; }); } let L=null; try{ L=JSON.parse(LS.getItem('livingworld_lore_'+w.id)||'null'); }catch(e){}
   if(!L){ const base=w.custom?(BASE.realismLore||[]):(w.lore||[]); L=base.map(e=>({...e, on:true, always:false})); } return L; }
-function saveLore(L,w){ w=w||W; try{ LS.setItem('livingworld_lore_'+w.id, JSON.stringify(L)); }catch(e){} }
+function saveLore(L,w){ w=w||W; if(w&&w.combined) return; try{ LS.setItem('livingworld_lore_'+w.id, JSON.stringify(L)); }catch(e){} }
 // your own lorebooks: named collections you can switch on for any world, or for a character (used whenever they're in the scene or named)
 const BOOKS_KEY='livingworld_lorebooks';
 function getBooks(){ try{ return JSON.parse(LS.getItem(BOOKS_KEY)||'[]'); }catch(e){ return []; } }
 function saveBooks(b){ try{ LS.setItem(BOOKS_KEY, JSON.stringify(b)); }catch(e){} }
 function booksFor(w, context){ w=w||W; if(!w) return []; const ctx=String(context||'').toLowerCase(); let here=[]; try{ here=(typeof present==='function'&&S&&W&&w.id===W.id)?present().map(c=>c.id):[]; }catch(e){}
-  return getBooks().filter(b=>(b.worlds||[]).includes(w.id)||(b.chars||[]).some(k=>{ const [wid,cid]=k.split(':'); if(wid!==w.id) return false; if(here.includes(cid)) return true; const c=w.characters.find(x=>x.id===cid); return !!c&&ctx.includes(' '+c.name.toLowerCase()); })); }
+  const ids=[w.id,...(w.combined?w.parts:[])];
+  return getBooks().filter(b=>(b.worlds||[]).some(x=>ids.includes(x))||(b.chars||[]).some(k=>{ const [wid,cid]=k.split(':'); if(!ids.includes(wid)) return false; if(here.includes(cid)) return true; const c=w.characters.find(x=>x.id===cid); return !!c&&ctx.includes(' '+c.name.toLowerCase()); })); }
 function matchLore(context, maxEntries=6, maxChars=14000){
   const ctx=' '+String(context||'').toLowerCase()+' '; const L=[...getLore(), ...booksFor(W,ctx).flatMap(b=>(b.entries||[]).map(e=>({...e,cat:e.cat||b.name})))]; const hits=[];
   const fullR=(CFG.realism||'full')==='full', offR=CFG.realism==='off';
@@ -2011,7 +2033,7 @@ $('#resetBtn').onclick=()=>{ if(!W) return; if(!confirm('Restart the world from 
 function getStats(){ try{ return JSON.parse(LS.getItem(STATS_KEY)||'{}'); }catch(e){ return {}; } }
 function bumpStats(ids){
   const st=getStats(); st.chars=st.chars||{}; st.worlds=st.worlds||{};
-  for(const id of ids){ const k=W.id+':'+id; st.chars[k]=st.chars[k]||{msgs:0}; st.chars[k].msgs++; st.chars[k].last=Date.now(); }
+  for(const id of ids){ const k=((W.characters.find(c=>c.id===id)||{}).home||W.id)+':'+id; st.chars[k]=st.chars[k]||{msgs:0}; st.chars[k].msgs++; st.chars[k].last=Date.now(); }
   st.worlds[W.id]={last:Date.now()}; try{ LS.setItem(STATS_KEY,JSON.stringify(st)); }catch(e){}
 }
 function allChars(){ const out=[]; for(const w of WORLDS) for(const c of w.characters) out.push({...c, world:w, key:w.id+':'+c.id}); return out; }
@@ -2057,7 +2079,7 @@ function renderHome(){
 }
 function renderHomeHero(st){
   // hero: last played world, or a welcome
-  const played=WORLDS.map(w=>({w, last:st.worlds?.[w.id]?.last||0, s:worldProgress(w)})).filter(x=>x.s&&x.s.chat?.length>1).sort((a,b)=>b.last-a.last);
+  const played=[...WORLDS,...COMBINED].map(w=>({w, last:st.worlds?.[w.id]?.last||0, s:worldProgress(w)})).filter(x=>x.s&&x.s.chat?.length>1).sort((a,b)=>b.last-a.last);
   const hb=$('#heroBox');
   if(played.length){ const {w,s}=played[0]; const lastA=[...s.chat].reverse().find(m=>m.role==='assistant');
     const snip=(lastA?.text||'').replace(/^\|.*\|\s*/,'').replace(/[*"]/g,'').replace(/\s+/g,' ').slice(0,220).replace(/[\s.,;:!?…]+$/,'');
@@ -2075,7 +2097,7 @@ function renderHomeRest(st){
   const groups=universeGroups();
   $('#worldGrid').innerHTML=`<div class="wgrid">${Object.entries(groups).map(([u,ws])=>{ const cast=ws.flatMap(w=>w.characters); const a=cast[0]||{color:'#888'}, b=cast[1]||a;
     const played=ws.filter(w=>{ const s=worldProgress(w); return s&&s.chat?.length>1; }).length;
-    return `<div class="wcard ucard" data-uopen="${esc(u)}"><div class="top" style="--wbg:linear-gradient(135deg,${a.color}44,${b.color}22 60%,transparent)"><h4>${esc(u)}</h4><div class="set">${ws.length} world${ws.length>1?'s':''} · ${cast.length} character${cast.length>1?'s':''}</div><div class="bl">${ws.map(w=>esc(w.title.split(':')[0])).join(', ')}</div>
+    return `<div class="wcard ucard" data-uopen="${esc(u)}"><div class="top" style="--wbg:linear-gradient(135deg,${a.color}44,${b.color}22 60%,transparent)"><h4>${esc(u)}</h4><div class="set">${ws.length} world${ws.length>1?'s':''} · ${cast.length} character${cast.length>1?'s':''}</div><div class="bl">${ws.map(w=>esc(w.title.split(':')[0])).join(', ')}${ws.length>1?', or everyone together':''}</div>
       <div class="cast">${cast.slice(0,10).map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
       <div class="bot"><span class="prog">${played?`${played} in progress`:'Not started'}</span><button class="primary" data-uopen="${esc(u)}">Enter</button></div></div>`; }).join('')}</div>`;
   $('#worldGrid').querySelectorAll('.ucard').forEach(el=>el.onclick=()=>openUniversePage(el.dataset.uopen));
@@ -2095,7 +2117,7 @@ function sceneText(){ const sc=S&&S.scene; if(!sc||sc.mode==='default') return W
   if(sc.mode==='custom') return sc.prompt;
   return W.scenario+`\n\nWHO THE USER IS IN THIS STORY (the user chose this; it replaces anything above about who the user is, their past with anyone, or how the characters know them. Characters only know what this says):\n${sc.role}`; }
 let scenePick=null;
-function openScenePicker(wid, opts){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; scenePick={wid, opts, mode:'default'};
+function openScenePicker(wid, opts){ const w=findWorld(wid); if(!w) return; scenePick={wid, opts, mode:'default'};
   $('#scSub').textContent=w.title.split(':')[0]+(w.setting?' · '+w.setting:'');
   $('#scPrev').textContent=w.scenario||'(This world has no scene prompt yet.)';
   $('#scRoleTx').value=''; $('#scPrompt').value=w.scenario||''; $('#scLoc').value=''; $('#scOpen').value='';
@@ -2117,6 +2139,11 @@ function universeGroups(){ const g={}; for(const w of WORLDS) (g[universeOf(w)]=
 function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; const cast=ws.flatMap(w=>w.characters); const a=cast[0]||{color:'#888'}, b=cast[1]||a;
   $('#wmBody').innerHTML=`<div class="wm-head" style="--wbg:linear-gradient(135deg,${a.color}55,${b.color}22 60%,transparent)">
       <button class="ghost" id="wmClose" style="float:right">Close</button><div class="small">Universe</div><h2>${esc(u)}</h2><div class="small">${ws.length} world${ws.length>1?'s':''} · ${cast.length} character${cast.length>1?'s':''}</div></div>
+    ${(()=>{ const cw=COMBINED.find(x=>x.universe===u); if(!cw) return ''; const s=worldProgress(cw); const started=s&&s.chat?.length>1; const tl=getBranches().filter(b=>b.world===cw.id);
+      return `<div class="wm-sec"><div class="everyone" data-all="${cw.id}"><div class="ev-av">${cast.slice(0,14).map((c,i)=>`<span style="background:${avatarBg(c.color,c.img)};--k:${i}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div>
+        <div class="ev-tx"><b>Everyone in ${esc(u)}</b><span>${ws.length} worlds, ${cast.length} characters, one story. No set plot: they all live their lives side by side and you can meet anyone.</span>${started?`<span class="small">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span>`:''}</div>
+        <div class="ev-btns"><button class="primary" data-allgo="${cw.id}">${started?'Continue':'Start'}</button>${started?`<button class="ghost" data-allnew="${cw.id}">Start over</button>`:''}</div></div>
+        ${tl.map(b=>`<div class="wm-row"><div class="wm-av" style="background:radial-gradient(circle at 30% 25%,${a.color},#1a1b22)">⑂</div><div class="wm-tx"><b>${esc(b.title)}</b><span>Timeline</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`).join('')}</div>`; })()}
     <div class="wm-sec"><h3>Worlds</h3><div class="wgrid">${ws.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1; const subs=getBranches().filter(x=>x.world===w.id).length;
       return `<div class="wcard" data-wopen="${w.id}"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.title.split(': ')[1]||w.setting)}</div><div class="bl">${esc(w.blurb)}</div>
         <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
@@ -2125,6 +2152,10 @@ function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; cons
   const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close;
   $('#wmBody').querySelectorAll('.wcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-go]')) return; openWorldPage(el.dataset.wopen,u); });
   $('#wmBody').querySelectorAll('[data-go]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.go); });
+  $('#wmBody').querySelectorAll('[data-allgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.allgo); });
+  $('#wmBody').querySelectorAll('[data-allnew]').forEach(x=>x.onclick=()=>{ if(confirm('Start the Everyone story over? The current one is deleted.')){ LS.removeItem('livingworld_save_'+x.dataset.allnew); close(); enterWorld(x.dataset.allnew); } });
+  $('#wmBody').querySelectorAll('[data-wmb]').forEach(x=>x.onclick=()=>{ close(); openBranch(x.dataset.wmb); });
+  $('#wmBody').querySelectorAll('[data-wmdel]').forEach(x=>x.onclick=()=>{ deleteBranch(x.dataset.wmdel); openUniversePage(u); });
 }
 function openWorldPage(wid,fromU){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
   const subs=getBranches().filter(b=>b.world===w.id);
@@ -2172,8 +2203,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.25.0';
+const APP_VERSION = '0.26.0';
 const CHANGELOG = [
+ {v:'0.26.0', d:'2026-11-18', notes:['Everyone stories: a universe with more than one world (like Zenless Zone Zero) now has an Everyone option at the top of its page. Krampus and Yunkui Summit live side by side in one story with every character on their own schedule, and you can meet anyone.','There\'s no set plot in an Everyone story, so you choose who you are or write your own scene when you start. Both worlds\' lorebooks, relationships and phone apps carry over.']},
  {v:'0.25.0', d:'2026-11-18', notes:['Lorebooks are now a library. Pick any world\'s lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.','Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time.']},
  {v:'0.24.0', d:'2026-11-18', notes:['More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world\'s cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.','Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.','Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.','Fixed: a new story no longer shows a stray "Show earlier messages" button.']},
  {v:'0.23.0', d:'2026-11-18', notes:['New stories now ask how you want to start: use the story\'s scene, keep the scene but choose who you are and how everyone knows you, or write your whole scene prompt yourself (with your own starting place and opening message if you like).']},
@@ -2351,7 +2383,7 @@ function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!c
 let lbTab='world', lbSel=null, lbBook='';
 function openLore(){ lbTab=W&&S&&SCREEN==='world'?lbTab:'world'; lbSel=null; const lw=loreWorld(); lbBook=lw?'w:'+lw.id:(getBooks()[0]?'u:'+getBooks()[0].id:''); $('#loreModal').classList.add('on'); renderLore(); }
 let LORE_WORLD=null;
-function loreWorld(){ if(LORE_WORLD&&!W){ const w=WORLDS.find(x=>x.id===LORE_WORLD); if(w) return w; } return W||WORLDS[0]; }
+function loreWorld(){ if(LORE_WORLD&&!W){ const w=WORLDS.find(x=>x.id===LORE_WORLD); if(w) return w; } if(W&&W.combined) return WORLDS.find(x=>x.id===W.parts[0])||WORLDS[0]; return W||WORLDS[0]; }
 function curBook(){ if(lbBook.startsWith('u:')){ const b=getBooks().find(x=>x.id===lbBook.slice(2)); if(b) return {kind:'user', book:b}; }
   const w=WORLDS.find(x=>'w:'+x.id===lbBook)||loreWorld(); return w?{kind:'world', world:w}:null; }
 function curEntries(){ const cb=curBook(); if(!cb) return []; return cb.kind==='user'?(cb.book.entries||[]):getLore(cb.world); }
@@ -2719,7 +2751,7 @@ function canEdit(c){ if(!c) return false; if(!c.custom) return isAppOwner(); if(
 function copyChar(key){ const [w,id]=key.split(':'); const wo=WORLDS.find(x=>x.id===w); const src=wo&&wo.characters.find(x=>x.id===id); if(!src) return;
   const C=getCustom(); const {custom,edited,src:_s,...base}=JSON.parse(JSON.stringify(src)); const nid='c'+Date.now().toString(36);
   const ch={...base, id:nid, world:w, name:base.name, full:(base.full||base.name)+' (my copy)', ownerId:myId(), gender:genderOf(src), race:raceOf(src).race||base.race||'', animal:raceOf(src).animal||base.animal||'', mortal:canDie(src), rank:10};
-  C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); renderHome(); notice?.(`Made your own copy of ${src.full}.`); setTimeout(()=>openCreator(w+':'+nid),150); }
+  C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); buildCombined(); renderHome(); notice?.(`Made your own copy of ${src.full}.`); setTimeout(()=>openCreator(w+':'+nid),150); }
 async function refreshAdmin(){ if(!AUTH||!studioReady()) return; try{ const p=await sb('profiles?select=name,is_admin&id=eq.'+AUTH.user.id,{auth:true}); if(p[0]) saveAuth({...AUTH, name:p[0].name||AUTH.name, isAdmin:!!p[0].is_admin}); }catch(e){} }
 function openCreator(editKey){
   if(editKey){ const [w0,id0]=editKey.split(':'); const wo=WORLDS.find(x=>x.id===w0); const co=wo&&wo.characters.find(x=>x.id===id0); if(co&&!canEdit(co)){ alert(`Only ${co.custom?'the person who made':'the owner of'} ${co.full} can edit them. You can make your own copy instead.`); return; } }
@@ -2857,7 +2889,7 @@ $('#crSave').onclick=()=>{
   if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
   if(c._builtin){ const sheet=(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,'');
     const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', mortal:!!c.mortal, undyingReason:c.mortal?'':(c.undyingReason||''), gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, wardrobe:c.wardrobe||[], schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
-    if(!setOverrides(OV)) return; rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); if(SCREEN==='home') renderHome(); setTimeout(()=>openChar(c.world+':'+c.id),200); return; }
+    if(!setOverrides(OV)) return; rebuildWorlds(); buildCombined(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); if(SCREEN==='home') renderHome(); setTimeout(()=>openChar(c.world+':'+c.id),200); return; }
   const C=getCustom();
   let wid=c.world;
   if(wid==='__new'){ const nw=c._newWorld; if(!nw.title){ crStep=3; renderCreator(); return msg('Give the new world a title.'); }
@@ -2875,14 +2907,14 @@ $('#crSave').onclick=()=>{
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));
   if(!setCustom(C)) return;
-  rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome();
+  rebuildWorlds(); buildCombined(); $('#createModal').classList.remove('on'); renderHome();
   if(c._lore&&c._lore.length){ const wobj=WORLDS.find(x=>x.id===wid); if(wobj){ const L=getLore(wobj); for(const e of c._lore) L.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:e.title||e.keys[0]||e.text.slice(0,40), keys:e.keys, text:e.text, cat:'World', on:true, always:!e.keys.length}); saveLore(L,wobj); } }
   setTimeout(()=>openChar(wid+':'+c.id),200);
 };
-$('#crDelete').onclick=()=>{ const c=CR; if(c._builtin){ if(!confirm(`Put ${c.full||c.name} back to how they originally were? Your edits to them are removed.`)) return; const OV=getOverrides(); delete OV[c.world+':'+c.id]; setOverrides(OV); rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); if(SCREEN==='home') renderHome(); return; } if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
+$('#crDelete').onclick=()=>{ const c=CR; if(c._builtin){ if(!confirm(`Put ${c.full||c.name} back to how they originally were? Your edits to them are removed.`)) return; const OV=getOverrides(); delete OV[c.world+':'+c.id]; setOverrides(OV); rebuildWorlds(); buildCombined(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); if(SCREEN==='home') renderHome(); return; } if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
   const C=getCustom(); const w=C.chars.find(x=>x.id===c.id)?.world; C.chars=C.chars.filter(x=>x.id!==c.id); C.worlds=C.worlds.filter(x=>C.chars.some(y=>y.world===x.id));
   if(w&&!C.worlds.some(x=>x.id===w)) LS.removeItem('livingworld_save_'+w);
-  setCustom(C); rebuildWorlds(); $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); renderHome(); };
+  setCustom(C); rebuildWorlds(); buildCombined(); $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); renderHome(); };
 // export / import a character (with its world, if it has its own)
 $('#cmExport').onclick=()=>{ const [w,id]=cmKey.split(':'); const C=getCustom(); const ch=C.chars.find(x=>x.id===id&&x.world===w); if(!ch) return;
   const world=C.worlds.find(x=>x.id===w); const data={livingWorldCharacter:1, character:ch, world:world||null};
@@ -2893,7 +2925,7 @@ $('#crImportFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value
     const C=getCustom(); const ch={...d.character, id:'c'+Date.now().toString(36)};
     if(d.world){ const nw={...d.world, id:'w'+Date.now().toString(36)}; nw.opening={...nw.opening, companions:(nw.opening.companions||[]).includes(d.character.id)?[ch.id]:[]}; ch.world=nw.id; C.worlds.push(nw); }
     else if(!WORLDS.some(w=>w.id===ch.world)){ if(!WORLDS.length) throw new Error('This character has no world of their own. Make a world first (create any character with a new world), then import them into it.'); ch.world=WORLDS[0].id; }
-    C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome(); setTimeout(()=>openChar(ch.world+':'+ch.id),200);
+    C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); buildCombined(); $('#createModal').classList.remove('on'); renderHome(); setTimeout(()=>openChar(ch.world+':'+ch.id),200);
   }catch(err){ $('#crMsg').textContent='Could not import: '+err.message; } };
 $('#cmEdit').onclick=()=>{ $('#charModal').classList.remove('on'); openCreator(cmKey); };
 $('#cmCopy').onclick=()=>{ $('#charModal').classList.remove('on'); copyChar(cmKey); };
@@ -3130,13 +3162,13 @@ function installItem(it){ const d=it.data||{};
   if(it.kind==='character'){ const rmap=addRacesFrom(d.races, it.id); const ch={...d.character, id:'c'+stamp, src:it.id, ownerId:it.owner}; if(ch.raceId) ch.raceId=rmap[ch.raceId]||'';
     if(d.world){ const nw={...d.world, id:'w'+stamp, src:it.id}; nw.opening={...nw.opening, companions:(nw.opening?.companions||[]).includes(d.character.id)?[ch.id]:[]}; ch.world=nw.id; C.worlds.push(nw); }
     else { const pick=WORLDS[0]; if(!pick) throw new Error('This character joins an existing world, and you don\'t have one yet. Make a world first (create a character with a new world).'); ch.world=pick.id; }
-    C.chars.push(ch); if(!setCustom(C)) throw new Error('Storage is full.'); rebuildWorlds(); return `${ch.full||ch.name} is in your app${d.world?` with their world "${d.world.title}"`:` in ${WORLDS.find(w=>w.id===ch.world)?.title.split(':')[0]}`}. Find them on the main menu.`; }
+    C.chars.push(ch); if(!setCustom(C)) throw new Error('Storage is full.'); rebuildWorlds(); buildCombined(); return `${ch.full||ch.name} is in your app${d.world?` with their world "${d.world.title}"`:` in ${WORLDS.find(w=>w.id===ch.world)?.title.split(':')[0]}`}. Find them on the main menu.`; }
   if(it.kind==='world'){ const rmap=addRacesFrom(d.races, it.id); const wid='w'+stamp; const idmap={};
     const chars=(d.characters||[]).map((c,i)=>{ const nid='c'+stamp+i; idmap[c.id]=nid; return {...c, id:nid, world:wid, src:it.id, ownerId:it.owner, raceId:c.raceId?(rmap[c.raceId]||''):''}; });
     const w={...d.world, id:wid, src:it.id}; w.opening={...w.opening, companions:(w.opening?.companions||[]).map(x=>idmap[x]).filter(Boolean)};
     C.worlds.push(w); C.chars.push(...chars); if(!setCustom(C)) throw new Error('Storage is full.');
     try{ LS.setItem('livingworld_lore_'+wid, JSON.stringify([...(BASE.realismLore||[]).map(e=>({...e,on:true,always:false})), ...(d.lore||[]).map(e=>({...e,on:e.on!==false}))])); }catch(e){}
-    rebuildWorlds(); return `"${w.title}" is in your app with ${chars.length} character${chars.length===1?'':'s'}. Start it from the main menu.`; }
+    rebuildWorlds(); buildCombined(); return `"${w.title}" is in your app with ${chars.length} character${chars.length===1?'':'s'}. Start it from the main menu.`; }
   throw new Error('Unknown item.');
 }
 
@@ -3260,7 +3292,7 @@ function showScreen(name){
     if(seen!==APP_VERSION){ $('#logDot').style.display='inline-block'; if(seen) setTimeout(openLog,500); else try{ LS.setItem(LOG_SEEN_KEY,APP_VERSION); }catch(e){} } }
 }
 function enterWorld(id, opts={}){
-  const w=WORLDS.find(x=>x.id===id); if(!w) return;
+  const w=findWorld(id); if(!w) return;
   const isNew=!opts.branch&&!opts.branchId&&!LS.getItem('livingworld_save_'+id);
   if(isNew&&!opts.scene){ openScenePicker(id, opts); return; }
   if(W&&S){ LS.setItem(SAVE_KEY, JSON.stringify(S)); }

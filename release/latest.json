@@ -1,11 +1,11 @@
 {
- "version": "0.25.0",
+ "version": "0.26.0",
  "date": "2026-11-18",
  "notes": [
-  "Lorebooks are now a library. Pick any world's lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.",
-  "Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time."
+  "Everyone stories: a universe with more than one world (like Zenless Zone Zero) now has an Everyone option at the top of its page. Krampus and Yunkui Summit live side by side in one story with every character on their own schedule, and you can meet anyone.",
+  "There's no set plot in an Everyone story, so you choose who you are or write your own scene when you start. Both worlds' lorebooks, relationships and phone apps carry over."
  ],
  "file": "index.html",
- "sha256": "183043ddc8025d235d5a7ff7e5949d2b68255921aee051b05a5d615c896e5e61",
+ "sha256": "f30bcdca00edd5f94480dbcfdfa060b936c333184a4156289643025e1d29444e",
  "minShell": "0.5.0"
 }
