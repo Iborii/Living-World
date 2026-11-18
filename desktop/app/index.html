@@ -131,6 +131,20 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .wcard .bot{padding:12px 18px;display:flex;gap:8px;align-items:center}
 .wcard .bot .prog{margin-right:auto;font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:14px}
+/* events */
+#evModal .box{width:min(980px,96vw);height:min(780px,92vh);padding:0;display:flex;flex-direction:column}
+.ev-body{flex:1;overflow:auto;padding:14px 20px}
+.ev-card{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+.ev-card h4{margin:0 0 6px;display:flex;align-items:center;gap:8px;font-size:15px}
+.ev-dot{width:12px;height:12px;border-radius:50%;flex:none}
+.ev-row{display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:13px;padding:3px 6px;border-radius:6px;color:var(--muted)}
+.ev-row.now{background:rgba(217,164,65,.14);color:var(--text)}
+.ev-row.once{color:#cbb8ff}
+.phase{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;border:1px solid var(--line)}
+.phase.period{background:#7a2333;border-color:#a33a4d;color:#ffd5dc}.phase.pms{background:#4a3360;color:#e6d4ff}.phase.ovulation{background:#2f5141;color:#cdf3de}.phase.follicular,.phase.luteal{color:var(--muted)}
+.cyc-bar{display:flex;gap:2px;margin:8px 0 4px}.cyc-bar span{flex:1;height:10px;border-radius:2px;background:#2a2c35}
+.cyc-bar span.p{background:#a33a4d}.cyc-bar span.o{background:#3f7a5e}.cyc-bar span.m{background:#5d4680}.cyc-bar span.today{outline:2px solid #fff;outline-offset:1px}
+.ev-form{display:grid;grid-template-columns:1.2fr 1fr 90px 90px;gap:6px;margin-top:6px}
 /* creator */
 #createModal .box{width:min(1000px,96vw);height:min(820px,94vh);padding:0;display:flex;flex-direction:column}
 .cr-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
@@ -263,6 +277,13 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
   </div>
 </div></div>
 
+<div class="modal" id="evModal"><div class="box">
+  <div class="lb-head"><h2 style="margin:0;font-size:18px">Events</h2>
+    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button></div>
+    <span class="small" id="evNow"></span><button class="ghost" id="evClose" style="margin-left:auto">Close</button></div>
+  <div class="ev-body" id="evBody"></div>
+</div></div>
+
 <div class="modal" id="createModal"><div class="box">
   <div class="cr-head"><h2 style="margin:0;font-size:18px" id="crTitle">Create a character</h2>
     <div class="cr-steps"><button data-step="0" class="on">1 · Basics</button><button data-step="1">2 · Character sheet</button><button data-step="2">3 · Schedule</button><button data-step="3">4 · World</button></div>
@@ -314,7 +335,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 
 <div id="app" style="display:none">
   <header>
-    <button class="ghost" id="homeBtn" title="Main menu">⌂ Home</button><button class="ghost" id="loreBtn" title="World lore and memories">📖 Lore</button><div class="title" id="worldTitle">Living World</div>
+    <button class="ghost" id="homeBtn" title="Main menu">⌂ Home</button><button class="ghost" id="loreBtn" title="World lore and memories">📖 Lore</button><button class="ghost" id="evBtn" title="Schedules, events and cycles">📅 Events</button><div class="title" id="worldTitle">Living World</div>
     <select id="personaSel" title="Who you are playing in this story"></select><span id="weather"></span>
     <span id="clock">--</span>
     <select id="speed" title="How fast the world's clock runs while the app is open">
@@ -487,7 +508,8 @@ function load(){
   if(!S&&fresh) S=fresh;
   if(!S||S.world!==W.id) S=newState();
   for(const c of W.characters) if(!S.chars[c.id]) S.chars[c.id]={loc:c.loc,act:c.act,lastBeat:S.clock,log:[],washed:S.clock,trust:0};
-  S.view = S.view||'me'; S.memories = S.memories||[];
+  S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[];
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st.cycle || (st.cycle.custom!==true && c.custom && c.cycle && !!c.cycle.on!==st.cycle.on)) st.cycle=defaultCycle(c); }
   // older saves kept one memory string per character: turn each into a memory entry
   for(const c of W.characters){ const st=S.chars[c.id]; if(st.memory){ addMemory({who:[c.id], text:st.memory, t:S.clock, src:'old', imp:2}); delete st.memory; } }
   if(!S.personaId || !PS.list.find(p=>p.id===S.personaId)) S.personaId = PS.defaultId;
@@ -497,9 +519,37 @@ function save(){ if(!W||!S) return; clearTimeout(saveTimer); saveTimer=setTimeou
 function saveCfg(){ try{ localStorage.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 
 // ======================= schedule engine =======================
+function allEvents(){ return [...(W.events||[]), ...((S&&S.events)||[])]; }
+const DAYMS=1440*MIN;
+// ---- menstrual cycles ----
+const BUILTIN_CYCLES={phoenix:{len:28,days:5}, dialyn:{len:30,days:5}, zhao:{len:27,days:4}, promeia:{len:29,days:6}};
+function hashStr(s){ let x=0; for(const ch of s) x=(x*31+ch.charCodeAt(0))>>>0; return x; }
+function defaultCycle(c){
+  const d=c.cycle&&c.cycle.on?{len:+c.cycle.len||28, days:+c.cycle.days||5}:(!c.custom&&BUILTIN_CYCLES[c.id]);
+  if(!d) return {on:false, len:28, days:5, start:0};
+  const base=parseStart(W.start.date,'00:00'); return {on:true, len:d.len, days:d.days, start:base-(hashStr(W.id+c.id)%d.len)*DAYMS};
+}
+function cycleInfo(c, ms){
+  const cy=S.chars[c.id]?.cycle; if(!cy||!cy.on) return null;
+  const len=cy.len, days=cy.days; const dn=Math.floor((Math.floor(ms/DAYMS)*DAYMS-cy.start)/DAYMS);
+  const day=((dn%len)+len)%len+1; const ov=len-14; const minor=!!c.minor;
+  let key, label, note;
+  if(day<=days){ key='period'; label=`Period, day ${day} of ${days}`; note=day<=2?'heaviest flow, cramps and lower-back ache likely, tired, needs pads or tampons and changes them every few hours':'lighter flow, still using pads or tampons, cramps easing'; }
+  else if(!minor && day>=ov-1 && day<=ov+1){ key='ovulation'; label='Ovulation'; note='a little more energy, sometimes a mild one-sided twinge'; }
+  else if(day>len-5){ key='pms'; label='PMS'; note=minor?'bloated, moodier or teary, snack cravings, tired':'bloated, sore breasts, irritable or teary, cravings, tired'; }
+  else if(day<ov){ key='follicular'; label='Between periods'; note=''; }
+  else { key='luteal'; label='Between periods'; note=''; }
+  const toNext=len-day+1; return {key,label,note,day,len,days,ov,minor,nextStart:Math.floor(ms/DAYMS)*DAYMS+toNext*DAYMS, toNext};
+}
+function bodyLines(chars){
+  return chars.map(c=>{ const i=cycleInfo(c,S.clock); if(!i||!i.note) return null; return `- ${c.name}: ${i.label}: ${i.note}`; }).filter(Boolean).join('\n');
+}
+function worldEventLines(){ const now=S.clock, until=now+2*DAYMS;
+  return allEvents().filter(e=>e.who==='all').map(e=>({...e,t:parseStart(e.date,e.start)})).filter(e=>e.t+ (toMin(e.end)-toMin(e.start))*MIN>now && e.t<until).sort((a,b)=>a.t-b.t)
+    .map(e=>`- ${e.date===isoDate(now)?'Today':wdName(e.t)+' '+mmdd(e.t)} ${e.start}-${e.end} at ${e.loc}: ${e.act}`).join('\n'); }
 function slotFor(c, ms){
   const day=dayNum(ms), m=dt(ms).h*60+dt(ms).mi, date=isoDate(ms);
-  const ev=(W.events||[]).find(e=>e.who===c.id && e.date===date && m>=toMin(e.start) && m<toMin(e.end));
+  const ev=allEvents().find(e=>e.who===c.id && e.date===date && m>=toMin(e.start) && m<toMin(e.end));
   if(ev) return {loc:ev.loc, act:ev.act, end:toMin(ev.end), event:true};
   const cands=c.schedule.filter(s=>s.days.includes(day) && m>=toMin(s.start) && m<(s.end==='23:59'?1440:toMin(s.end)));
   if(!cands.length) return null;
@@ -510,7 +560,7 @@ function nextSlot(c, ms){
   // first slot starting after now, today or tomorrow
   for(let add=0; add<2; add++){
     const base=ms+add*1440*MIN; const day=dayNum(base); const m=add?-1:(dt(ms).h*60+dt(ms).mi); const date=isoDate(base);
-    const evs=(W.events||[]).filter(e=>e.who===c.id&&e.date===date&&toMin(e.start)>m).map(e=>({start:e.start,act:e.act}));
+    const evs=allEvents().filter(e=>e.who===c.id&&e.date===date&&toMin(e.start)>m).map(e=>({start:e.start,act:e.act}));
     const ss=c.schedule.filter(s=>s.days.includes(day)&&toMin(s.start)>m).map(s=>({start:s.start,act:s.act}));
     const all=[...evs,...ss].sort((a,b)=>toMin(a.start)-toMin(b.start));
     if(all.length) return all[0];
@@ -661,7 +711,7 @@ USER'S LOCATION: ${S.user.loc}
 CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
 TRUST TOWARD THE USER: ${trustLine()}
 LAST WASHED: ${washedLine()}
-
+${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
   const ctx=recentContext(4);
   for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${c.sheet}\n\nWHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What they were just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
@@ -778,7 +828,7 @@ async function pumpQueue(){
 async function beat(ids){
   const cs=ids.map(charById); const st0=S.chars[ids[0]]; const now=S.clock;
   const since=Math.round((now-Math.min(...ids.map(i=>S.chars[i].lastBeat)))/MIN);
-  const sys=`You write short off-screen moments in the lives of characters in a living-world roleplay set in New Eridu (Zenless Zone Zero). These scenes happen while the user is elsewhere; the user is never present.
+  const sys=`You write short off-screen moments in the lives of characters in a living-world roleplay set in ${W.custom?(W.setting||'their world'):'New Eridu (Zenless Zone Zero)'}. These scenes happen while the user is elsewhere; the user is never present.
 Style: third person, present tense. *Italics* for actions and narration, "quotes" for speech. Each spoken line starts with the speaker's name, and under it goes one short italic sentence describing the tone. Vivid sensory detail, micro-reactions, hair/cloth/fur physics. Use "~" at most once. Never state body measurements as numbers. Keep characters exactly as described; never invent big past events.${realismBlock(true)}
 
 ${cs.map(c=>`=== ${c.full} ===\n${c.brief}\nThings they remember:\n${memLines(c.id,(S.chars[c.id].act||'')+' '+(S.chars[c.id].loc||''),6)||'(nothing yet)'}\nRecent moments:\n${recentLog(c.id,3)||'(none yet)'}`).join('\n\n')}`;
@@ -788,7 +838,7 @@ TIME: ${timeLine(now)} (about ${since} minutes since their last moment)
 PLACE: ${st0.loc}
 CHARACTERS HERE: ${cs.map(c=>c.full).join(', ')}
 DOING: ${cs.map(c=>`${c.name}: ${S.chars[c.id].act}`).join('; ')}
-${userBits}
+${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).
 Only if a character would genuinely text ${persona().name||'the user'} right now, add a final line: TEXT TO USER: Name: message. Usually do not.`;
@@ -1033,8 +1083,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.10.0';
 const CHANGELOG = [
+ {v:'0.10.0', d:'2026-11-17', notes:['New 📅 Events button in the chat: see every character\'s schedule for any day, with what they\'re doing right now highlighted.','Upcoming events: see what\'s coming and add your own, either for one character (it moves them there at that time) or for everyone (a festival, a storm, a sale the world can hear about).','Menstrual cycles now run on the story clock: period days, PMS and ovulation, shown on a little calendar bar with the next period date. You can change the length, mark when a period started, or turn tracking on or off.','The narrator and off-screen scenes now know who\'s on their period or has PMS today, and show it through small natural details.','Phoenix, Dialyn, Zhao and Promeia have cycles; the character creator has a cycle option too.','Off-screen scenes in your own worlds now use that world\'s setting.']},
  {v:'0.9.0', d:'2026-11-17', notes:['Create your own characters: + Create on the main menu opens a 4-step editor (Basics, Character sheet, Schedule, World).','Upload a picture for any character you make; it shows on their card and page.','✨ AI helpers: write the short summary from the sheet, and suggest a full weekly schedule from their job and habits.','Put a character in an existing world (they share its city and clock) or give them a brand-new world with its own scenario, opening and start time. Leave the opening empty and the AI writes it.','New worlds get the full realism rules and their own lorebook automatically.','Edit, delete, export and import your characters (share them as a file).','Characters marked under 18 are automatically kept age-appropriate.']},
  {v:'0.8.0', d:'2026-11-17', notes:['Realism is now on by default, all of it: weather, physics, bodies, hygiene, household life, clothes and wet fabric, touch, pacing, menstrual cycles, boredom and schedules apply in every scene.','Off-screen lives follow the core realism rules too.','Settings > Realism: Full (default), Standard (core rules plus details when relevant, uses fewer tokens), or Off.','Your edits to Realism entries in the Lorebook are used, and switching an entry off removes it.']},
  {v:'0.7.1', d:'2026-11-17', notes:['Personas now require a gender: Male, Female, Transgender man, Transgender woman, Non-binary, or type your own.','Picking a gender fills in matching pronouns (you can still change them).','Existing personas without a gender are asked to set one before you play.']},
@@ -1235,10 +1286,72 @@ $('#lbClose').onclick=()=>$('#loreModal').classList.remove('on');
 $('#loreModal').onclick=e=>{ if(e.target.id==='loreModal') $('#loreModal').classList.remove('on'); };
 $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 
+// ======================= events panel =======================
+let evTab='sched', evDate=null;
+function openEvents(){ if(!S) return; evDate=isoDate(S.clock); $('#evModal').classList.add('on'); renderEvents(); }
+document.querySelectorAll('#evModal [data-ev]').forEach(b=>b.onclick=()=>{ evTab=b.dataset.ev; renderEvents(); });
+$('#evClose').onclick=()=>$('#evModal').classList.remove('on');
+function slotsForDay(c, date){
+  const ms=parseStart(date,'00:00'); const day=dayNum(ms);
+  const rows=c.schedule.filter(s=>s.days.includes(day)).map(s=>({start:s.start,end:s.end,loc:s.loc,act:s.act}));
+  const evs=allEvents().filter(e=>e.who===c.id&&e.date===date).map(e=>({...e,once:true}));
+  return [...rows,...evs].sort((a,b)=>toMin(a.start)-toMin(b.start));
+}
+function renderEvents(){
+  document.querySelectorAll('#evModal [data-ev]').forEach(b=>b.classList.toggle('on',b.dataset.ev===evTab));
+  $('#evNow').textContent=`Now: ${wdName(S.clock)} ${mmdd(S.clock)} ${hhmm(S.clock)}`;
+  const B=$('#evBody'); const cs=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
+  if(evTab==='sched'){
+    const today=isoDate(S.clock); const nowM=dt(S.clock).h*60+dt(S.clock).mi;
+    B.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><button class="ghost" id="evPrev">◀</button><input type="date" id="evDay" value="${evDate}" style="width:auto"><button class="ghost" id="evNext">▶</button><button class="ghost" id="evToday">Today</button><span class="small">${S.branch?'One-on-one stories follow the story instead of schedules.':'Purple rows are one-time events.'}</span></div>`+
+      cs.map(c=>{ const st=S.chars[c.id]; const rows=slotsForDay(c,evDate); const cur=evDate===today?slotFor(c,S.clock):null;
+        return `<div class="ev-card"><h4><span class="ev-dot" style="background:${c.color}"></span>${esc(c.full)}<span class="small" style="font-weight:400;margin-left:6px">${evDate===today?`now: ${esc(st.act)} · ${esc(st.loc)}`:''}</span></h4>
+        ${rows.length?rows.map(r=>`<div class="ev-row ${r.once?'once':''} ${cur&&cur.start===r.start&&cur.act===r.act?'now':''}"><span>${r.start}–${r.end==='23:59'?'24:00':r.end}</span><span>${esc(r.act)} · <i>${esc(r.loc)}</i></span></div>`).join(''):'<div class="small">Nothing scheduled.</div>'}</div>`; }).join('');
+    const go=d=>{ evDate=d; renderEvents(); };
+    $('#evDay').onchange=e=>go(e.target.value||today); $('#evToday').onclick=()=>go(today);
+    $('#evPrev').onclick=()=>go(isoDate(parseStart(evDate,'12:00')-DAYMS)); $('#evNext').onclick=()=>go(isoDate(parseStart(evDate,'12:00')+DAYMS));
+  }
+  if(evTab==='events'){
+    const now=S.clock; const name=id=>id==='all'?'Everyone (world event)':(charById(id)?.full||id);
+    const list=allEvents().map(e=>({...e,t:parseStart(e.date,e.start),mine:(S.events||[]).includes(e)})).filter(e=>parseStart(e.date,e.end)>now).sort((a,b)=>a.t-b.t);
+    B.innerHTML=`<div class="ev-card"><h4>Add an event</h4>
+      <div class="small">Pick a character to move them there at that time, or Everyone for something happening in the world (a festival, a storm, a sale) that people can hear about and go to.</div>
+      <div class="ev-form"><select id="efWho"><option value="all">Everyone (world event)</option>${W.characters.map(c=>`<option value="${c.id}">${esc(c.full)}</option>`).join('')}</select><input type="date" id="efDate" value="${isoDate(now)}"><input type="time" id="efStart" value="18:00"><input type="time" id="efEnd" value="20:00"></div>
+      <div class="ev-form" style="grid-template-columns:1fr 1.4fr auto"><input id="efLoc" list="efLocs" placeholder="District, exact spot"><datalist id="efLocs">${W.locations.map(l=>`<option>${esc(l)}</option>`).join('')}</datalist><input id="efAct" placeholder="What's happening"><button class="primary" id="efAdd">Add</button></div><div class="small" id="efMsg"></div></div>`+
+      (list.length?list.map(e=>`<div class="ev-card" style="display:flex;gap:12px;align-items:center"><div style="min-width:120px"><b>${e.date===isoDate(now)?'Today':wdName(e.t).slice(0,3)+' '+mmdd(e.t)}</b><div class="small">${e.start}–${e.end}</div></div><div style="flex:1"><div>${esc(e.act)}</div><div class="small">${esc(name(e.who))} · ${esc(e.loc)}</div></div>${e.mine?`<button class="ghost" data-del="${e.id}">Remove</button>`:'<span class="small">story event</span>'}</div>`).join(''):'<div class="small">No upcoming events.</div>');
+    $('#efAdd').onclick=()=>{ const v=id=>$('#'+id).value.trim(); const e={id:'e'+Date.now().toString(36), who:v('efWho'), date:v('efDate'), start:v('efStart'), end:v('efEnd'), loc:v('efLoc'), act:v('efAct')};
+      if(!e.date||!e.start||!e.end||!e.act||!e.loc){ $('#efMsg').textContent='Fill in the date, times, place and what is happening.'; return; }
+      if(toMin(e.end)<=toMin(e.start)){ $('#efMsg').textContent='The end time must be after the start (events end by midnight).'; return; }
+      S.events.push(e); save(); updateSchedules(); renderEvents(); };
+    B.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ S.events=S.events.filter(e=>e.id!==b.dataset.del); save(); updateSchedules(); renderEvents(); });
+  }
+  if(evTab==='cycles'){
+    const adults=cs.filter(c=>!c.minor);
+    B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">Characters' cycles run on the story clock. The narrator gets what's going on today (cramps, PMS, supplies) and shows it through small details. Change the length, the period length, or mark when a period actually started in the story.</div>`+
+      adults.map(c=>{ const cy=S.chars[c.id].cycle||{on:false}; const i=cycleInfo(c,S.clock);
+        if(!cy.on) return `<div class="ev-card" style="display:flex;align-items:center;gap:10px"><span class="ev-dot" style="background:${c.color}"></span><b>${esc(c.full)}</b><span class="small">Not tracked</span><button class="ghost" data-cyon="${c.id}" style="margin-left:auto">Track a cycle</button></div>`;
+        const bar=Array.from({length:i.len},(_,k)=>{ const d=k+1; const cl=d<=i.days?'p':(d>=i.ov-1&&d<=i.ov+1?'o':(d>i.len-5?'m':'')); return `<span class="${cl} ${d===i.day?'today':''}" title="Day ${d}"></span>`; }).join('');
+        const ovIn=i.ov-i.day; 
+        return `<div class="ev-card"><h4><span class="ev-dot" style="background:${c.color}"></span>${esc(c.full)} <span class="phase ${i.key}">${esc(i.label)}</span><span class="small" style="font-weight:400">day ${i.day} of ${i.len}</span></h4>
+          <div class="cyc-bar">${bar}</div>
+          <div class="small">${i.note?esc(i.note)+' · ':''}Next period: <b>${wdName(i.nextStart)} ${mmdd(i.nextStart)}</b> (in ${i.toNext} day${i.toNext===1?'':'s'})${ovIn>0?` · ovulation in about ${ovIn} days`:''}</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="small" style="margin:0">Cycle length <input type="number" min="21" max="40" value="${cy.len}" data-len="${c.id}" style="width:64px;padding:4px"></label><label class="small" style="margin:0">Period lasts <input type="number" min="2" max="8" value="${cy.days}" data-days="${c.id}" style="width:56px;padding:4px"> days</label>
+          <button class="ghost" data-pstart="${c.id}">Period started today</button><button class="ghost" data-cyoff="${c.id}">Stop tracking</button></div></div>`; }).join('')+
+      (cs.some(c=>c.minor)?`<div class="small" style="margin-top:6px">Characters under 18 aren't shown here. If they have a cycle, the narrator only handles the practical side of their periods.</div>`:'');
+    const cyc=id=>S.chars[id].cycle; const upd=()=>{ save(); renderEvents(); };
+    B.querySelectorAll('[data-cyon]').forEach(b=>b.onclick=()=>{ const c=charById(b.dataset.cyon); S.chars[c.id].cycle={on:true,len:28,days:5,start:Math.floor(S.clock/DAYMS)*DAYMS-((hashStr(c.id)%28))*DAYMS,custom:true}; upd(); });
+    B.querySelectorAll('[data-cyoff]').forEach(b=>b.onclick=()=>{ Object.assign(cyc(b.dataset.cyoff),{on:false,custom:true}); upd(); });
+    B.querySelectorAll('[data-pstart]').forEach(b=>b.onclick=()=>{ Object.assign(cyc(b.dataset.pstart),{start:Math.floor(S.clock/DAYMS)*DAYMS,custom:true}); upd(); });
+    B.querySelectorAll('[data-len]').forEach(x=>x.onchange=()=>{ Object.assign(cyc(x.dataset.len),{len:Math.max(21,Math.min(40,+x.value||28)),custom:true}); upd(); });
+    B.querySelectorAll('[data-days]').forEach(x=>x.onchange=()=>{ Object.assign(cyc(x.dataset.days),{days:Math.max(2,Math.min(8,+x.value||5)),custom:true}); upd(); });
+  }
+}
+$('#evBtn').onclick=openEvents;
+
 // ======================= character creator =======================
 const DAYS=['M','T','W','T','F','S','S'];
 let CR=null, crStep=0;
-function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', minor:false, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
+function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
 function openCreator(editKey){
   if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id); if(!c) return; CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
@@ -1249,7 +1362,7 @@ function openCreator(editKey){
 }
 function crCollect(){ // read the visible step's fields into CR
   const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined; };
-  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; }
+  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
@@ -1270,6 +1383,9 @@ function renderCreator(){
         <label>Tags (comma-separated; used for search and recommendations)</label><input id="crTags" value="${esc(c.tags.join(', '))}" placeholder="e.g. Thiren, Bunny, Calculating, Caretaker">
         <div class="grid2"><div><label>Age</label><input id="crAge" value="${esc(c.age||'')}" placeholder="e.g. 24"></div>
         <div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crMinor" style="width:auto" ${c.minor?'checked':''}>This character is under 18</label></div></div>
+        <label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crCyc" style="width:auto" ${c.cycle&&c.cycle.on?'checked':''}>Has a menstrual cycle</label>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:4px"><span class="small">Cycle length</span><input id="crCycLen" type="number" min="21" max="40" value="${(c.cycle||{}).len||28}" style="width:70px;padding:5px"><span class="small">days · period lasts</span><input id="crCycDays" type="number" min="2" max="8" value="${(c.cycle||{}).days||5}" style="width:60px;padding:5px"><span class="small">days</span></div>
+        <div class="hint">The cycle runs on the story clock and shows in the chat's 📅 Events panel.</div>
         <div class="hint">Under 18 keeps everything about them age-appropriate: they're never part of romantic or sexual content, their body is never described beyond height and general build, and no romance happens while they're present.</div>
       </div></div>`;
     $('#crAv').onclick=()=>$('#crImgFile').click(); const del=$('#crImgDel'); if(del) del.onclick=()=>{ crCollect(); CR.img=''; renderCreator(); };
@@ -1346,7 +1462,7 @@ $('#crSave').onclick=()=>{
   }
   const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
-    brief:c.brief, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+    brief:c.brief, cycle:c.cycle||{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));

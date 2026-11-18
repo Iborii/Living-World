@@ -1,16 +1,15 @@
 {
- "version": "0.9.0",
+ "version": "0.10.0",
  "date": "2026-11-17",
  "notes": [
-  "Create your own characters: + Create on the main menu opens a 4-step editor (Basics, Character sheet, Schedule, World).",
-  "Upload a picture for any character you make; it shows on their card and page.",
-  "\u2728 AI helpers: write the short summary from the sheet, and suggest a full weekly schedule from their job and habits.",
-  "Put a character in an existing world (they share its city and clock) or give them a brand-new world with its own scenario, opening and start time. Leave the opening empty and the AI writes it.",
-  "New worlds get the full realism rules and their own lorebook automatically.",
-  "Edit, delete, export and import your characters (share them as a file).",
-  "Characters marked under 18 are automatically kept age-appropriate."
+  "New \ud83d\udcc5 Events button in the chat: see every character's schedule for any day, with what they're doing right now highlighted.",
+  "Upcoming events: see what's coming and add your own, either for one character (it moves them there at that time) or for everyone (a festival, a storm, a sale the world can hear about).",
+  "Menstrual cycles now run on the story clock: period days, PMS and ovulation, shown on a little calendar bar with the next period date. You can change the length, mark when a period started, or turn tracking on or off.",
+  "The narrator and off-screen scenes now know who's on their period or has PMS today, and show it through small natural details.",
+  "Phoenix, Dialyn, Zhao and Promeia have cycles; the character creator has a cycle option too.",
+  "Off-screen scenes in your own worlds now use that world's setting."
  ],
  "file": "index.html",
- "sha256": "d3031ed545e3a25a1bee1daefdc1edcf6097ca3dee2a7b0136b5e4104fd4b773",
+ "sha256": "b51c17714aa19a70862c374a652e2a1f928e783be38d2fc3bb6d3a20df40e6a8",
  "minShell": "0.5.0"
 }
