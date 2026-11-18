@@ -625,11 +625,11 @@ function unreadCount(){ const P=phone(); let n=0; for(const id in P.threads) n+=
 function textSnippet(id,n){ return (phone().threads[id]||[]).slice(-n).map(m=>`[${mmdd(m.t)} ${hhmm(m.t)}] ${m.me?(persona().name||'User'):charById(id).name}: ${m.text.replace(/\n+/g,' / ')}`).join(' | '); }
 function recentTextsBlock(){ const out=[]; const P=phone(); for(const id in P.threads){ const c=charById(id); if(!c) continue; const recent=P.threads[id].filter(m=>S.clock-m.t<12*60*MIN).slice(-6); if(recent.length) out.push(`With ${c.name}:\n`+recent.map(m=>`  [${hhmm(m.t)}] ${m.me?(persona().name||'User'):c.name}: ${m.text.replace(/\n+/g,' / ')}`).join('\n')); } return out.join('\n'); }
 const SLEEPY=/asleep|sleep|in bed|nap|lights out|dozing/i, BUSY=/work|shift|class|meeting|training|teaching|judg|mission|patrol|case|operation|lesson|duty|investigat/i;
-function replyDelay(c){ const st=S.chars[c.id]; if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return 1+Math.random()*2; if(BUSY.test(st.act)) return 15+Math.random()*40; return 1+Math.random()*7; }
+function replyDelay(c){ const st=S.chars[c.id]; if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return 0.3+Math.random()*0.7; if(BUSY.test(st.act)) return 4+Math.random()*10; return 0.5+Math.random()*3.5; }
 let phoneBusy=new Set();
 function processPhone(){ const P=phone(); for(const id in P.pending){ const at=P.pending[id]; const c=charById(id); if(!c){ delete P.pending[id]; continue; }
   if(S.clock<at||phoneBusy.has(id)) continue; if(SLEEPY.test(S.chars[id].act)) continue; // they'll see it when they wake up
-  delete P.pending[id]; phoneBusy.add(id); renderPhone(); textReply(c).catch(e=>notice('Text reply failed: '+e.message,true)).finally(()=>{ phoneBusy.delete(id); renderPhone(); }); } }
+  delete P.pending[id]; phoneBusy.add(id); P.err=P.err||{}; delete P.err[id]; renderPhone(); textReply(c).catch(e=>{ P.err[id]=e.message; notice('Text reply failed: '+e.message,true); }).finally(()=>{ phoneBusy.delete(id); renderPhone(); }); } }
 async function textReply(c){
   const st=S.chars[c.id]; const th=thread(c.id).slice(-24); const pn=persona().name||'the user';
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
@@ -1256,8 +1256,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.12.1';
+const APP_VERSION = '0.12.2';
 const CHANGELOG = [
+ {v:'0.12.2', d:'2026-11-17', notes:['Texts get answered much sooner: within a minute or so if they\'re with you, a few minutes if they\'re free, and about 5 to 15 minutes if they\'re at work. Asleep still means they answer when they wake up.','The phone shows why someone hasn\'t answered yet (busy, asleep, or the story is paused), and shows an error with a Try again link if a reply fails.']},
  {v:'0.12.1', d:'2026-11-17', notes:['The Studio is now connected to its server: sign up, publish, like, report and download for real.']},
  {v:'0.12.0', d:'2026-11-17', notes:['✦ The Studio: browse races, characters and worlds other people have shared, download them into your app, and like the ones you love. Sort by most liked, newest or most downloaded, and search.','Publish your own races, characters and worlds for everyone (free account needed to publish, like or report; browsing and downloading need no account).','Make your own races in Studio → My races: looks, biology, culture, whether they have cycles, an optional "what kind?" question (like which animal), and race lore entries. Their lore reaches the narrator whenever someone of that race is in a scene.','Race lists in the character creator and personas now use your races instead of a fixed list.','Content rules: 18+ items are hidden unless you turn them on; anything with a character under 18 can never be marked 18+; anything reported several times is hidden until reviewed.','Your own worlds no longer borrow anything from the Krampus world.']},
  {v:'0.11.0', d:'2026-11-17', notes:['📱 Phone: a Knock Knock inbox in the chat. Texts from characters land there with an unread badge, and you can text anyone back. They reply in their own texting style, on their own time: fast if they\'re free, slower at work, and not until they wake up if they\'re asleep.','The narrator and off-screen scenes know about recent texts, so people can bring them up in person.','Relationships between characters: everyone in a world now has a closeness score and a description with each other (Krampus starts from their real history). Scenes on and off screen change them, and the narrator plays them that way. See and edit them under 📅 Events → Relationships.','Races: characters and personas can be Human, Thiren (pick the animal), an Intelligent Construct / robot, or anything you type. The AI is told everyone\'s race; constructs never get cycles.']},
@@ -1482,8 +1483,9 @@ function renderPhone(){ if(!S||!$('#phoneModal').classList.contains('on')) { ren
     const av=$('#phAv'); av.style.display='flex'; av.style.background=avatarBg(c.color,c.img); av.textContent=c.img?'':c.name[0];
     let lastDay='', html='';
     for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
-    const waiting=phoneBusy.has(c.id)?`<div class="ph-typing">${esc(c.name)} is typing…</div>`:(P.pending[c.id]&&SLEEPY.test(st.act)?`<div class="ph-typing">Delivered. ${esc(c.name)} seems to be asleep.</div>`:(P.pending[c.id]?'<div class="ph-typing">Delivered</div>':''));
+    const waiting=phoneBusy.has(c.id)?`<div class="ph-typing">${esc(c.name)} is typing…</div>`:(P.pending[c.id]&&SLEEPY.test(st.act)?`<div class="ph-typing">Delivered. ${esc(c.name)} seems to be asleep.</div>`:(P.pending[c.id]?`<div class="ph-typing">Delivered${S.paused?' · the story is paused, so time isn\'t passing':BUSY.test(st.act)?` · ${esc(c.name)} is busy (${esc(st.act)}), so it may take a few minutes`:''}</div>`:(P.err&&P.err[c.id]?`<div class="ph-typing" style="color:var(--danger)">Couldn't get a reply: ${esc(P.err[c.id])} <a href="#" id="phRetry">Try again</a></div>`:'')));
     B.innerHTML=`<div class="ph-msgs">${html||'<div class="bub-t">Say hi.</div>'}</div>${waiting}`; B.scrollTop=B.scrollHeight;
+    const rt=$('#phRetry'); if(rt) rt.onclick=e=>{ e.preventDefault(); delete P.err[c.id]; P.pending[c.id]=S.clock; renderPhone(); };
   }
   renderPhoneBadge(); save();
 }

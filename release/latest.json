@@ -1,10 +1,11 @@
 {
- "version": "0.12.1",
+ "version": "0.12.2",
  "date": "2026-11-17",
  "notes": [
-  "The Studio is now connected to its server: sign up, publish, like, report and download for real."
+  "Texts get answered much sooner: within a minute or so if they're with you, a few minutes if they're free, and about 5 to 15 minutes if they're at work. Asleep still means they answer when they wake up.",
+  "The phone shows why someone hasn't answered yet (busy, asleep, or the story is paused), and shows an error with a Try again link if a reply fails."
  ],
  "file": "index.html",
- "sha256": "ad113f71ed6749105ed8bcd666693f16dfcc6a0142ec79fb1a1ea8a9762c5936",
+ "sha256": "a368da456cb88dc1ff09c7f5ef61cd1a1bcd5b2f80e220b0daa392bd7ecd89cb",
  "minShell": "0.5.0"
 }
