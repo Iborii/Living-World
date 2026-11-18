@@ -1435,7 +1435,8 @@ $('#allCard').onclick=()=>{ S.view='all'; render(); save(); };
 $('#speed').onchange=e=>{ S.speed=+e.target.value; save(); };
 $('#pauseBtn').onclick=()=>{ S.paused=!S.paused; renderClock(); save(); };
 $('#regenBtn').onclick=async()=>{ if(busyMain) return; const i=S.chat.map(m=>m.role).lastIndexOf('assistant'); if(i<=0) return; S.chat.splice(i,1); render(); await generateReply(); };
-$('#undoBtn').onclick=()=>{ if(busyMain) return; let i=S.chat.map(m=>m.role).lastIndexOf('user'); if(i<0) return; const t=S.chat[i].text; S.chat.splice(i); $('#input').value=t; render(); save(); };
+$('#undoBtn').onclick=()=>{ if(busyMain) return; let i=S.chat.map(m=>m.role).lastIndexOf('user'); if(i<0) return; const t=S.chat[i].text;
+  const n=S.chat.length-i; if(!confirm(`Are you sure? This permanently deletes your last message${n>1?` and the ${n-1} message${n>2?'s':''} after it`:''} from the story. It can't be brought back.\n\nYour message: "${String(t).slice(0,140)}${String(t).length>140?'…':''}"`)) return; S.chat.splice(i); $('#input').value=t; render(); save(); };
 $('#moveBtn').onclick=()=>{ $('#moveSel').innerHTML='<option value="">— choose —</option>'+W.locations.map(l=>`<option>${esc(l)}</option>`).join(''); $('#moveFree').value=''; $('#moveModal').classList.add('on'); };
 $('#moveClose').onclick=()=>$('#moveModal').classList.remove('on');
 $('#moveGo').onclick=()=>{ const to=($('#moveFree').value||$('#moveSel').value).trim(); if(!to) return; $('#moveModal').classList.remove('on'); send(`*I head to ${to}.*`); };
@@ -1579,8 +1580,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.16.1';
+const APP_VERSION = '0.16.2';
 const CHANGELOG = [
+ {v:'0.16.2', d:'2026-11-17', notes:['Undo last now asks "Are you sure?" first and shows what will be deleted, so you can\'t wipe part of a story by accident.']},
  {v:'0.16.1', d:'2026-11-17', notes:['You can now edit the built-in characters too (their page → Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an "edited" tag, and Reset to original undoes your changes.']},
  {v:'0.16.0', d:'2026-11-17', notes:['You don\'t start with everyone\'s number anymore. Swap numbers with someone while you\'re with them (Messages → Swap numbers), or they can give you theirs in the story. Only contacts can text, call or invite you, and only they show on the Map.','Phone profile pictures: set one for each character in the creator, and one for yourself in Personas. You can also tap any contact\'s picture in a chat to give them your own contact photo.','New worlds: choose whether you already have each other\'s numbers.']},
  {v:'0.15.1', d:'2026-11-17', notes:['Signing in is now required to use the app. New here? Create a free account on the sign-in screen.','Forgot your password? There\'s a link on the sign-in screen to reset it by email.','Signing out takes you back to the sign-in screen.']},

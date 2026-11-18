@@ -1,10 +1,10 @@
 {
- "version": "0.16.1",
+ "version": "0.16.2",
  "date": "2026-11-17",
  "notes": [
-  "You can now edit the built-in characters too (their page \u2192 Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an \"edited\" tag, and Reset to original undoes your changes."
+  "Undo last now asks \"Are you sure?\" first and shows what will be deleted, so you can't wipe part of a story by accident."
  ],
  "file": "index.html",
- "sha256": "04cc3299b1c524a98e2bcee78807d714b763d2c2b163b8657676c6aadd223e1b",
+ "sha256": "7cb36002a2e6ed5eb9b967ea09afe0bf359a5edb094a46793768b9c7fdac00f0",
  "minShell": "0.5.0"
 }
