@@ -315,6 +315,9 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .lb-body{display:grid;grid-template-columns:330px 1fr;flex:1;min-height:0}
 .lb-list{border-right:1px solid var(--line);overflow:auto;padding:10px}
 .lb-tools{display:flex;gap:6px;margin-bottom:8px}
+.lb-books{display:flex;gap:6px;margin-bottom:8px}.lb-books select{flex:1;min-width:0}.lb-books button{white-space:nowrap}
+.bk-attach{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 4px}.bk-attach label{display:flex;gap:6px;align-items:center;margin:0;color:var(--text);font-size:13px}.bk-attach input{width:auto}
+.bk-world{font-size:12px;color:var(--muted);margin:10px 0 2px}
 .lb-item{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;cursor:pointer;background:var(--panel2)}
 .lb-item:hover,.lb-item.sel{border-color:var(--accent)}
 .lb-item .t{font-weight:650;font-size:14px;display:flex;gap:6px;align-items:center}
@@ -666,11 +669,11 @@ body.calm *,body.calm *::before,body.calm *::after{animation:none!important;tran
 </div></div>
 
 <div class="modal" id="loreModal"><div class="box">
-  <div class="lb-head"><h2 style="margin:0;font-size:18px">Lorebook</h2>
-    <div class="lb-tabs"><button id="lbTabWorld" class="on">World lore</button><button id="lbTabMem">Memories</button></div>
+  <div class="lb-head"><h2 style="margin:0;font-size:18px">Lore</h2>
+    <div class="lb-tabs"><button id="lbTabWorld" class="on">Lorebooks</button><button id="lbTabMem">Memories</button></div>
     <span class="small" id="lbScope"></span><button class="ghost" id="lbClose" style="margin-left:auto">Close</button></div>
   <div class="lb-body">
-    <div class="lb-list"><div class="lb-tools"><input id="lbSearch" placeholder="Search…"><select id="lbFilter" style="width:auto"></select></div><button id="lbNew" style="width:100%;margin-bottom:8px">+ New entry</button><div id="lbItems"></div></div>
+    <div class="lb-list"><div class="lb-books" id="lbBooksRow"><select id="lbBook"></select><button id="lbNewBook" title="Create a new lorebook">+ New lorebook</button></div><div class="lb-tools"><input id="lbSearch" placeholder="Search…"><select id="lbFilter" style="width:auto"></select></div><button id="lbNew" style="width:100%;margin-bottom:8px">+ New entry</button><div id="lbItems"></div></div>
     <div class="lb-edit" id="lbEdit"></div>
   </div>
 </div></div>
@@ -1527,15 +1530,21 @@ function loreKey(){ return 'livingworld_lore_'+W.id; }
 function getLore(w){ w=w||W; let L=null; try{ L=JSON.parse(LS.getItem('livingworld_lore_'+w.id)||'null'); }catch(e){}
   if(!L){ const base=w.custom?(BASE.realismLore||[]):(w.lore||[]); L=base.map(e=>({...e, on:true, always:false})); } return L; }
 function saveLore(L,w){ w=w||W; try{ LS.setItem('livingworld_lore_'+w.id, JSON.stringify(L)); }catch(e){} }
+// your own lorebooks: named collections you can switch on for any world, or for a character (used whenever they're in the scene or named)
+const BOOKS_KEY='livingworld_lorebooks';
+function getBooks(){ try{ return JSON.parse(LS.getItem(BOOKS_KEY)||'[]'); }catch(e){ return []; } }
+function saveBooks(b){ try{ LS.setItem(BOOKS_KEY, JSON.stringify(b)); }catch(e){} }
+function booksFor(w, context){ w=w||W; if(!w) return []; const ctx=String(context||'').toLowerCase(); let here=[]; try{ here=(typeof present==='function'&&S&&W&&w.id===W.id)?present().map(c=>c.id):[]; }catch(e){}
+  return getBooks().filter(b=>(b.worlds||[]).includes(w.id)||(b.chars||[]).some(k=>{ const [wid,cid]=k.split(':'); if(wid!==w.id) return false; if(here.includes(cid)) return true; const c=w.characters.find(x=>x.id===cid); return !!c&&ctx.includes(' '+c.name.toLowerCase()); })); }
 function matchLore(context, maxEntries=6, maxChars=14000){
-  const ctx=' '+String(context||'').toLowerCase()+' '; const L=getLore(); const hits=[];
+  const ctx=' '+String(context||'').toLowerCase()+' '; const L=[...getLore(), ...booksFor(W,ctx).flatMap(b=>(b.entries||[]).map(e=>({...e,cat:e.cat||b.name})))]; const hits=[];
   const fullR=(CFG.realism||'full')==='full', offR=CFG.realism==='off';
   for(const e of L){ if(!e.on) continue; if((e.cat||'World')==='Realism'&&(fullR||offR)) continue; let score=e.always?100:0;
     for(const k of e.keys||[]){ const kk=k.toLowerCase().trim(); if(kk.length<2) continue; if(ctx.includes(kk)) score+= kk.length>5?3:2; }
     if(score>0) hits.push({e,score}); }
   // world facts first; general realism/behavior entries are capped so they never crowd out the world
-  hits.sort((a,b)=>((b.e.cat||'World')==='World')-((a.e.cat||'World')==='World') || b.score-a.score); const out=[]; let total=0; const perCat={};
-  for(const {e} of hits){ const c=e.cat||'World'; const cap=c==='World'?5:2; if((perCat[c]||0)>=cap||out.length>=maxEntries+2||total+e.text.length>maxChars) continue; out.push(e); total+=e.text.length; perCat[c]=(perCat[c]||0)+1; }
+  hits.sort((a,b)=>((b.e.cat||'World')!=='Realism')-((a.e.cat||'World')!=='Realism') || b.score-a.score); const out=[]; let total=0; const perCat={};
+  for(const {e} of hits){ const c=e.cat||'World'; const cap=c==='Realism'?2:5; if((perCat[c]||0)>=cap||out.length>=maxEntries+2||total+e.text.length>maxChars) continue; out.push(e); total+=e.text.length; perCat[c]=(perCat[c]||0)+1; }
   return out;
 }
 // Conflict is real here: arguments don't magically resolve and fights aren't dodged.
@@ -2163,8 +2172,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.24.0';
+const APP_VERSION = '0.25.0';
 const CHANGELOG = [
+ {v:'0.25.0', d:'2026-11-18', notes:['Lorebooks are now a library. Pick any world\'s lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.','Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time.']},
  {v:'0.24.0', d:'2026-11-18', notes:['More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world\'s cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.','Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.','Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.','Fixed: a new story no longer shows a stray "Show earlier messages" button.']},
  {v:'0.23.0', d:'2026-11-18', notes:['New stories now ask how you want to start: use the story\'s scene, keep the scene but choose who you are and how everyone knows you, or write your whole scene prompt yourself (with your own starting place and opening message if you like).']},
  {v:'0.22.4', d:'2026-11-18', notes:['Owner build only: Belle and Wise in Yunkui Summit are back to their regular selves. Who they are to you now comes only from the scene, not their character sheets.']},
@@ -2338,17 +2348,26 @@ function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!c
   setBranches(getBranches().filter(x=>x.id!==bid)); LS.removeItem(branchSaveKey(b.world,bid)); }
 
 // ======================= lorebook UI =======================
-let lbTab='world', lbSel=null;
-function openLore(){ if(!loreWorld()){ alert('Make a world first: create a character and give them a new world.'); return; } lbTab=W&&S&&SCREEN==='world'?lbTab:'world'; lbSel=null; $('#loreModal').classList.add('on'); renderLore(); }
+let lbTab='world', lbSel=null, lbBook='';
+function openLore(){ lbTab=W&&S&&SCREEN==='world'?lbTab:'world'; lbSel=null; const lw=loreWorld(); lbBook=lw?'w:'+lw.id:(getBooks()[0]?'u:'+getBooks()[0].id:''); $('#loreModal').classList.add('on'); renderLore(); }
 let LORE_WORLD=null;
 function loreWorld(){ if(LORE_WORLD&&!W){ const w=WORLDS.find(x=>x.id===LORE_WORLD); if(w) return w; } return W||WORLDS[0]; }
+function curBook(){ if(lbBook.startsWith('u:')){ const b=getBooks().find(x=>x.id===lbBook.slice(2)); if(b) return {kind:'user', book:b}; }
+  const w=WORLDS.find(x=>'w:'+x.id===lbBook)||loreWorld(); return w?{kind:'world', world:w}:null; }
+function curEntries(){ const cb=curBook(); if(!cb) return []; return cb.kind==='user'?(cb.book.entries||[]):getLore(cb.world); }
+function saveCurEntries(L){ const cb=curBook(); if(!cb) return; if(cb.kind==='world'){ saveLore(L,cb.world); return; } const all=getBooks(); const b=all.find(x=>x.id===cb.book.id); if(b){ b.entries=L; b.updated=Date.now(); saveBooks(all); } }
+function renderBookPicker(){ const sel=$('#lbBook'); const books=getBooks();
+  sel.innerHTML=`<optgroup label="World lorebooks">${WORLDS.map(w=>`<option value="w:${w.id}">${esc(w.title.split(':')[0])}</option>`).join('')}</optgroup>`+(books.length?`<optgroup label="Your lorebooks">${books.map(b=>`<option value="u:${b.id}">${esc(b.name)}</option>`).join('')}</optgroup>`:'');
+  if(![...sel.options].some(o=>o.value===lbBook)) lbBook=sel.options[0]?sel.options[0].value:''; sel.value=lbBook; }
 function renderLore(){
+  $('#lbBooksRow').style.display=lbTab==='world'?'':'none'; if(lbTab==='world') renderBookPicker();
   $('#lbTabWorld').classList.toggle('on',lbTab==='world'); $('#lbTabMem').classList.toggle('on',lbTab==='mem');
   const inStory=W&&S&&SCREEN==='world';
-  $('#lbScope').textContent=lbTab==='world'?`${loreWorld().title.split(':')[0]} · shared by every story in this world`:(inStory?(S.branch?`This 1-on-1: ${S.branch.title}`:'This world\'s main story'):'');
+  const cbk=curBook(); $('#lbScope').textContent=lbTab==='world'?(!cbk?'':cbk.kind==='world'?`${cbk.world.title.split(':')[0]} · shared by every story in this world`:`Your lorebook · ${bookUseText(cbk.book)}`):(inStory?(S.branch?`This 1-on-1: ${S.branch.title}`:'This world\'s main story'):'');
   const q=$('#lbSearch').value.trim().toLowerCase();
   if(lbTab==='world'){
-    const L=getLore(loreWorld()); const cats=[...new Set(L.map(e=>e.cat||'World'))];
+    if(!cbk){ $('#lbItems').innerHTML='<div class="small">No lorebooks yet. Press + New lorebook to make one.</div>'; $('#lbEdit').innerHTML=''; $('#lbNew').style.display='none'; return; }
+    const L=curEntries(); const cats=[...new Set(L.map(e=>e.cat||'World'))];
     const f=$('#lbFilter'); const prev=f.value; f.innerHTML='<option value="">All</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join(''); f.value=cats.includes(prev)?prev:''; f.style.display='';
     const items=L.map((e,i)=>({e,i})).filter(({e})=>(!f.value||e.cat===f.value)&&(!q||(e.title+' '+(e.keys||[]).join(' ')+' '+e.text).toLowerCase().includes(q)));
     $('#lbNew').textContent='+ New lore entry'; $('#lbNew').style.display='';
@@ -2369,8 +2388,9 @@ function renderLore(){
 }
 function renderLoreEditor(L){
   const e=lbSel==null?null:(lbSel===-1?{title:'',keys:[],text:'',cat:'World',on:true,always:false}:L[lbSel]);
-  if(!e){ $('#lbEdit').innerHTML=`<div class="small" style="line-height:1.6"><b>World lore</b> is background knowledge for this world. An entry is added to the AI's context only when one of its <b>keywords</b> shows up in the recent story, so the world stays consistent without using space on everything at once. Tick <b>Always on</b> for anything that should always apply.<br><br>${L.length} entries · ${L.filter(x=>x.on).length} on. Pick one to read or edit, or add your own.</div><div class="rowbtns"><button id="lbReset" class="ghost">Restore the built-in entries</button></div>`;
-    const r=$('#lbReset'); r.onclick=()=>{ if(confirm('Restore all built-in world lore? Your own entries and edits for this world will be removed.')){ LS.removeItem('livingworld_lore_'+loreWorld().id); renderLore(); } }; return; }
+  if(!e&&curBook()&&curBook().kind==='user'){ renderBookSettings(curBook().book, L); return; }
+  if(!e){ const extra=booksFor(loreWorld()).length; $('#lbEdit').innerHTML=`<div class="small" style="line-height:1.6"><b>World lore</b> is background knowledge for this world. An entry is added to the AI's context only when one of its <b>keywords</b> shows up in the recent story, so the world stays consistent without using space on everything at once. Tick <b>Always on</b> for anything that should always apply.<br><br>${L.length} entries · ${L.filter(x=>x.on).length} on. Pick one to read or edit, or add your own.${(()=>{ const ub=getBooks().filter(b=>(b.worlds||[]).includes(curBook().world.id)||(b.chars||[]).some(k=>k.startsWith(curBook().world.id+':'))); return ub.length?`<br><br>Your lorebooks used here too: ${ub.map(b=>`<b>${esc(b.name)}</b>`).join(', ')}.`:''; })()}</div><div class="rowbtns"><button id="lbReset" class="ghost">Restore the built-in entries</button></div>`;
+    const r=$('#lbReset'); r.onclick=()=>{ if(confirm('Restore all built-in world lore? Your own entries and edits for this world will be removed.')){ LS.removeItem('livingworld_lore_'+curBook().world.id); renderLore(); } }; return; }
   $('#lbEdit').innerHTML=`<label>Title</label><input id="leTitle" value="${esc(e.title)}">
     <label>Keywords (comma-separated; the entry is used when any of these appears in the story)</label><input id="leKeys" value="${esc((e.keys||[]).join(', '))}">
     <div class="grid2"><div><label>Category</label><input id="leCat" value="${esc(e.cat||'World')}"></div><div><label>&nbsp;</label><div style="display:flex;gap:14px;align-items:center;height:36px"><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--text)"><input type="checkbox" id="leOn" style="width:auto" ${e.on?'checked':''}>On</label><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--text)"><input type="checkbox" id="leAlways" style="width:auto" ${e.always?'checked':''}>Always on</label></div></div></div>
@@ -2379,8 +2399,23 @@ function renderLoreEditor(L){
     <div class="rowbtns"><button class="primary" id="leSave">Save</button>${lbSel>=0?'<button class="ghost" id="leDel" style="margin-left:auto;border-color:var(--danger)">Delete</button>':''}</div>`;
   const cnt=()=>$('#leCount').textContent=`${$('#leText').value.length} characters`; cnt(); $('#leText').oninput=cnt;
   $('#leSave').onclick=()=>{ const ne={...e, title:$('#leTitle').value.trim()||'Untitled', keys:$('#leKeys').value.split(',').map(x=>x.trim()).filter(Boolean), cat:$('#leCat').value.trim()||'World', text:$('#leText').value.trim(), on:$('#leOn').checked, always:$('#leAlways').checked};
-    if(lbSel===-1){ ne.id='u'+Date.now().toString(36); L.unshift(ne); lbSel=0; } else L[lbSel]=ne; saveLore(L,loreWorld()); renderLore(); };
-  const d=$('#leDel'); if(d) d.onclick=()=>{ if(!confirm(`Delete "${e.title}"?`)) return; L.splice(lbSel,1); lbSel=null; saveLore(L,loreWorld()); renderLore(); };
+    if(lbSel===-1){ ne.id='u'+Date.now().toString(36); L.unshift(ne); lbSel=0; } else L[lbSel]=ne; saveCurEntries(L); renderLore(); };
+  const d=$('#leDel'); if(d) d.onclick=()=>{ if(!confirm(`Delete "${e.title}"?`)) return; L.splice(lbSel,1); lbSel=null; saveCurEntries(L); renderLore(); };
+}
+function bookUseText(b){ const ws=(b.worlds||[]).map(id=>WORLDS.find(w=>w.id===id)).filter(Boolean).map(w=>w.title.split(':')[0]);
+  const cs=(b.chars||[]).map(k=>{ const [wid,cid]=k.split(':'); const w=WORLDS.find(x=>x.id===wid); const c=w&&w.characters.find(x=>x.id===cid); return c?c.name:null; }).filter(Boolean);
+  const parts=[ws.length?'on in '+ws.join(', '):'', cs.length?'with '+cs.join(', '):''].filter(Boolean); return parts.length?parts.join('; '):'not used anywhere yet'; }
+function renderBookSettings(b, L){
+  $('#lbEdit').innerHTML=`<label>Lorebook name</label><input id="bkName" value="${esc(b.name)}">
+    <label>What it's for (optional)</label><textarea id="bkDesc" rows="2">${esc(b.desc||'')}</textarea>
+    <label>Use in these worlds (every story there can draw on it)</label><div class="bk-attach">${WORLDS.map(w=>`<label><input type="checkbox" data-bkw="${w.id}" ${(b.worlds||[]).includes(w.id)?'checked':''}>${esc(w.title.split(':')[0])}</label>`).join('')||'<span class="small">No worlds yet.</span>'}</div>
+    <label>Or only with these characters (used when they're in the scene or named)</label>${WORLDS.filter(w=>w.characters.length).map(w=>`<div class="bk-world">${esc(w.title.split(':')[0])}</div><div class="bk-attach">${w.characters.map(c=>`<label><input type="checkbox" data-bkc="${w.id}:${c.id}" ${(b.chars||[]).includes(w.id+':'+c.id)?'checked':''}><span style="color:${c.color}">●</span>${esc(c.name)}</label>`).join('')}</div>`).join('')}
+    <div class="small" style="margin-top:10px">${L.length} entr${L.length===1?'y':'ies'} · ${L.filter(x=>x.on).length} on. Entries work like world lore: each one comes into the story when one of its keywords shows up, or always if you tick Always on.</div>
+    <div class="rowbtns"><button class="primary" id="bkSave">Save lorebook</button><button class="ghost" id="bkDup">Duplicate</button><button class="ghost" id="bkDel" style="margin-left:auto;border-color:var(--danger)">Delete lorebook</button></div>`;
+  $('#bkSave').onclick=()=>{ const all=getBooks(); const x=all.find(y=>y.id===b.id); if(!x) return; x.name=$('#bkName').value.trim()||'Untitled lorebook'; x.desc=$('#bkDesc').value.trim();
+    x.worlds=[...document.querySelectorAll('[data-bkw]:checked')].map(i=>i.dataset.bkw); x.chars=[...document.querySelectorAll('[data-bkc]:checked')].map(i=>i.dataset.bkc); x.updated=Date.now(); saveBooks(all); renderLore(); };
+  $('#bkDup').onclick=()=>{ const all=getBooks(); const nb={...JSON.parse(JSON.stringify(b)), id:'bk'+Date.now().toString(36), name:b.name+' (copy)', created:Date.now()}; all.push(nb); saveBooks(all); lbBook='u:'+nb.id; lbSel=null; renderLore(); };
+  $('#bkDel').onclick=()=>{ if(!confirm(`Delete the lorebook "${b.name}" and all ${L.length} of its entries? This can't be undone.`)) return; saveBooks(getBooks().filter(y=>y.id!==b.id)); lbBook=''; lbSel=null; renderLore(); };
 }
 function renderMemEditor(){
   const CS=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
@@ -2405,6 +2440,10 @@ $('#lbTabWorld').onclick=()=>{ lbTab='world'; lbSel=null; $('#lbSearch').value='
 $('#lbTabMem').onclick=()=>{ lbTab='mem'; lbSel=null; $('#lbSearch').value=''; renderLore(); };
 $('#lbSearch').oninput=()=>renderLore(); $('#lbFilter').onchange=()=>{ lbSel=null; renderLore(); };
 $('#lbNew').onclick=()=>{ lbSel=-1; renderLore(); };
+$('#lbBook').onchange=()=>{ lbBook=$('#lbBook').value; lbSel=null; $('#lbSearch').value=''; renderLore(); };
+$('#lbNewBook').onclick=()=>{ const name=prompt('Name your new lorebook (e.g. "Magic system", "My OC\'s family", "Ship rules"):'); if(name===null) return;
+  const all=getBooks(); const b={id:'bk'+Date.now().toString(36), name:name.trim()||'Untitled lorebook', desc:'', entries:[], worlds:(W&&S&&SCREEN==='world')?[W.id]:[], chars:[], created:Date.now()};
+  all.push(b); saveBooks(all); lbBook='u:'+b.id; lbSel=null; lbTab='world'; renderLore(); };
 $('#lbClose').onclick=()=>$('#loreModal').classList.remove('on');
 $('#loreModal').onclick=e=>{ if(e.target.id==='loreModal') $('#loreModal').classList.remove('on'); };
 $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;

@@ -1,13 +1,11 @@
 {
- "version": "0.24.0",
+ "version": "0.25.0",
  "date": "2026-11-18",
  "notes": [
-  "More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world's cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.",
-  "Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.",
-  "Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.",
-  "Fixed: a new story no longer shows a stray \"Show earlier messages\" button."
+  "Lorebooks are now a library. Pick any world's lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.",
+  "Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time."
  ],
  "file": "index.html",
- "sha256": "0ec5d2c102c4dc965c930830414fd57083ff8eecf058b16c91dc479f3d5adea8",
+ "sha256": "183043ddc8025d235d5a7ff7e5949d2b68255921aee051b05a5d615c896e5e61",
  "minShell": "0.5.0"
 }
