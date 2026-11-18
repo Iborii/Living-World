@@ -1,12 +1,13 @@
 {
- "version": "0.7.1",
+ "version": "0.8.0",
  "date": "2026-11-17",
  "notes": [
-  "Personas now require a gender: Male, Female, Transgender man, Transgender woman, Non-binary, or type your own.",
-  "Picking a gender fills in matching pronouns (you can still change them).",
-  "Existing personas without a gender are asked to set one before you play."
+  "Realism is now on by default, all of it: weather, physics, bodies, hygiene, household life, clothes and wet fabric, touch, pacing, menstrual cycles, boredom and schedules apply in every scene.",
+  "Off-screen lives follow the core realism rules too.",
+  "Settings > Realism: Full (default), Standard (core rules plus details when relevant, uses fewer tokens), or Off.",
+  "Your edits to Realism entries in the Lorebook are used, and switching an entry off removes it."
  ],
  "file": "index.html",
- "sha256": "ee1248e38081b8f5dd6426f31d3142c4557c37f76477ec81249edc49e96b67a2",
+ "sha256": "e56f4bc01ae4b39fa414851ee9fceaf123308fa861c89c1645cdb56e0428fce6",
  "minShell": "0.5.0"
 }
