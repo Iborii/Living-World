@@ -1,10 +1,10 @@
 {
- "version": "0.22.4",
+ "version": "0.23.0",
  "date": "2026-11-18",
  "notes": [
-  "Owner build only: Belle and Wise in Yunkui Summit are back to their regular selves. Who they are to you now comes only from the scene, not their character sheets."
+  "New stories now ask how you want to start: use the story's scene, keep the scene but choose who you are and how everyone knows you, or write your whole scene prompt yourself (with your own starting place and opening message if you like)."
  ],
  "file": "index.html",
- "sha256": "f0fedbf799ca319e9c45e48685347db1a53d339adf3b5049e60c326c8c725518",
+ "sha256": "5152dae709c78e0756bff0a3830e12d31767fa84f99e865d643b21bbda565480",
  "minShell": "0.5.0"
 }
