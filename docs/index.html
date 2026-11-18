@@ -492,6 +492,31 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
 .ph-app .ic{background:#1b2134;border-color:#2a3148;border-radius:18px}
 #viewbar b{white-space:nowrap}
 .lb-tabs{flex-wrap:nowrap;overflow-x:auto}.lb-tabs button,.cr-steps button{white-space:nowrap}
+/* ---- motion: the world moves even when nobody's talking ---- */
+#center{position:relative;isolation:isolate}
+#sky,#tint{position:absolute;inset:0;pointer-events:none;z-index:0}
+#sky{width:100%;height:100%;opacity:.55}
+#tint{transition:background 4s linear}
+#viewbar,#feed{position:relative;z-index:1}
+#feed{background:transparent}
+.msg.enter,.beat.enter,.notice.enter{animation:enterUp .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes enterUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.msg.enter .stamp .t{animation:clockIn .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes clockIn{from{opacity:0;letter-spacing:6px}to{opacity:1;letter-spacing:0}}
+#streaming::after{content:"";display:inline-block;width:2px;height:1.05em;background:var(--accent);margin-left:3px;vertical-align:-2px;animation:caret 1s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.card.moved{animation:moved 1.6s ease}
+@keyframes moved{0%{background:rgba(121,199,194,.22)}100%{background:transparent}}
+.card.moved .where{animation:whereIn .6s ease}
+@keyframes whereIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.modal.on .box{animation:boxIn .28s cubic-bezier(.2,.8,.2,1) both}
+@keyframes boxIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+#phoneModal.on .box{animation:phoneIn .38s cubic-bezier(.2,.8,.2,1) both}
+@keyframes phoneIn{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:none}}
+.card.dead{opacity:.55}.card.dead .nm{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
+#clock.tick{animation:tickPulse .5s ease}
+@keyframes tickPulse{50%{color:#fff3d6}}
+@media (prefers-reduced-motion:reduce){#sky{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-width:760px){
   .msg{font-size:16.5px;line-height:1.7}
@@ -676,7 +701,7 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
       <div class="card" id="allCard"><div class="nm"><span class="dot" style="background:var(--accent2)"></span>Everyone (live feed)</div><div class="where">Every off-screen moment as it happens</div></div>
       <div id="charCards"></div>
     </aside>
-    <section id="center">
+    <section id="center"><canvas id="sky" aria-hidden="true"></canvas><div id="tint" aria-hidden="true"></div>
       <div id="viewbar"></div>
       <div id="feed"></div>
       <div id="composer">
@@ -717,6 +742,8 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
   </div>
   <div class="grid2">
     <div><label>Background lives on/off</label><select id="sBgOn"><option value="1">On</option><option value="0">Off (save money)</option></select></div>
+    <div><label>Weather and light effects</label><select id="sFx"><option value="on">On: rain, snow, fog, stars and the light of the hour behind the story</option><option value="off">Off</option></select></div>
+    <div><label>Character deaths</label><select id="sDeaths"><option value="on">On: characters can die if the story leads there</option><option value="off">Off: lethal harm leaves them badly hurt instead</option></select></div>
     <div><label>Daily spending limit (USD, 0 = none)</label><input id="sLimit" type="number" min="0" step="0.05"><div class="hint" id="sSpend"></div></div>
     <div><label>Read replies aloud</label><select id="sVoice"><option value="off">Off (use 🔊 on a message to hear it)</option><option value="auto">Read every new reply aloud</option></select></div>
     <div><label>AI thinking before replying (DeepSeek)</label><select id="sThink"><option value="0">Off: fast replies (recommended)</option><option value="1">On: slower, sometimes smarter</option></select></div>
@@ -976,7 +1003,7 @@ function phoneCfg(w){ w=w||W; if(!w) return {style:'none'}; let o={}; try{ o=JSO
   return {style:isZZZ(w)?'zzz':'standard', msgName:'', feedName:'', accent:'#d9a441', wall:'', hidden:[], ...(w.phone||{}), ...o}; }
 function savePhoneCfg(c,w){ w=w||W; try{ LS.setItem('livingworld_phone_'+w.id, JSON.stringify(c)); return true; }catch(e){ alert('Could not save: storage is full (try a smaller wallpaper).'); return false; } }
 function phonesOn(){ return !!W&&phoneCfg().style!=='none'; }
-function hasPhone(c){ return phonesOn()&&!!c&&c.phone!==false; }
+function hasPhone(c){ return phonesOn()&&!!c&&c.phone!==false&&!isDead(c); }
 function phoneApp(){ const p=phoneCfg(); return p.msgName||(p.style==='zzz'?'Knock Knock':'Messages'); }
 function feedApp(){ const p=phoneCfg(); return p.feedName||(p.style==='zzz'?'Inter-Knot':'Social'); }
 function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads||{}; P.pending=P.pending||{}; P.calls=P.calls||[]; P.invites=P.invites||[]; P.feed=P.feed||[]; P.err=P.err||{}; P.extra=P.extra||{}; P.photos=P.photos||{};
@@ -1191,9 +1218,23 @@ function nextSlot(c, ms){
 }
 const baseLoc = l => (l||'').split(' (')[0].trim().toLowerCase();
 const sameLoc = (a,b) => (a||'').trim().toLowerCase()===(b||'').trim().toLowerCase();
+const BUILTIN_UNDYING={phoenix:true};
+function canDie(c){ if(c.mortal===false) return false; if(c.mortal===true) return true; return !BUILTIN_UNDYING[c.id]; }
+const isDead=c=>!!(S&&S.chars[c.id]&&S.chars[c.id].dead);
+function deathsAllowed(){ return CFG.deaths!=='off'; }
+function killChar(c, how){ const st=S.chars[c.id]; if(!st||st.dead) return;
+  if(!canDie(c)||!deathsAllowed()){ (st.hurt=st.hurt||[]).push({what:(how||'nearly killed').slice(0,80), sev:'serious', t:S.clock}); return; }
+  st.dead={t:S.clock, how:String(how||'').slice(0,200), loc:st.loc}; S.user.companions=S.user.companions.filter(x=>x!==c.id);
+  addMemory({who:W.characters.filter(x=>x.id!==c.id&&!isDead(x)).map(x=>x.id), text:`${c.full} died${how?': '+how:''}`, imp:3, src:'death'}); notice(`† ${c.full} has died.`); }
+function deathBlock(){ const dead=W.characters.filter(isDead), undying=W.characters.filter(c=>!canDie(c)&&!isDead(c));
+  let s=''; if(dead.length) s+=`THE DEAD: ${dead.map(c=>`${c.full} died ${mmdd(S.chars[c.id].dead.t)}${S.chars[c.id].dead.how?' ('+S.chars[c.id].dead.how+')':''}`).join('; ')}. They are gone for good: they never appear, speak, text or act again. Everyone who knew them grieves in their own way for a long time (denial, anger, numbness, guilt, keeping their things, avoiding places that remind them).\n`;
+  if(!deathsAllowed()) s+='DEATHS ARE OFF in this story: anything that would kill a character leaves them badly hurt instead.\n';
+  else { s+='DEATH IS REAL: if the story truly leads there (a fight that goes too far, an accident, an illness, a fatal choice), a character can die. Don\'t rescue them with convenient miracles, and don\'t kill anyone casually or for shock. When a character dies, add [[DIED: Name: how]]. Never kill or decide the death of the user\'s character.\n';
+    if(undying.length) s+=`CANNOT DIE: ${undying.map(c=>c.name).join(', ')}. Anything that would kill them, they survive or come back from in the way their sheet describes, but it still hurts and has consequences.\n`; }
+  return s; }
 function present(){ // characters in the user's scene
   if(S.branch) return W.characters.filter(c=>c.id===S.branch.charId);
-  return W.characters.filter(c=> S.user.companions.includes(c.id) || sameLoc(S.chars[c.id].loc, S.user.loc));
+  return W.characters.filter(c=> !isDead(c) && (S.user.companions.includes(c.id) || sameLoc(S.chars[c.id].loc, S.user.loc)));
 }
 // ======================= needs, moods, boredom and clothes =======================
 const HOUR=60*MIN;
@@ -1258,6 +1299,7 @@ function updateSchedules(){
   if(S.branch){ const st=S.chars[S.branch.charId]; st.loc=S.user.loc; st.act='with you'; return; }
   for(const c of W.characters){
     const st=S.chars[c.id];
+    if(st.dead){ st.loc='—'; st.act='passed away'; continue; }
     if(S.user.companions.includes(c.id)){ st.loc=S.user.loc; st.act='with you'; continue; }
     const sl=slotFor(c,S.clock);
     if(sl && (st.loc!==sl.loc || st.act!==sl.act)){ st.loc=sl.loc; st.act=sl.act; st.changed=true; }
@@ -1444,6 +1486,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[GET: item]] / [[LOSE: item]]  when the user picks up, receives, uses up or loses something they carry
    [[HURT: Name: injury: minor|moderate|serious]]  when a character gets hurt (use "user" only for an injury the user themselves described)
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
+   [[DIED: Name: how]]  when a character dies (see DEATH IS REAL)
    [[BOND: Name / Name +N: reason]]  when something changes how two characters feel about each other (usually 1 to 3)
    Do not write a status line; the app shows it.`;
   s+='\n\n';
@@ -1459,6 +1502,7 @@ LAST WASHED: ${washedLine()}
 ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}SEASON: ${weather(S.clock).season} (people dress, eat and spend their free time for the season and today's weather)\n${(()=>{ const hl=holidayLines(); return hl?`HOLIDAYS:\n${hl}\n`:''; })()}
 `;
   s+=`NEXT EVENTS for people here: ${nextEventsFor(pres)||'none'}.\n\n`;
+  s+=deathBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: ${stateLine(c)}\n${outfitLine(c)}`; }
   if((S.user.bag||[]).length) s+=`THE USER IS CARRYING: ${S.user.bag.join(', ')}\n`;
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
@@ -1468,7 +1512,7 @@ ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in 
   if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
   s+=raceLoreBlock([...pres, persona()], ctx);
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
-  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
+  for(const c of absent){ if(isDead(c)) continue; const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   return subUser(s);
 }
 function snapState(){ return JSON.parse(JSON.stringify({clock:S.clock, user:S.user, trust:Object.fromEntries(Object.entries(S.chars).map(([k,v])=>[k,{trust:v.trust,washed:v.washed,mood:v.mood||null,outfit:v.outfit||null}])), contacts:(S.phone&&S.phone.contacts)||null, rel:S.rel||null})); }
@@ -1526,6 +1570,7 @@ function applyControls(text){
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
+    else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
@@ -1556,13 +1601,13 @@ const queue=[]; let bgRunning=0; const BG_MAX=2; const busyChars=new Set();
 function scheduleBeats(){
   if(CFG.bgOn==='0' || S.paused || S.branch || overBudget()) return;
   const pres=present().map(c=>c.id);
-  const due=W.characters.filter(c=>!pres.includes(c.id) && !busyChars.has(c.id) && !queue.some(g=>g.includes(c.id)) &&
+  const due=W.characters.filter(c=>!isDead(c) && !pres.includes(c.id) && !busyChars.has(c.id) && !queue.some(g=>g.includes(c.id)) &&
     (S.clock-S.chars[c.id].lastBeat>=(+CFG.beat||30)*MIN || (S.chars[c.id].changed && S.clock-S.chars[c.id].lastBeat>=10*MIN)));
   // group by exact location so people in the same place share a moment
   const groups={};
   for(const c of due){ const k=S.chars[c.id].loc.toLowerCase(); (groups[k]=groups[k]||[]).push(c.id); }
   for(const k in groups){
-    const others=W.characters.filter(c=>!pres.includes(c.id)&&!groups[k].includes(c.id)&&sameLoc(S.chars[c.id].loc,S.chars[groups[k][0]].loc)&&!busyChars.has(c.id));
+    const others=W.characters.filter(c=>!isDead(c)&&!pres.includes(c.id)&&!groups[k].includes(c.id)&&sameLoc(S.chars[c.id].loc,S.chars[groups[k][0]].loc)&&!busyChars.has(c.id));
     queue.push([...groups[k], ...others.map(c=>c.id)]);
   }
   pumpQueue();
@@ -1591,15 +1636,15 @@ STATE: ${cs.map(c=>`${c.name}: ${stateLine(c)}${S.chars[c.id].outfit?`; wearing 
 ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
-Optional lines when they apply: ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · HURT: Name: injury: minor|moderate|serious.
+Optional lines when they apply: ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.name).join(', ')||'nobody')+' cannot die)':''}.
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:450});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
-  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|ATE|MOOD|OUTFIT|BUY|HURT):.*$/gim,'').trim();
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|ATE|MOOD|OUTFIT|BUY|HURT|DIED):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -1614,6 +1659,29 @@ async function compressMemory(id){ return;
 
 // ======================= clock =======================
 let lastReal=Date.now();
+// ---- the sky behind the story: rain, snow, fog, stars, and the light of the hour ----
+const SKY={parts:[], kind:'', w:0, h:0, raf:0, flash:0};
+function skyKind(){ if(!W||!S||CFG.fx==='off') return ''; const w=weather(S.clock).desc.toLowerCase(), hr=dt(S.clock).h; const night=hr>=20||hr<6;
+  if(/snow/.test(w)) return 'snow'; if(/thunder/.test(w)) return 'storm'; if(/downpour|steady rain/.test(w)) return 'rain'; if(/drizzle/.test(w)) return 'drizzle'; if(/fog|mist|haze/.test(w)) return 'fog'; return night?'stars':'motes'; }
+function skyTint(){ const hr=dt(S.clock).h+dt(S.clock).mi/60; const t=$('#tint'); if(!t) return;
+  const c=hr<5?'rgba(10,14,40,.35)':hr<7?'rgba(120,70,90,.14)':hr<17?'rgba(0,0,0,0)':hr<19.5?'rgba(170,90,40,.12)':hr<21?'rgba(60,40,90,.18)':'rgba(10,14,40,.3)';
+  t.style.background=`linear-gradient(180deg, ${c}, rgba(0,0,0,0) 70%)`; }
+function skySeed(kind){ const n={rain:140,storm:180,drizzle:60,snow:90,fog:7,stars:90,motes:28}[kind]||0; SKY.parts=Array.from({length:n},()=>({x:Math.random(),y:Math.random(),z:.4+Math.random()*.6,s:Math.random()})); }
+function skyLoop(){ SKY.raf=requestAnimationFrame(skyLoop); const cv=$('#sky'); if(!cv||SCREEN!=='world'||document.hidden) return;
+  const kind=skyKind(); if(kind!==SKY.kind){ SKY.kind=kind; skySeed(kind); }
+  const r=cv.getBoundingClientRect(); const dpr=Math.min(2,devicePixelRatio||1); if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){ cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); }
+  const g=cv.getContext('2d'), W_=cv.width, H_=cv.height; g.clearRect(0,0,W_,H_); if(!kind) return;
+  const sp=S.paused?0.15:1;
+  if(kind==='rain'||kind==='storm'||kind==='drizzle'){ g.strokeStyle='rgba(170,200,230,.35)'; g.lineWidth=1*dpr; g.beginPath();
+    for(const p of SKY.parts){ p.y+=(kind==='drizzle'?.006:.016)*p.z*sp; p.x+=.002*p.z*sp; if(p.y>1){ p.y=-.05; p.x=Math.random(); } if(p.x>1) p.x-=1;
+      const x=p.x*W_, y=p.y*H_, l=(kind==='drizzle'?8:16)*p.z*dpr; g.moveTo(x,y); g.lineTo(x+l*.18,y+l); } g.stroke();
+    if(kind==='storm'){ if(SKY.flash>0){ g.fillStyle=`rgba(220,230,255,${SKY.flash*.18})`; g.fillRect(0,0,W_,H_); SKY.flash-=.04; } else if(Math.random()<.0018*sp) SKY.flash=1; } }
+  else if(kind==='snow'){ g.fillStyle='rgba(240,245,255,.75)'; for(const p of SKY.parts){ p.y+=.0012*p.z*sp; p.x+=Math.sin((p.y+p.s)*12)*.0006*sp; if(p.y>1){ p.y=-.02; p.x=Math.random(); } g.beginPath(); g.arc(p.x*W_,p.y*H_,(1+2*p.z)*dpr,0,7); g.fill(); } }
+  else if(kind==='fog'){ for(const p of SKY.parts){ p.x+=.00012*p.z*sp; if(p.x>1.3) p.x=-.3; const x=p.x*W_, y=(.2+p.y*.7)*H_, rad=(160+220*p.z)*dpr; const gr=g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,'rgba(200,210,225,.10)'); gr.addColorStop(1,'rgba(200,210,225,0)'); g.fillStyle=gr; g.fillRect(x-rad,y-rad,rad*2,rad*2); } }
+  else if(kind==='stars'){ const t=performance.now()/1000; for(const p of SKY.parts){ const a=.25+.45*Math.abs(Math.sin(t*(.3+p.s)+p.x*30)); g.fillStyle=`rgba(255,248,225,${a*p.z})`; g.fillRect(p.x*W_,p.y*H_*.7,1.3*dpr,1.3*dpr); } }
+  else if(kind==='motes'){ for(const p of SKY.parts){ p.y-=.00025*p.z*sp; p.x+=Math.sin(performance.now()/4000+p.s*9)*.0002*sp; if(p.y<-.02){ p.y=1.02; p.x=Math.random(); } g.fillStyle=`rgba(242,200,130,${.10+.12*p.z})`; g.beginPath(); g.arc(p.x*W_,p.y*H_,(1+1.5*p.z)*dpr,0,7); g.fill(); } }
+}
+if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(skyLoop);
 function tick(){
   const now=Date.now(); let dtReal=now-lastReal; lastReal=now;
   if(!W||SCREEN!=='world') return;
@@ -1621,7 +1689,7 @@ function tick(){
     if(CFG.away==='catchup'&&!S.paused){ const gone=Math.min(dtReal,12*3600000); notice(`While you were away, ${gone>=3600000?Math.round(gone/360000)/10+' hours':Math.round(gone/60000)+' minutes'} of real time passed in the world.`); dtReal=gone; }
     else dtReal=1000; }
   if(!S.paused){ S.clock+=dtReal*(+S.speed||1); }
-  updateSchedules(); tickNeeds(); renderClock(); renderCards(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
+  updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
 }
 setInterval(tick,1000);
 setInterval(()=>{ if(W&&SCREEN==='world'){ scheduleBeats(); save(); } }, 5000);
@@ -1668,6 +1736,9 @@ function renderFeed(){
     if(!items.length) h=`<div class="notice"><div class="in">Nothing yet. Off-screen moments appear here as the world's clock runs (every ${CFG.beat} game minutes per character).${CFG.bgOn==='0'?' Background lives are turned off in Settings.':''}</div></div>`;
   }
   f.innerHTML=h; if(atBottom||S.view!=='me'||busyMain) f.scrollTop=f.scrollHeight;
+  { const els=f.querySelectorAll('.msg,.beat,.notice'); const keys=[...els].map(el=>el.dataset.i!==undefined?'m'+el.dataset.i:el.textContent.slice(0,60));
+    if(seenFeed.view===S.view&&seenFeed.world===(W&&W.id)) els.forEach((el,k)=>{ if(!seenFeed.keys.has(keys[k])&&el.id!=='streaming') el.classList.add('enter'); });
+    seenFeed={view:S.view, world:W&&W.id, keys:new Set(keys)}; }
   if(S.view==='me') bindMsgTools(f);
 }
 // ---- read aloud ----
@@ -1681,6 +1752,7 @@ function speakText(text){ if(!('speechSynthesis' in window)) { notice('This devi
     const sp=l.match(/^([A-Z][\w' .-]{0,24}):\s*(.*)$/); const c=sp?charByName(sp[1]):null; const say=(sp?sp[2]:l).replace(/[*_"“”]/g,'').trim(); if(!say) continue;
     const u=new SpeechSynthesisUtterance(say); const v=voiceFor(c); if(v) u.voice=v; u.rate=c?1.02:0.98; u.pitch=c&&genderOf(c)==='Female'?1.08:1; speechSynthesis.speak(u); } }
 try{ speechSynthesis.onvoiceschanged=()=>{}; }catch(e){}
+let seenFeed={view:null,world:null,keys:new Set()};
 let recapHTML='';
 async function makeRecap(){ const last=S.chat.filter(m=>m.role!=='text'&&!m.hidden).slice(-8).map(m=>(m.role==='user'?(persona().name||'You')+': ':'')+m.text.replace(/^\|.*\|\s*/,'')).join('\n\n').slice(-6000);
   try{ const t=await callAI({system:'Write a short "Previously…" recap for a roleplay the reader is coming back to: 3 to 5 sentences, second person for the user ("you"), past tense, specific (names, places, what was left hanging). End with where things stand right now. No preamble.', messages:[{role:'user',content:`${S.summary?'Story so far: '+S.summary+'\n\n':''}Most recent moments:\n${last}`}], model:CFG.bg, maxTokens:260});
@@ -1712,11 +1784,13 @@ function forkTimeline(i){ if(busyMain) return; const name=prompt('Name this new 
   setTimeout(()=>enterWorld(W.id,{branchId:id}),600); }
 function renderStreaming(m){ const el=$('#streaming'); if(el){ el.innerHTML=fmt(m.text); const f=$('#feed'); f.scrollTop=f.scrollHeight; } }
 function renderClock(){ const w=weather(S.clock); $('#clock').textContent=`${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)} ${hhmm(S.clock)}`; $('#weather').textContent=`${w.desc}, ${w.temp}°F`; $('#pauseBtn').textContent=S.paused?'Resume':'Pause'; }
+const lastCardLoc={};
 function renderCards(){
   const pres=present().map(c=>c.id);
   $('#allCard').style.display=S.branch?'none':''; document.querySelectorAll('aside h3')[1].textContent=S.branch?'In this chat':'Watch the world';
   $('#charCards').innerHTML=W.characters.filter(c=>!S.branch||c.id===S.branch.charId).map(c=>{ const st=S.chars[c.id]; const withU=pres.includes(c.id);
-    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div><div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>${(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
+    const mv=lastCardLoc[c.id]!==undefined&&lastCardLoc[c.id]!==st.loc; lastCardLoc[c.id]=st.loc;
+    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div>${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
   document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=()=>{ S.view=el.dataset.id; render(); save(); closeSide(); });
   $('#myStoryCard').classList.toggle('sel',S.view==='me'); $('#allCard').classList.toggle('sel',S.view==='all');
   $('#myWhere').textContent=S.user.loc; $('#myWith').textContent=pres.length?'With: '+pres.map(i=>charById(i).name).join(', '):'Alone';
@@ -1773,7 +1847,7 @@ function openSettings(){
   refreshWipeToggle();
   $('#verLine').textContent=`Version ${APP_VERSION}`+(window.lwUpdate?'':WEBAPP?' (phone/web app)':' (browser version)');
   $('#resetBtn').style.display=W?'':'none'; $('#exportBtn').style.display=W?'':'none'; $('#importBtn').style.display=W?'':'none';
-  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
+  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
   $('#baseRow').style.display=CFG.provider==='openai'?'':'none';
   $('#costNote').textContent='Tip: the story model writes your scenes (use a strong one). The background model writes everyone else\'s lives many times an hour, so a small cheap model keeps costs down. Raise "update every" to save more.';
   $('#settingsModal').classList.add('on');
@@ -1782,7 +1856,7 @@ $('#settingsBtn').onclick=openSettings;
 $('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
-$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||1600,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
+$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||1600,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
 $('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`livingworld-${W.id}-${isoDate(S.clock)}.json`; a.click(); };
 $('#importBtn').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); if(j.world!==W.id) throw new Error('That save is for a different world.'); S=j; save(); render(); notice('Save loaded.'); }catch(err){ notice('Could not load: '+err.message,true); } };
@@ -1899,8 +1973,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.20.0';
+const APP_VERSION = '0.21.0';
 const CHANGELOG = [
+ {v:'0.21.0', d:'2026-11-18', notes:['Characters can die now. If the story truly leads there (a fight gone too far, an accident, an illness), a character can die and stays gone; everyone who knew them grieves. Off-screen scenes can end that way too.','Each character has a "Can die" option in the creator (and when editing built-ins). Characters who can\'t die, like Phoenix, survive or come back the way their sheet says, but still get hurt.','Settings has a switch to turn deaths off for everything. Events → Timeline lists who has died, with Undo death.','More alive on screen: rain, snow, fog, stars or drifting dust behind the story to match the weather, light that shifts with the hour, new messages and the clock ribbon slide in, the text cursor blinks while a reply is written, and a character\'s card flashes when they move somewhere new. Turn the effects off in Settings; they also stay off if your device asks for less motion.']},
  {v:'0.20.0', d:'2026-11-18', notes:['New look: a deep dusk-blue theme with lantern gold and tide teal, new fonts made for reading long stories, and calmer menus and windows.','Every reply opens with a big clock ribbon showing the time, place, date and weather, so you always know where the world is.','Your turns now read like notes in the margin instead of chat bubbles, and off-screen scenes have their own teal edge.','Clearer keyboard focus, and animations calm down if your device asks for reduced motion.']},
  {v:'0.19.1', d:'2026-11-18', notes:['Import from Clank World: in + Create, paste a bot\'s character prompt, dialogue example, scene, initial message and lorebook entries. The app works out their details and schedule, builds their world from the scene (start time and place from the time stamp), adds the lorebook, and lets you check everything before saving.']},
  {v:'0.19.0', d:'2026-11-18', notes:['Seasons: weather now follows the month (snow in winter, heat and thunderstorms in summer), and the narrator knows the season. New worlds can pick a climate.','Holidays: New Year, Valentine\'s, Halloween, Christmas and more come around on their own, and people talk about them days ahead.','Injuries: when someone gets hurt it\'s tracked like a real injury (minor, moderate or serious), shows on their card, and heals over days or weeks.','Spending: Settings shows about how much DeepSeek has cost today and this month, and you can set a daily limit (off-screen lives pause when you hit it).','Read aloud: 🔊 on any reply, or turn on reading every reply aloud in Settings. Characters get their own voices from your device.']},
@@ -2332,9 +2407,11 @@ function renderEvents(){
       ...S.memories.filter(m=>m.imp>=3||(m.imp>=2&&/invite|phone|call|met|swapped|fight|argu|kiss|confess|promise|betray|hurt|gift/i.test(m.text))).map(m=>({t:m.t, title:m.text.slice(0,120), text:'', who:m.who.map(id=>charById(id)?.name).filter(Boolean).join(', ')})),
       ...Object.entries(S.rel||{}).flatMap(([k,r])=>r.log.filter(x=>Math.abs(x.d)>=3).map(x=>({t:x.t, title:`${k.split('|').map(id=>charById(id)?.name).join(' & ')}: ${x.d>0?'+':''}${x.d}`, text:x.why, who:'Relationship'})))]
       .sort((a,b)=>b.t-a.t).slice(0,150);
-    B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">The big moments of this story, newest first: what you pinned (📍 on any message), important memories, and big relationship changes. ${S.summary?'<details style="margin-top:8px"><summary>Story so far (summary)</summary><div style="margin-top:6px;white-space:pre-wrap">'+esc(S.summary)+'</div></details>':''}</div>`+
+    const lost=W.characters.filter(isDead);
+    B.innerHTML=(lost.length?`<div class="ev-card"><h4>In memory</h4>${lost.map(c=>`<div class="ev-row" style="grid-template-columns:1fr auto"><span>† <b>${esc(c.full)}</b> · died ${wdName(S.chars[c.id].dead.t).slice(0,3)} ${mmdd(S.chars[c.id].dead.t)}${S.chars[c.id].dead.how?' · '+esc(S.chars[c.id].dead.how):''}</span><button class="ghost" data-revive="${c.id}">Undo death</button></div>`).join('')}</div>`:'')+`<div class="small" style="margin-bottom:10px;line-height:1.5">The big moments of this story, newest first: what you pinned (📍 on any message), important memories, and big relationship changes. ${S.summary?'<details style="margin-top:8px"><summary>Story so far (summary)</summary><div style="margin-top:6px;white-space:pre-wrap">'+esc(S.summary)+'</div></details>':''}</div>`+
       (items.length?items.map(x=>`<div class="tl-item"><div class="tw">${wdName(x.t).slice(0,3)} ${mmdd(x.t)}<br>${hhmm(x.t)}</div><div class="tt"><b>${esc(x.title)}</b>${x.text?`<span class="small">${esc(x.text)}</span><br>`:''}<span class="small">${esc(x.who)}</span></div></div>`).join(''):'<div class="small">Nothing yet. Pin a message with 📍 to add it.</div>');
   }
+  B.querySelectorAll('[data-revive]').forEach(x=>x.onclick=()=>{ const c=charById(x.dataset.revive); if(!confirm(`Undo ${c.full}'s death? They'll be back in the story as if it never happened (memories of it stay unless you rewind).`)) return; delete S.chars[c.id].dead; updateSchedules(); save(); renderEvents(); renderCards(); });
   if(evTab==='wear'){
     const kinds=k=>OUTFIT_KINDS.map(x=>`<option ${x===k?'selected':''}>${x}</option>`).join('');
     B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">What everyone owns and has on. Characters change by themselves when their day changes (work, sleep, the gym), and the story can buy, return and swap clothes. You can edit any of it here.</div>
@@ -2392,13 +2469,13 @@ $('#evBtn').onclick=openEvents;
 // ======================= character creator =======================
 const DAYS=['M','T','W','T','F','S','S'];
 let CR=null, crStep=0;
-function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', phoneImg:'', gender:'', race:'', animal:'', construct:false, phone:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
+function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', phoneImg:'', gender:'', race:'', animal:'', construct:false, phone:true, mortal:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
 function openCreator(editKey){
   if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id);
     if(!c){ const bw=WORLDS.find(x=>x.id===w&&!x.custom); const bc=bw&&bw.characters.find(x=>x.id===id); if(!bc) return;
       const r=BUILTIN_RACE[bc.id]&&!bc.edited?BUILTIN_RACE[bc.id]:{race:bc.race||'',animal:bc.animal||''}; const bcy=BUILTIN_CYCLES[bc.id];
-      CR={...JSON.parse(JSON.stringify(bc)), world:w, gender:bc.gender||BUILTIN_GENDER[bc.id]||'', race:(!bc.edited&&r.animal)?`${r.race} (${r.animal})`:r.race, animal:bc.edited?(r.animal||''):'', raceId:bc.raceId||'', phone:bc.phone!==false, minor:!!bc.minor, age:bc.age||'', img:bc.img||'', phoneImg:bc.phoneImg||'',
+      CR={...JSON.parse(JSON.stringify(bc)), world:w, mortal:canDie(bc), gender:bc.gender||BUILTIN_GENDER[bc.id]||'', race:(!bc.edited&&r.animal)?`${r.race} (${r.animal})`:r.race, animal:bc.edited?(r.animal||''):'', raceId:bc.raceId||'', phone:bc.phone!==false, minor:!!bc.minor, age:bc.age||'', img:bc.img||'', phoneImg:bc.phoneImg||'',
         cycle:bc.cycle||(bcy?{on:true,len:bcy.len,days:bcy.days}:{on:false,len:28,days:5}), _builtin:true, _editing:true, _newWorld:blankChar()._newWorld};
       crStep=0; $('#crTitle').textContent=`Edit ${CR.full||CR.name}`; $('#crDelete').style.display=bc.edited?'':'none'; $('#crDelete').textContent='Reset to original';
       $('#createModal').classList.add('on'); renderCreator(); return; } CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
@@ -2409,7 +2486,7 @@ function openCreator(editKey){
 }
 function crCollect(){ // read the visible step's fields into CR
   const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined; };
-  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.phone=$('#crPhone').checked; CR.gender=v('crGender')==='__other'?(v('crGenderOther')||'').trim():v('crGender'); { const r=raceSelectRead($('#crRace'),$('#crRaceX')); CR.race=r.race; CR.raceId=r.raceId; CR.animal=r.animal; const d=raceById(r.raceId); CR.construct=d?d.cycle==='none':/construct|robot|android/i.test(CR.race); } CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
+  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.phone=$('#crPhone').checked; CR.mortal=$('#crMortal').checked; CR.gender=v('crGender')==='__other'?(v('crGenderOther')||'').trim():v('crGender'); { const r=raceSelectRead($('#crRace'),$('#crRaceX')); CR.race=r.race; CR.raceId=r.raceId; CR.animal=r.animal; const d=raceById(r.raceId); CR.construct=d?d.cycle==='none':/construct|robot|android/i.test(CR.race); } CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); CR.wardrobe=(v('crWard')||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const m=l.match(/^(.+?)\s*\((\w+)\)\s*:?\s*(.*)$/); return m?{name:m[1].trim().slice(0,60), kind:OUTFIT_KINDS.includes(m[2].toLowerCase())?m[2].toLowerCase():'casual', desc:m[3].trim().slice(0,300)}:{name:l.split(':')[0].trim().slice(0,60), kind:'casual', desc:(l.split(':').slice(1).join(':')||'').trim()}; }); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
@@ -2433,7 +2510,8 @@ function renderCreator(){
         <div><label>Race <span style="color:var(--danger)">*</span></label>${raceSelectHTML('crRace')}<div class="hint"><a href="#" id="crNewRace">+ Make a new race</a></div><label id="crRaceXL" style="margin-top:4px"></label><input id="crRaceX" style="display:none"></div></div>
         <div class="grid2"><div><label>Age</label><input id="crAge" value="${esc(c.age||'')}" placeholder="e.g. 24"></div>
         <div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crMinor" style="width:auto" ${c.minor?'checked':''}>This character is under 18</label></div></div>
-        <label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crPhone" style="width:auto" ${c.phone!==false?'checked':''}>Has a phone (can text, call and post)</label>
+        <label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crMortal" style="width:auto" ${canDie(c)?'checked':''}>Can die in the story (untick for characters who can't die or always come back)</label>
+        <label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crPhone" style="width:auto" ${c.phone!==false?'checked':''}>Has a phone (can text, call and post)</label>
         <div id="crCycBox"><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crCyc" style="width:auto" ${c.cycle&&c.cycle.on?'checked':''}>Has a menstrual cycle</label>
         <div style="display:flex;gap:10px;align-items:center;margin-top:4px"><span class="small">Cycle length</span><input id="crCycLen" type="number" min="21" max="40" value="${(c.cycle||{}).len||28}" style="width:70px;padding:5px"><span class="small">days · period lasts</span><input id="crCycDays" type="number" min="2" max="8" value="${(c.cycle||{}).days||5}" style="width:60px;padding:5px"><span class="small">days</span></div>
         <div class="hint">The cycle runs on the story clock and shows in the chat's 📅 Events panel.</div></div>
@@ -2524,7 +2602,7 @@ $('#crSave').onclick=()=>{
   if(!c.sheet.trim()){ crStep=1; renderCreator(); return msg('Write their character sheet.'); }
   if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
   if(c._builtin){ const sheet=(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,'');
-    const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, wardrobe:c.wardrobe||[], schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
+    const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', mortal:!!c.mortal, gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, wardrobe:c.wardrobe||[], schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
     if(!setOverrides(OV)) return; rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); if(SCREEN==='home') renderHome(); setTimeout(()=>openChar(c.world+':'+c.id),200); return; }
   const C=getCustom();
   let wid=c.world;
@@ -2537,7 +2615,7 @@ $('#crSave').onclick=()=>{
   }
   const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
-    brief:c.brief, wardrobe:c.wardrobe||[], phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+    brief:c.brief, wardrobe:c.wardrobe||[], phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, mortal:c.mortal!==false, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));

@@ -1,13 +1,13 @@
 {
- "version": "0.20.0",
+ "version": "0.21.0",
  "date": "2026-11-18",
  "notes": [
-  "New look: a deep dusk-blue theme with lantern gold and tide teal, new fonts made for reading long stories, and calmer menus and windows.",
-  "Every reply opens with a big clock ribbon showing the time, place, date and weather, so you always know where the world is.",
-  "Your turns now read like notes in the margin instead of chat bubbles, and off-screen scenes have their own teal edge.",
-  "Clearer keyboard focus, and animations calm down if your device asks for reduced motion."
+  "Characters can die now. If the story truly leads there (a fight gone too far, an accident, an illness), a character can die and stays gone; everyone who knew them grieves. Off-screen scenes can end that way too.",
+  "Each character has a \"Can die\" option in the creator (and when editing built-ins). Characters who can't die, like Phoenix, survive or come back the way their sheet says, but still get hurt.",
+  "Settings has a switch to turn deaths off for everything. Events \u2192 Timeline lists who has died, with Undo death.",
+  "More alive on screen: rain, snow, fog, stars or drifting dust behind the story to match the weather, light that shifts with the hour, new messages and the clock ribbon slide in, the text cursor blinks while a reply is written, and a character's card flashes when they move somewhere new. Turn the effects off in Settings; they also stay off if your device asks for less motion."
  ],
  "file": "index.html",
- "sha256": "a9bebd7ce26feb4b2929b65ebc892948a99900b5d68ad7ea73a740d7ede39e40",
+ "sha256": "0500c3e8f57c67f4bd8896d0bde96116f17c28bf689e984c29f7dc85a99192de",
  "minShell": "0.5.0"
 }
