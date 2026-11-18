@@ -734,9 +734,13 @@ const WORLDS = window.WORLDS;
 const CUSTOM_KEY='livingworld_custom';
 function getCustom(){ try{ return JSON.parse(LS.getItem(CUSTOM_KEY)||'null')||{worlds:[],chars:[]}; }catch(e){ return {worlds:[],chars:[]}; } }
 function setCustom(c){ try{ LS.setItem(CUSTOM_KEY, JSON.stringify(c)); return true; }catch(e){ alert('Could not save: your app storage is full (pictures take space; try a smaller picture).'); return false; } }
+const OVR_KEY='livingworld_overrides';
+function getOverrides(){ try{ return JSON.parse(LS.getItem(OVR_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function setOverrides(o){ try{ LS.setItem(OVR_KEY,JSON.stringify(o)); return true; }catch(e){ alert('Could not save: storage is full.'); return false; } }
 function rebuildWorlds(){
   const C=getCustom(); WORLDS.length=0;
   for(const b of BUILTIN) WORLDS.push(JSON.parse(JSON.stringify(b)));
+  const OV=getOverrides(); for(const w of WORLDS) for(const c of w.characters){ const o=OV[w.id+':'+c.id]; if(o) Object.assign(c,o,{edited:true}); }
   for(const w of C.worlds) WORLDS.push({...w, characters:[], custom:true, realismCore:BASE.realismCore, rules:BASE.rules.replace('{{SETTING}}', w.setting||'the world described in the scenario')+(w.extraRules?'\n\nWORLD RULES\n'+w.extraRules:''), lore:[]});
   for(const c of C.chars){ const w=WORLDS.find(x=>x.id===c.world); if(w) w.characters.push({...c, custom:true}); }
   for(const w of WORLDS){ const locs=new Set(w.locations||[]); for(const c of w.characters) for(const s of c.schedule||[]) if(s.loc) locs.add(s.loc); if(w.opening&&w.opening.userLoc) locs.add(w.opening.userLoc); w.locations=[...locs].sort(); }
@@ -810,7 +814,7 @@ function load(){
   if(!S||S.world!==W.id) S=newState();
   for(const c of W.characters) if(!S.chars[c.id]) S.chars[c.id]={loc:c.loc,act:c.act,lastBeat:S.clock,log:[],washed:S.clock,trust:0};
   S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel();
-  for(const c of W.characters){ const st=S.chars[c.id]; if(!st.cycle || (st.cycle.custom!==true && c.custom && c.cycle && !!c.cycle.on!==st.cycle.on)) st.cycle=defaultCycle(c); }
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st.cycle || (st.cycle.custom!==true && (c.custom||c.edited) && c.cycle && (!!c.cycle.on!==st.cycle.on || (c.cycle.on && (+c.cycle.len!==st.cycle.len || +c.cycle.days!==st.cycle.days))))) st.cycle=defaultCycle(c); }
   // older saves kept one memory string per character: turn each into a memory entry
   for(const c of W.characters){ const st=S.chars[c.id]; if(st.memory){ addMemory({who:[c.id], text:st.memory, t:S.clock, src:'old', imp:2}); delete st.memory; } }
   if(!S.personaId || !PS.list.find(p=>p.id===S.personaId)) S.personaId = PS.defaultId;
@@ -988,7 +992,7 @@ function allEvents(){ return [...((S&&S.events)||[]), ...(W.events||[])]; } // p
 const DAYMS=1440*MIN;
 // ---- menstrual cycles ----
 const BUILTIN_RACE={phoenix:{race:'Human'}, dialyn:{race:'Human'}, zhao:{race:'Thiren',animal:'rabbit'}, promeia:{race:'Human'}, banyue:{race:'Intelligent Construct',animal:'stone lion, four-armed'}};
-function raceOf(c){ const b=BUILTIN_RACE[c.id]&&!c.custom&&W&&W.id==='krampus'?BUILTIN_RACE[c.id]:{race:(raceDefOf(c)||{}).name||c.race||'',animal:c.animal||''}; return b; }
+function raceOf(c){ const b=BUILTIN_RACE[c.id]&&!c.custom&&!c.edited&&W&&W.id==='krampus'?BUILTIN_RACE[c.id]:{race:(raceDefOf(c)||{}).name||c.race||'',animal:c.animal||''}; return b; }
 function raceText(c){ const r=raceOf(c); if(!r.race) return ''; return r.race+(r.animal?` (${r.animal})`:''); }
 function isConstruct(c){ const d=raceDefOf(c); if(d) return d.cycle==='none'; return /construct|robot|android/i.test(raceOf(c).race)||!!c.construct; }
 function idLine(c){ const g=genderOf(c), r=raceText(c); return (g||r)?[g&&'Gender: '+g, r&&'Race: '+r].filter(Boolean).join(' · ')+'\n':''; }
@@ -996,11 +1000,11 @@ const BUILTIN_GENDER={phoenix:'Female', dialyn:'Female', zhao:'Female', promeia:
 const NOCYCLE={banyue:'an Intelligent Construct'};
 function genderOf(c){ return c.gender||BUILTIN_GENDER[c.id]||''; }
 // who can have a cycle: anyone with a uterus could; trans men and non-binary people may or may not, so it's up to you
-function canCycle(c){ if(NOCYCLE[c.id]||isConstruct(c)) return false; const g=genderOf(c); return g!=='Male' && g!=='Transgender woman'; }
+function canCycle(c){ if((NOCYCLE[c.id]&&!c.edited)||isConstruct(c)) return false; const g=genderOf(c); return g!=='Male' && g!=='Transgender woman'; }
 const BUILTIN_CYCLES={phoenix:{len:28,days:5}, dialyn:{len:30,days:5}, zhao:{len:27,days:4}, promeia:{len:29,days:6}};
 function hashStr(s){ let x=0; for(const ch of s) x=(x*31+ch.charCodeAt(0))>>>0; return x; }
 function defaultCycle(c){
-  const d=c.cycle&&c.cycle.on?{len:+c.cycle.len||28, days:+c.cycle.days||5}:(!c.custom&&BUILTIN_CYCLES[c.id]);
+  const d=c.cycle?(c.cycle.on?{len:+c.cycle.len||28, days:+c.cycle.days||5}:null):(!c.custom&&BUILTIN_CYCLES[c.id]);
   if(!d||!canCycle(c)) return {on:false, len:28, days:5, start:0};
   const base=parseStart(W.start.date,'00:00'); return {on:true, len:d.len, days:d.days, start:base-(hashStr(W.id+c.id)%d.len)*DAYMS};
 }
@@ -1495,7 +1499,7 @@ function avatarBg(col,img){ return img?`url(${img}) center/cover no-repeat`:`rad
 function charCardHTML(c, i, opts={}){
   const st=getStats(); const m=myMsgs(c,st);
   return `<div class="ccard" style="--cc:${c.color}" data-key="${c.key}">
-    <div class="art" style="background:${avatarBg(c.color,c.img)}">${c.img?'':`<span class="init">${esc(c.name[0])}</span>`}${c.custom?'<span class="mine">yours</span>':''}${opts.rank?`<span class="rank">#${i+1}</span>`:''}${opts.why?`<span class="why">${esc(opts.why)}</span>`:''}</div>
+    <div class="art" style="background:${avatarBg(c.color,c.img)}">${c.img?'':`<span class="init">${esc(c.name[0])}</span>`}${c.custom?'<span class="mine">yours</span>':c.edited?'<span class="mine">edited</span>':''}${opts.rank?`<span class="rank">#${i+1}</span>`:''}${opts.why?`<span class="why">${esc(opts.why)}</span>`:''}</div>
     <div class="body"><div class="nm">${esc(c.full)}</div><div class="wd">${esc(c.world.title.split(':')[0])}</div><div class="tl">${esc(c.tagline)}</div>
     <div class="chips">${c.tags.filter(t=>t!=='Zenless Zone Zero').slice(0,3).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
     <div class="stat"><span>${m?`💬 ${m} with you`:'New'}</span><span>${c.minor?'Teen · no romance':''}</span></div></div></div>`;
@@ -1551,7 +1555,7 @@ let cmKey=null;
 function openChar(key){
   const c=allChars().find(x=>x.key===key); if(!c) return; cmKey=key; const st=getStats(); const s=worldProgress(c.world);
   $('#cmAv').style.background=avatarBg(c.color,c.img); $('#cmAv').textContent=c.img?'':c.name[0];
-  $('#cmEdit').style.display=c.custom?'':'none'; $('#cmExport').style.display=c.custom?'':'none';
+  $('#cmEdit').style.display=''; $('#cmExport').style.display=c.custom?'':'none';
   document.querySelector('#charModal .cm-top').style.setProperty('--cbg',`linear-gradient(120deg,${c.color}44,transparent 70%)`);
   $('#cmWorld').textContent=c.world.title.split(':')[0]; $('#cmName').textContent=c.full; $('#cmTag').textContent=c.tagline;
   $('#cmChips').innerHTML=c.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
@@ -1575,8 +1579,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.16.1';
 const CHANGELOG = [
+ {v:'0.16.1', d:'2026-11-17', notes:['You can now edit the built-in characters too (their page → Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an "edited" tag, and Reset to original undoes your changes.']},
  {v:'0.16.0', d:'2026-11-17', notes:['You don\'t start with everyone\'s number anymore. Swap numbers with someone while you\'re with them (Messages → Swap numbers), or they can give you theirs in the story. Only contacts can text, call or invite you, and only they show on the Map.','Phone profile pictures: set one for each character in the creator, and one for yourself in Personas. You can also tap any contact\'s picture in a chat to give them your own contact photo.','New worlds: choose whether you already have each other\'s numbers.']},
  {v:'0.15.1', d:'2026-11-17', notes:['Signing in is now required to use the app. New here? Create a free account on the sign-in screen.','Forgot your password? There\'s a link on the sign-in screen to reset it by email.','Signing out takes you back to the sign-in screen.']},
  {v:'0.15.0', d:'2026-11-17', notes:['Accounts: sign in (main menu or Settings) and your API keys, settings, personas, characters, worlds, races and stories are saved to your account. Sign in on your phone or another PC and everything is there.','Everything synced is encrypted with your password before it leaves your device, so nobody else (not even the server owner) can read your keys or stories.','Your Studio account and your sync account are the same account.']},
@@ -2010,10 +2015,16 @@ let CR=null, crStep=0;
 function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', phoneImg:'', gender:'', race:'', animal:'', construct:false, phone:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
 function openCreator(editKey){
-  if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id); if(!c) return; CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
+  if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id);
+    if(!c){ const bw=WORLDS.find(x=>x.id===w&&!x.custom); const bc=bw&&bw.characters.find(x=>x.id===id); if(!bc) return;
+      const r=BUILTIN_RACE[bc.id]&&!bc.edited?BUILTIN_RACE[bc.id]:{race:bc.race||'',animal:bc.animal||''}; const bcy=BUILTIN_CYCLES[bc.id];
+      CR={...JSON.parse(JSON.stringify(bc)), world:w, gender:bc.gender||BUILTIN_GENDER[bc.id]||'', race:(!bc.edited&&r.animal)?`${r.race} (${r.animal})`:r.race, animal:bc.edited?(r.animal||''):'', raceId:bc.raceId||'', phone:bc.phone!==false, minor:!!bc.minor, age:bc.age||'', img:bc.img||'', phoneImg:bc.phoneImg||'',
+        cycle:bc.cycle||(bcy?{on:true,len:bcy.len,days:bcy.days}:{on:false,len:28,days:5}), _builtin:true, _editing:true, _newWorld:blankChar()._newWorld};
+      crStep=0; $('#crTitle').textContent=`Edit ${CR.full||CR.name}`; $('#crDelete').style.display=bc.edited?'':'none'; $('#crDelete').textContent='Reset to original';
+      $('#createModal').classList.add('on'); renderCreator(); return; } CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
     const cw=C.worlds.find(x=>x.id===c.world); CR._newWorld=cw?{title:cw.title,setting:cw.setting,blurb:cw.blurb,scenario:cw.scenario,opening:cw.opening.text,date:cw.start.date,time:cw.start.time,userLoc:cw.opening.userLoc,withUser:(cw.opening.companions||[]).includes(c.id),extraRules:cw.extraRules||'',phoneStyle:(cw.phone||{}).style||'standard'}:blankChar()._newWorld; CR._worldIsMine=!!cw; }
   else { CR=blankChar(); }
-  crStep=0; $('#crTitle').textContent=CR._editing?`Edit ${CR.full||CR.name}`:'Create a character'; $('#crDelete').style.display=CR._editing?'':'none';
+  crStep=0; $('#crTitle').textContent=CR._editing?`Edit ${CR.full||CR.name}`:'Create a character'; $('#crDelete').style.display=CR._editing?'':'none'; $('#crDelete').textContent='Delete character';
   $('#createModal').classList.add('on'); renderCreator();
 }
 function crCollect(){ // read the visible step's fields into CR
@@ -2022,7 +2033,7 @@ function crCollect(){ // read the visible step's fields into CR
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
-  if(crStep===3){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
+  if(crStep===3&&!CR._builtin){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
 }
 function renderCreator(){
   document.querySelectorAll('.cr-steps button').forEach(b=>b.classList.toggle('on',+b.dataset.step===crStep));
@@ -2090,7 +2101,8 @@ function renderCreator(){
         CR.schedule=arr.map(r=>({days:(r.days||[]).map(Number).filter(d=>d>=1&&d<=7), start:r.start||'00:00', end:r.end||'23:59', loc:r.loc||'', act:r.act||''})); renderCreator(); $('#crMsg').textContent='Suggested. Check it over and adjust anything.';
       }catch(e){ $('#crMsg').textContent=e.message; $('#crAiSched').disabled=false; $('#crAiSched').textContent='✨ Suggest a schedule from the sheet'; } };
   }
-  if(crStep===3){
+  if(crStep===3&&CR._builtin){ const w=WORLDS.find(x=>x.id===CR.world); B.innerHTML=`<div class="small" style="line-height:1.6">${esc(CR.full||CR.name)} is one of the built-in characters of <b>${esc((w?.title||'').split(':')[0])}</b>, so they stay in that world.<br>Your changes are saved on top of the original, and you can go back to the original any time with <b>Reset to original</b>.</div>`; }
+  if(crStep===3&&!CR._builtin){
     const nw=c._newWorld; const isNew=c.world==='__new';
     const opts=WORLDS.filter(w=>!w.custom||c._worldIsMine||true).map(w=>`<option value="${w.id}" ${w.id===c.world?'selected':''}>${esc(w.title.split(':')[0])}${w.custom?' (yours)':''}</option>`).join('');
     B.innerHTML=`<label>Which world do they live in?</label><select id="crWorld">${opts}<option value="__new" ${isNew?'selected':''}>+ A new world just for them</option></select>
@@ -2123,6 +2135,9 @@ $('#crSave').onclick=()=>{
   if(!c.race){ crStep=0; renderCreator(); return msg('Choose their race.'); }
   if(!c.sheet.trim()){ crStep=1; renderCreator(); return msg('Write their character sheet.'); }
   if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
+  if(c._builtin){ const sheet=(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,'');
+    const OV=getOverrides(); OV[c.world+':'+c.id]={name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', phoneImg:c.phoneImg||'', gender:c.gender, race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, phone:c.phone!==false, minor:!!c.minor, age:c.age||'', cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, sheet, brief:c.brief, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||'', act:c.act||'going about their day'};
+    if(!setOverrides(OV)) return; rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); if(SCREEN==='home') renderHome(); setTimeout(()=>openChar(c.world+':'+c.id),200); return; }
   const C=getCustom();
   let wid=c.world;
   if(wid==='__new'){ const nw=c._newWorld; if(!nw.title){ crStep=3; renderCreator(); return msg('Give the new world a title.'); }
@@ -2142,7 +2157,7 @@ $('#crSave').onclick=()=>{
   rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome();
   setTimeout(()=>openChar(wid+':'+c.id),200);
 };
-$('#crDelete').onclick=()=>{ const c=CR; if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
+$('#crDelete').onclick=()=>{ const c=CR; if(c._builtin){ if(!confirm(`Put ${c.full||c.name} back to how they originally were? Your edits to them are removed.`)) return; const OV=getOverrides(); delete OV[c.world+':'+c.id]; setOverrides(OV); rebuildWorlds(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); if(SCREEN==='home') renderHome(); return; } if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
   const C=getCustom(); const w=C.chars.find(x=>x.id===c.id)?.world; C.chars=C.chars.filter(x=>x.id!==c.id); C.worlds=C.worlds.filter(x=>C.chars.some(y=>y.world===x.id));
   if(w&&!C.worlds.some(x=>x.id===w)) LS.removeItem('livingworld_save_'+w);
   setCustom(C); rebuildWorlds(); $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); renderHome(); };

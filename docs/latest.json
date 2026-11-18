@@ -1,12 +1,10 @@
 {
- "version": "0.16.0",
+ "version": "0.16.1",
  "date": "2026-11-17",
  "notes": [
-  "You don't start with everyone's number anymore. Swap numbers with someone while you're with them (Messages \u2192 Swap numbers), or they can give you theirs in the story. Only contacts can text, call or invite you, and only they show on the Map.",
-  "Phone profile pictures: set one for each character in the creator, and one for yourself in Personas. You can also tap any contact's picture in a chat to give them your own contact photo.",
-  "New worlds: choose whether you already have each other's numbers."
+  "You can now edit the built-in characters too (their page \u2192 Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an \"edited\" tag, and Reset to original undoes your changes."
  ],
  "file": "index.html",
- "sha256": "a27008231c745ce0398d4e084b1e5282f4a595763398e93a57564f5dda03bee9",
+ "sha256": "04cc3299b1c524a98e2bcee78807d714b763d2c2b163b8657676c6aadd223e1b",
  "minShell": "0.5.0"
 }
