@@ -131,6 +131,23 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .wcard .bot{padding:12px 18px;display:flex;gap:8px;align-items:center}
 .wcard .bot .prog{margin-right:auto;font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:14px}
+/* creator */
+#createModal .box{width:min(1000px,96vw);height:min(820px,94vh);padding:0;display:flex;flex-direction:column}
+.cr-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.cr-steps{display:flex;gap:6px;flex-wrap:wrap}
+.cr-steps button.on{border-color:var(--accent);color:var(--accent)}
+.cr-body{flex:1;overflow:auto;padding:16px 22px}
+.cr-foot{display:flex;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--line)}
+.cr-av{width:120px;height:120px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:56px;background-size:cover;background-position:center;flex:none;cursor:pointer;border:2px dashed transparent}
+.cr-av:hover{border-color:var(--accent)}
+.srow{display:grid;grid-template-columns:auto 118px 118px 1fr 1fr 30px;gap:6px;align-items:center;margin-bottom:6px}
+.srow .days{display:flex;gap:2px}
+.srow .days label{margin:0;display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--muted);cursor:pointer}
+.srow .days input{width:auto;margin:0}
+.srow input{padding:5px 7px;font-size:13px}
+.aibtn{border-color:#5b4a8a;color:#cbb8ff}
+.hint{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+.mine{position:absolute;top:10px;right:10px;font-size:10.5px;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:20px;color:#f1d9a6}
 /* lorebook */
 #loreModal .box{width:min(980px,96vw);height:min(760px,92vh);padding:0;display:flex;flex-direction:column}
 .lb-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
@@ -213,7 +230,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
   <div class="hnav">
     <div class="brand"><span class="mini"></span>Living World</div>
     <input id="search" placeholder="Search characters, worlds, tags…">
-    <button id="homeLog">What's new<span class="newdot" id="logDot" style="display:none"></span></button><button id="homeLore">Lorebook</button><button id="homePersonas">Personas</button><button id="homeSettings">Settings</button>
+    <button id="homeLog">What's new<span class="newdot" id="logDot" style="display:none"></span></button><button id="homeCreate" class="primary">+ Create</button><button id="homeLore">Lorebook</button><button id="homePersonas">Personas</button><button id="homeSettings">Settings</button>
   </div>
   <div class="hwrap">
     <div id="heroBox"></div>
@@ -244,6 +261,15 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
     <div class="lb-list"><div class="lb-tools"><input id="lbSearch" placeholder="Search…"><select id="lbFilter" style="width:auto"></select></div><button id="lbNew" style="width:100%;margin-bottom:8px">+ New entry</button><div id="lbItems"></div></div>
     <div class="lb-edit" id="lbEdit"></div>
   </div>
+</div></div>
+
+<div class="modal" id="createModal"><div class="box">
+  <div class="cr-head"><h2 style="margin:0;font-size:18px" id="crTitle">Create a character</h2>
+    <div class="cr-steps"><button data-step="0" class="on">1 · Basics</button><button data-step="1">2 · Character sheet</button><button data-step="2">3 · Schedule</button><button data-step="3">4 · World</button></div>
+    <button class="ghost" id="crImport" style="margin-left:auto">Import file</button><button class="ghost" id="crClose">Close</button></div>
+  <div class="cr-body" id="crBody"></div>
+  <div class="cr-foot"><span class="small" id="crMsg"></span><button id="crDelete" class="ghost" style="margin-left:auto;border-color:var(--danger);display:none">Delete character</button><button id="crBack">Back</button><button id="crNext">Next</button><button class="primary" id="crSave">Save character</button></div>
+  <input type="file" id="crImgFile" accept="image/*" style="display:none"><input type="file" id="crImportFile" accept=".json" style="display:none">
 </div></div>
 
 <div id="updToast"><h4 id="updTitle">Update ready</h4><div class="small" id="updNotes"></div>
@@ -282,7 +308,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
     <div class="cm-stats" id="cmStats"></div>
     <div class="brief" id="cmBrief"></div>
     <div class="cm-branches" id="cmBranches"></div>
-    <div class="rowbtns"><button class="primary" id="cmChat">Chat</button><button id="cmSolo">1-on-1 chat</button><button id="cmWatch">Watch their story</button><button class="ghost" id="cmClose" style="margin-left:auto">Close</button></div>
+    <div class="rowbtns"><button class="primary" id="cmChat">Chat</button><button id="cmSolo">1-on-1 chat</button><button id="cmWatch">Watch their story</button><button id="cmEdit" class="ghost" style="display:none">Edit</button><button id="cmExport" class="ghost" style="display:none">Export</button><button class="ghost" id="cmClose" style="margin-left:auto">Close</button></div>
   </div>
 </div></div>
 
@@ -381,7 +407,21 @@ window.WORLDS = [{"id": "krampus", "title": "Krampus: One Day Watching Phoenix",
 "use strict";
 // ======================= helpers =======================
 const $ = s => document.querySelector(s);
+const BUILTIN = JSON.parse(JSON.stringify(window.WORLDS));
 const WORLDS = window.WORLDS;
+const CUSTOM_KEY='livingworld_custom';
+function getCustom(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_KEY)||'null')||{worlds:[],chars:[]}; }catch(e){ return {worlds:[],chars:[]}; } }
+function setCustom(c){ try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(c)); return true; }catch(e){ alert('Could not save: your app storage is full (pictures take space; try a smaller picture).'); return false; } }
+function rebuildWorlds(){
+  const C=getCustom(); WORLDS.length=0;
+  for(const b of BUILTIN) WORLDS.push(JSON.parse(JSON.stringify(b)));
+  for(const w of C.worlds) WORLDS.push({...w, characters:[], custom:true, realismCore:BUILTIN[0].realismCore, rules:BUILTIN[0].rules.split('\n\nKRAMPUS\n')[0].replace(/set in New Eridu, from Zenless Zone Zero \([^)]*\)/, 'set in '+(w.setting||'the world described in the scenario'))+(w.extraRules?'\n\nWORLD RULES\n'+w.extraRules:''), lore:[]});
+  for(const c of C.chars){ const w=WORLDS.find(x=>x.id===c.world); if(w) w.characters.push({...c, custom:true}); }
+  for(const w of WORLDS){ const locs=new Set(w.locations||[]); for(const c of w.characters) for(const s of c.schedule||[]) if(s.loc) locs.add(s.loc); if(w.opening&&w.opening.userLoc) locs.add(w.opening.userLoc); w.locations=[...locs].sort(); }
+  // a world with no characters can't be played; hide it from menus
+  for(let i=WORLDS.length-1;i>=0;i--) if(!WORLDS[i].characters.length) WORLDS.splice(i,1);
+}
+rebuildWorlds();
 let W = null, SAVE_KEY = '', SCREEN = 'splash';
 const STATS_KEY = 'livingworld_stats';
 const SET_KEY = 'livingworld_settings';
@@ -436,7 +476,7 @@ function newState(){
   const wt=k=> wo[k]?parseStart(wo[k].split(' ')[0], wo[k].split(' ')[1]):t0-MIN*90;
   for(const c of W.characters){ chars[c.id]={loc:c.loc, act:c.act, lastBeat:t0-MIN*20, log:[], washed:wt(c.id), trust:(W.opening.trust||{})[c.id]||0}; }
   const s={v:1, world:W.id, clock:t0, speed:1, paused:false, user:{loc:W.opening.userLoc, companions:[...W.opening.companions], washed:wt('user')}, chars, chat:[], summary:'', notices:[], usage:{inT:0,outT:0}, view:'me', memories:[]};
-  s.chat.push({role:'assistant', text: stripStatus(W.opening.text), t:t0});
+  if((W.opening.text||'').trim()) s.chat.push({role:'assistant', text: stripStatus(W.opening.text), t:t0});
   return s;
 }
 function stripStatus(t){ return t.split('\n').filter(l=>!/\d+\/100\s*\|/.test(l)).join('\n').trim(); }
@@ -494,6 +534,7 @@ function updateSchedules(){
 }
 
 // ======================= AI client =======================
+const _spareUsage={inT:0,outT:0}; function USE(){ return (typeof S!=="undefined"&&S&&S.usage)||_spareUsage; }
 async function callAI({system, messages, model, maxTokens, onText, signal}){
   if((CFG.key||'').trim().toLowerCase()==='demo') return demoAI({system,messages,onText});
   if(!CFG.key) throw new Error('No API key yet. Open Settings and paste your key (or type "demo" to test).');
@@ -501,11 +542,11 @@ async function callAI({system, messages, model, maxTokens, onText, signal}){
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':CFG.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model, max_tokens:maxTokens, system, messages, stream:!!onText})});
     if(!res.ok) throw new Error('AI error '+res.status+': '+(await res.text()).slice(0,300));
-    if(!onText){ const j=await res.json(); S.usage.inT+=j.usage?.input_tokens||0; S.usage.outT+=j.usage?.output_tokens||0; return (j.content||[]).map(b=>b.text||'').join(''); }
+    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.input_tokens||0; USE().outT+=j.usage?.output_tokens||0; return (j.content||[]).map(b=>b.text||'').join(''); }
     let text=''; await readSSE(res, ev=>{
       if(ev.type==='content_block_delta' && ev.delta?.text){ text+=ev.delta.text; onText(text); }
-      if(ev.type==='message_start') S.usage.inT+=ev.message?.usage?.input_tokens||0;
-      if(ev.type==='message_delta') S.usage.outT+=ev.usage?.output_tokens||0;
+      if(ev.type==='message_start') USE().inT+=ev.message?.usage?.input_tokens||0;
+      if(ev.type==='message_delta') USE().outT+=ev.usage?.output_tokens||0;
       if(ev.type==='error') throw new Error(ev.error?.message||'stream error');
     }); return text;
   } else {
@@ -514,8 +555,8 @@ async function callAI({system, messages, model, maxTokens, onText, signal}){
     const res=await fetch(url,{method:'POST',signal,headers:{'content-type':'application/json','authorization':'Bearer '+CFG.key},
       body:JSON.stringify({model, max_tokens:maxTokens, stream:!!onText, messages:[{role:'system',content:system},...messages]})});
     if(!res.ok) throw new Error('AI error '+res.status+': '+(await res.text()).slice(0,300));
-    if(!onText){ const j=await res.json(); S.usage.inT+=j.usage?.prompt_tokens||0; S.usage.outT+=j.usage?.completion_tokens||0; return j.choices?.[0]?.message?.content||''; }
-    let text=''; await readSSE(res, ev=>{ const d=ev.choices?.[0]?.delta?.content; if(d){ text+=d; onText(text); } if(ev.usage){ S.usage.inT+=ev.usage.prompt_tokens||0; S.usage.outT+=ev.usage.completion_tokens||0; } }); return text;
+    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.prompt_tokens||0; USE().outT+=j.usage?.completion_tokens||0; return j.choices?.[0]?.message?.content||''; }
+    let text=''; await readSSE(res, ev=>{ const d=ev.choices?.[0]?.delta?.content; if(d){ text+=d; onText(text); } if(ev.usage){ USE().inT+=ev.usage.prompt_tokens||0; USE().outT+=ev.usage.completion_tokens||0; } }); return text;
   }
 }
 async function readSSE(res, onEvent){
@@ -562,7 +603,7 @@ function memLines(id, context, n){ return memoriesFor(id,context,n).map(m=>`- [$
 // world lore: a per-world, editable copy of the built-in keyword entries
 function loreKey(){ return 'livingworld_lore_'+W.id; }
 function getLore(w){ w=w||W; let L=null; try{ L=JSON.parse(localStorage.getItem('livingworld_lore_'+w.id)||'null'); }catch(e){}
-  if(!L){ L=(w.lore||[]).map(e=>({...e, on:true, always:false})); } return L; }
+  if(!L){ const base=w.custom?(BUILTIN[0].lore||[]).filter(e=>e.cat==='Realism'):(w.lore||[]); L=base.map(e=>({...e, on:true, always:false})); } return L; }
 function saveLore(L,w){ w=w||W; try{ localStorage.setItem('livingworld_lore_'+w.id, JSON.stringify(L)); }catch(e){} }
 function matchLore(context, maxEntries=6, maxChars=14000){
   const ctx=' '+String(context||'').toLowerCase()+' '; const L=getLore(); const hits=[];
@@ -910,11 +951,11 @@ function recommendations(){
   }).sort((a,b)=>b.s-a.s);
   return {list:scored.slice(0,6), sub:`Based on who you've been chatting with (${chatted.slice(0,3).map(c=>c.name).join(', ')}).`};
 }
-function avatarBg(col){ return `radial-gradient(circle at 30% 25%, ${col}ff 0%, ${col}aa 35%, #1a1b22 100%)`; }
+function avatarBg(col,img){ return img?`url(${img}) center/cover no-repeat`:`radial-gradient(circle at 30% 25%, ${col}ff 0%, ${col}aa 35%, #1a1b22 100%)`; }
 function charCardHTML(c, i, opts={}){
   const st=getStats(); const m=myMsgs(c,st);
   return `<div class="ccard" style="--cc:${c.color}" data-key="${c.key}">
-    <div class="art" style="background:${avatarBg(c.color)}"><span class="init">${esc(c.name[0])}</span>${opts.rank?`<span class="rank">#${i+1}</span>`:''}${opts.why?`<span class="why">${esc(opts.why)}</span>`:''}</div>
+    <div class="art" style="background:${avatarBg(c.color,c.img)}">${c.img?'':`<span class="init">${esc(c.name[0])}</span>`}${c.custom?'<span class="mine">yours</span>':''}${opts.rank?`<span class="rank">#${i+1}</span>`:''}${opts.why?`<span class="why">${esc(opts.why)}</span>`:''}</div>
     <div class="body"><div class="nm">${esc(c.full)}</div><div class="wd">${esc(c.world.title.split(':')[0])}</div><div class="tl">${esc(c.tagline)}</div>
     <div class="chips">${c.tags.filter(t=>t!=='Zenless Zone Zero').slice(0,3).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
     <div class="stat"><span>${m?`💬 ${m} with you`:'New'}</span><span>${c.minor?'Teen · no romance':''}</span></div></div></div>`;
@@ -948,8 +989,8 @@ function renderHomeRest(st){
   const top=topChars(); $('#topGrid').innerHTML=top.map((c,i)=>charCardHTML(c,i,{rank:true})).join(''); bindCards($('#topGrid'));
   const rec=recommendations(); $('#recSub').textContent=rec.sub; $('#recGrid').innerHTML=rec.list.map((r,i)=>charCardHTML(r.c,i,{why:r.why})).join(''); bindCards($('#recGrid'));
   $('#worldGrid').innerHTML=WORLDS.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1;
-    return `<div class="wcard"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${w.characters[1].color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.setting)} · ${esc(w.title.split(': ')[1]||'')}</div><div class="bl">${esc(w.blurb)}</div>
-      <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color)}">${esc(c.name[0])}</span>`).join('')}</div>
+    return `<div class="wcard"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.setting)} · ${esc(w.title.split(': ')[1]||'')}</div><div class="bl">${esc(w.blurb)}</div>
+      <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div>
       <div class="chips">${w.tags.slice(1).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div></div>
       <div class="bot"><span class="prog">${started?`In progress · ${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}</span>${started?`<button data-new="${w.id}" class="ghost">New story</button>`:''}<button class="primary" data-go="${w.id}">${started?'Continue':'Start'}</button></div></div>`; }).join('');
   $('#worldGrid').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>enterWorld(b.dataset.go));
@@ -967,7 +1008,8 @@ function doSearch(){
 let cmKey=null;
 function openChar(key){
   const c=allChars().find(x=>x.key===key); if(!c) return; cmKey=key; const st=getStats(); const s=worldProgress(c.world);
-  $('#cmAv').style.background=avatarBg(c.color); $('#cmAv').textContent=c.name[0];
+  $('#cmAv').style.background=avatarBg(c.color,c.img); $('#cmAv').textContent=c.img?'':c.name[0];
+  $('#cmEdit').style.display=c.custom?'':'none'; $('#cmExport').style.display=c.custom?'':'none';
   document.querySelector('#charModal .cm-top').style.setProperty('--cbg',`linear-gradient(120deg,${c.color}44,transparent 70%)`);
   $('#cmWorld').textContent=c.world.title.split(':')[0]; $('#cmName').textContent=c.full; $('#cmTag').textContent=c.tagline;
   $('#cmChips').innerHTML=c.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
@@ -991,8 +1033,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.8.0';
+const APP_VERSION = '0.9.0';
 const CHANGELOG = [
+ {v:'0.9.0', d:'2026-11-17', notes:['Create your own characters: + Create on the main menu opens a 4-step editor (Basics, Character sheet, Schedule, World).','Upload a picture for any character you make; it shows on their card and page.','✨ AI helpers: write the short summary from the sheet, and suggest a full weekly schedule from their job and habits.','Put a character in an existing world (they share its city and clock) or give them a brand-new world with its own scenario, opening and start time. Leave the opening empty and the AI writes it.','New worlds get the full realism rules and their own lorebook automatically.','Edit, delete, export and import your characters (share them as a file).','Characters marked under 18 are automatically kept age-appropriate.']},
  {v:'0.8.0', d:'2026-11-17', notes:['Realism is now on by default, all of it: weather, physics, bodies, hygiene, household life, clothes and wet fabric, touch, pacing, menstrual cycles, boredom and schedules apply in every scene.','Off-screen lives follow the core realism rules too.','Settings > Realism: Full (default), Standard (core rules plus details when relevant, uses fewer tokens), or Off.','Your edits to Realism entries in the Lorebook are used, and switching an entry off removes it.']},
  {v:'0.7.1', d:'2026-11-17', notes:['Personas now require a gender: Male, Female, Transgender man, Transgender woman, Non-binary, or type your own.','Picking a gender fills in matching pronouns (you can still change them).','Existing personas without a gender are asked to set one before you play.']},
  {v:'0.7.0', d:'2026-11-17', notes:['1-on-1 chats: start a private story with any single character from their page. Have as many as you like; they show up under "Your 1-on-1 chats" on the main menu.','New Lorebook (📖 Lore) with two kinds of lore: World lore (keyword entries, like before) and Memories.','Memories are written automatically after every scene. Each one belongs to the characters who were there, so characters only remember what actually happened to them.','View, edit, pin or forget any memory, and add, edit or switch off world lore entries.','For testing, only the Krampus world is on the menu for now.']},
@@ -1114,7 +1157,7 @@ function renderBranchSection(){
   $('#branchSec').style.display=list.length?'':'none';
   $('#branchGrid').innerHTML=list.map(b=>{ const w=WORLDS.find(x=>x.id===b.world); const c=w.characters.find(x=>x.id===b.charId); if(!c) return '';
     let s=null; try{ s=JSON.parse(localStorage.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){}
-    return `<div class="bcard" data-b="${b.id}"><div class="bav" style="background:${avatarBg(c.color)}">${esc(c.name[0])}</div><div style="min-width:0"><div class="bt">${esc(c.full)}</div><div class="bm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.title)}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${s.chat.filter(m=>m.role!=='user'||!m.hidden).length} messages`:'Not started'}</div></div></div>`; }).join('');
+    return `<div class="bcard" data-b="${b.id}"><div class="bav" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div style="min-width:0"><div class="bt">${esc(c.full)}</div><div class="bm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.title)}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${s.chat.filter(m=>m.role!=='user'||!m.hidden).length} messages`:'Not started'}</div></div></div>`; }).join('');
   $('#branchGrid').querySelectorAll('.bcard').forEach(el=>el.onclick=()=>openBranch(el.dataset.b));
 }
 function openBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b) return; enterWorld(b.world,{branchId:bid}); }
@@ -1192,6 +1235,144 @@ $('#lbClose').onclick=()=>$('#loreModal').classList.remove('on');
 $('#loreModal').onclick=e=>{ if(e.target.id==='loreModal') $('#loreModal').classList.remove('on'); };
 $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 
+// ======================= character creator =======================
+const DAYS=['M','T','W','T','F','S','S'];
+let CR=null, crStep=0;
+function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', minor:false, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
+  _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
+function openCreator(editKey){
+  if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id); if(!c) return; CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
+    const cw=C.worlds.find(x=>x.id===c.world); CR._newWorld=cw?{title:cw.title,setting:cw.setting,blurb:cw.blurb,scenario:cw.scenario,opening:cw.opening.text,date:cw.start.date,time:cw.start.time,userLoc:cw.opening.userLoc,withUser:(cw.opening.companions||[]).includes(c.id),extraRules:cw.extraRules||''}:blankChar()._newWorld; CR._worldIsMine=!!cw; }
+  else { CR=blankChar(); }
+  crStep=0; $('#crTitle').textContent=CR._editing?`Edit ${CR.full||CR.name}`:'Create a character'; $('#crDelete').style.display=CR._editing?'':'none';
+  $('#createModal').classList.add('on'); renderCreator();
+}
+function crCollect(){ // read the visible step's fields into CR
+  const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined; };
+  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; }
+  if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
+  if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
+    CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
+  if(crStep===3){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; }
+}
+function renderCreator(){
+  document.querySelectorAll('.cr-steps button').forEach(b=>b.classList.toggle('on',+b.dataset.step===crStep));
+  $('#crBack').style.display=crStep?'':'none'; $('#crNext').style.display=crStep<3?'':'none'; $('#crMsg').textContent='';
+  const B=$('#crBody'); const c=CR;
+  if(crStep===0){
+    B.innerHTML=`<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+      <div><div class="cr-av" id="crAv" title="Click to upload a picture" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc((c.name||'?')[0])}</div>
+        <div class="hint" style="text-align:center">Click to add a picture</div>${c.img?'<div style="text-align:center"><button class="ghost" id="crImgDel" style="font-size:12px;padding:3px 8px;margin-top:4px">Remove picture</button></div>':''}
+        <label>Color</label><div class="colors" id="crColors">${PCOLORS.map(x=>`<span data-c="${x}" style="background:${x}" class="${x===c.color?'sel':''}"></span>`).join('')}</div></div>
+      <div style="flex:1;min-width:280px">
+        <div class="grid2"><div><label>Short name (used in chat)</label><input id="crName" value="${esc(c.name)}" placeholder="e.g. Zhao"></div><div><label>Full name</label><input id="crFull" value="${esc(c.full)}" placeholder="e.g. Zhao Lin"></div></div>
+        <label>Tagline (one line for their card)</label><input id="crTagline" value="${esc(c.tagline)}" placeholder="e.g. Tiny rabbit supervisor. Value, equivalent exchange, and salad.">
+        <label>Tags (comma-separated; used for search and recommendations)</label><input id="crTags" value="${esc(c.tags.join(', '))}" placeholder="e.g. Thiren, Bunny, Calculating, Caretaker">
+        <div class="grid2"><div><label>Age</label><input id="crAge" value="${esc(c.age||'')}" placeholder="e.g. 24"></div>
+        <div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crMinor" style="width:auto" ${c.minor?'checked':''}>This character is under 18</label></div></div>
+        <div class="hint">Under 18 keeps everything about them age-appropriate: they're never part of romantic or sexual content, their body is never described beyond height and general build, and no romance happens while they're present.</div>
+      </div></div>`;
+    $('#crAv').onclick=()=>$('#crImgFile').click(); const del=$('#crImgDel'); if(del) del.onclick=()=>{ crCollect(); CR.img=''; renderCreator(); };
+    $('#crColors').querySelectorAll('span').forEach(el=>el.onclick=()=>{ crCollect(); CR.color=el.dataset.c; renderCreator(); });
+    $('#crName').oninput=e=>{ if(!CR.img) $('#crAv').textContent=(e.target.value||'?')[0]; };
+  }
+  if(crStep===1){
+    B.innerHTML=`<label>Character sheet: everything the AI needs to play them (personality, appearance, body and sizes, outfits, how they talk, quirks, habits, likes and dislikes, real history, relationships). This is their full description in scenes.</label>
+      <textarea id="crSheet" rows="18" placeholder="Write as much as you like. The more specific, the better they'll be played.">${esc(c.sheet)}</textarea><div class="hint" id="crSheetCount"></div>
+      <label>Short summary (used when they live off-screen and in their card; 2–4 sentences)</label>
+      <textarea id="crBrief" rows="4">${esc(c.brief)}</textarea>
+      <div class="rowbtns"><button class="aibtn" id="crAiBrief">✨ Write the summary from the sheet</button></div>`;
+    const cnt=()=>$('#crSheetCount').textContent=`${$('#crSheet').value.length.toLocaleString()} characters`; cnt(); $('#crSheet').oninput=cnt;
+    $('#crAiBrief').onclick=async()=>{ crCollect(); if(!CR.sheet.trim()){ $('#crMsg').textContent='Write the character sheet first.'; return; }
+      $('#crAiBrief').disabled=true; $('#crAiBrief').textContent='✨ Writing…';
+      try{ const t=await callAI({system:'You write compact character summaries for a roleplay engine. Third person, present tense, 2-4 sentences (max 700 characters): who they are, look, personality, key habits. No preamble.', messages:[{role:'user',content:`Name: ${CR.full||CR.name}${CR.minor?' (under 18)':''}\n\n${CR.sheet.slice(0,20000)}`}], model:CFG.bg, maxTokens:350});
+        $('#crBrief').value=t.trim(); }catch(e){ $('#crMsg').textContent=e.message; }
+      $('#crAiBrief').disabled=false; $('#crAiBrief').textContent='✨ Write the summary from the sheet'; };
+  }
+  if(crStep===2){
+    const rows=(c.schedule.length?c.schedule:[{days:[1,2,3,4,5,6,7],start:'00:00',end:'07:00',loc:'',act:'asleep'}]);
+    B.innerHTML=`<div class="small" style="line-height:1.5">Where they are and what they're doing, by day and time. The world uses this to move them around, decide who you run into, and write their off-screen life. Places should be written as "District, exact spot". Times use 24 hours; use 23:59 for "until midnight". When two rows overlap, the one for fewer days wins, so you can add special days on top of a daily routine.</div>
+      <div style="margin-top:10px" id="crRows">${rows.map(srowHTML).join('')}</div>
+      <div class="rowbtns"><button id="crAddRow">+ Add a row</button><button class="aibtn" id="crAiSched">✨ Suggest a schedule from the sheet</button></div>
+      <div class="grid2" style="margin-top:8px"><div><label>Where they are when the world starts (if no row covers that time)</label><input id="crLoc" value="${esc(c.loc)}" placeholder="District, exact spot"></div><div><label>What they're doing then</label><input id="crAct" value="${esc(c.act)}"></div></div>`;
+    bindRows();
+    $('#crAddRow').onclick=()=>{ $('#crRows').insertAdjacentHTML('beforeend',srowHTML({days:[1,2,3,4,5],start:'09:00',end:'17:00',loc:'',act:''})); bindRows(); };
+    $('#crAiSched').onclick=async()=>{ crCollect(); if(!CR.sheet.trim()){ $('#crMsg').textContent='Write the character sheet first (step 2).'; return; }
+      const wname=CR.world==='__new'?(CR._newWorld.setting||'their city'):(WORLDS.find(w=>w.id===CR.world)?.setting||'');
+      $('#crAiSched').disabled=true; $('#crAiSched').textContent='✨ Thinking…';
+      try{ const out=await callAI({system:`You plan realistic weekly schedules for roleplay characters based on their job, duties, habits and hobbies, so they don't have unlimited free time. Return ONLY a JSON array of rows: [{"days":[1,2,3,4,5],"start":"HH:MM","end":"HH:MM","loc":"District, exact spot","act":"what they're doing"}]. days: 1=Monday … 7=Sunday. Cover all 24 hours of every day, including sleep, meals, work, commutes, chores and free time. Use 23:59 for until midnight. 12 to 25 rows.`, messages:[{role:'user',content:`Setting: ${wname}\nCharacter: ${CR.full||CR.name}\n\n${CR.sheet.slice(0,16000)}`}], model:CFG.bg, maxTokens:2000});
+        const arr=JSON.parse((out.match(/\[[\s\S]*\]/)||['[]'])[0]); if(!arr.length) throw new Error('No schedule came back. Try again.');
+        CR.schedule=arr.map(r=>({days:(r.days||[]).map(Number).filter(d=>d>=1&&d<=7), start:r.start||'00:00', end:r.end||'23:59', loc:r.loc||'', act:r.act||''})); renderCreator(); $('#crMsg').textContent='Suggested. Check it over and adjust anything.';
+      }catch(e){ $('#crMsg').textContent=e.message; $('#crAiSched').disabled=false; $('#crAiSched').textContent='✨ Suggest a schedule from the sheet'; } };
+  }
+  if(crStep===3){
+    const nw=c._newWorld; const isNew=c.world==='__new';
+    const opts=WORLDS.filter(w=>!w.custom||c._worldIsMine||true).map(w=>`<option value="${w.id}" ${w.id===c.world?'selected':''}>${esc(w.title.split(':')[0])}${w.custom?' (yours)':''}</option>`).join('');
+    B.innerHTML=`<label>Which world do they live in?</label><select id="crWorld">${opts}<option value="__new" ${isNew?'selected':''}>+ A new world just for them</option></select>
+      <div class="hint">Joining a world means they share its clock and city with everyone there, run into them, and get their own off-screen life. A new world starts its own story with this character.</div>
+      ${isNew?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div class="grid2"><div><label>World title</label><input id="nwTitle" value="${esc(nw.title)}" placeholder="e.g. Rainy Season at the Café"></div><div><label>Setting (City, District)</label><input id="nwSetting" value="${esc(nw.setting)}" placeholder="e.g. New Eridu (Zenless Zone Zero), Sixth Street, or your own world"></div></div>
+        <label>One-line blurb for the world card</label><input id="nwBlurb" value="${esc(nw.blurb)}">
+        <label>Scenario: who you are, how you know them, what's going on right now</label><textarea id="nwScenario" rows="5">${esc(nw.scenario)}</textarea>
+        <label>Opening message (optional: leave empty and the AI writes it when you start)</label><textarea id="nwOpening" rows="5">${esc(nw.opening)}</textarea>
+        <div class="grid2"><div><label>Story start date</label><input id="nwDate" type="date" value="${esc(nw.date)}"></div><div><label>Start time</label><input id="nwTime" type="time" value="${esc(nw.time)}"></div></div>
+        <div class="grid2"><div><label>Where you start (District, exact spot)</label><input id="nwUserLoc" value="${esc(nw.userLoc)}"></div><div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="nwWith" style="width:auto" ${nw.withUser?'checked':''}>They start with you</label></div></div>
+        <label>Extra world rules (optional: anything special about this world)</label><textarea id="nwRules" rows="3">${esc(nw.extraRules)}</textarea>
+        <div class="hint">New worlds automatically get the full realism rules and an editable lorebook.</div></div>`:''}`;
+    $('#crWorld').onchange=()=>{ crCollect(); renderCreator(); };
+  }
+}
+function srowHTML(s){ return `<div class="srow"><div class="days">${DAYS.map((d,i)=>`<label>${d}<input type="checkbox" ${s.days.includes(i+1)?'checked':''}></label>`).join('')}</div><input class="s1" type="time" value="${esc(s.start)}"><input class="s2" type="time" value="${esc(s.end==='23:59'?'23:59':s.end)}"><input class="s3" value="${esc(s.loc)}" placeholder="District, exact spot"><input class="s4" value="${esc(s.act)}" placeholder="doing what"><button class="ghost sdel" title="Remove">✕</button></div>`; }
+function bindRows(){ document.querySelectorAll('.sdel').forEach(b=>b.onclick=()=>b.closest('.srow').remove()); }
+document.querySelectorAll('.cr-steps button').forEach(b=>b.onclick=()=>{ crCollect(); crStep=+b.dataset.step; renderCreator(); });
+$('#crNext').onclick=()=>{ crCollect(); crStep=Math.min(3,crStep+1); renderCreator(); };
+$('#crBack').onclick=()=>{ crCollect(); crStep=Math.max(0,crStep-1); renderCreator(); };
+$('#crClose').onclick=()=>{ if(confirm('Close without saving?')) $('#createModal').classList.remove('on'); };
+$('#crImgFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; crCollect(); CR.img=await shrinkImage(f,320); renderCreator(); };
+function shrinkImage(file,max){ return new Promise((res,rej)=>{ const img=new Image(); const url=URL.createObjectURL(file); img.onload=()=>{ const k=Math.min(1,max/Math.max(img.width,img.height)); const cv=document.createElement('canvas'); cv.width=Math.round(img.width*k); cv.height=Math.round(img.height*k); cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url); res(cv.toDataURL('image/jpeg',0.86)); }; img.onerror=()=>rej(new Error('That picture could not be opened.')); img.src=url; }); }
+$('#crSave').onclick=()=>{
+  crCollect(); const c=CR; const msg=t=>{ $('#crMsg').textContent=t; };
+  if(!c.name){ crStep=0; renderCreator(); return msg('Give them a name.'); }
+  if(!c.sheet.trim()){ crStep=1; renderCreator(); return msg('Write their character sheet.'); }
+  if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
+  const C=getCustom();
+  let wid=c.world;
+  if(wid==='__new'){ const nw=c._newWorld; if(!nw.title){ crStep=3; renderCreator(); return msg('Give the new world a title.'); }
+    const existing=c._editing&&C.worlds.find(w=>w.id===C.chars.find(x=>x.id===c.id)?.world);
+    wid=existing?existing.id:('w'+Date.now().toString(36));
+    const world={id:wid, title:nw.title, setting:nw.setting||'', blurb:nw.blurb||'', tags:['Custom',...c.tags.slice(0,3)], start:{date:nw.date, time:nw.time||'09:00'}, scenario:nw.scenario||'', extraRules:nw.extraRules||'', events:[],
+      opening:{userLoc:nw.userLoc||c.loc||nw.setting||'', companions:nw.withUser?[c.id]:[], text:nw.opening||'', washed:{}}};
+    C.worlds=C.worlds.filter(w=>w.id!==wid); C.worlds.push(world);
+  }
+  const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
+    sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
+    brief:c.brief, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+  C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
+  // drop worlds of ours that no longer have anyone in them
+  C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));
+  if(!setCustom(C)) return;
+  rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome();
+  setTimeout(()=>openChar(wid+':'+c.id),200);
+};
+$('#crDelete').onclick=()=>{ const c=CR; if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
+  const C=getCustom(); const w=C.chars.find(x=>x.id===c.id)?.world; C.chars=C.chars.filter(x=>x.id!==c.id); C.worlds=C.worlds.filter(x=>C.chars.some(y=>y.world===x.id));
+  if(w&&!C.worlds.some(x=>x.id===w)) localStorage.removeItem('livingworld_save_'+w);
+  setCustom(C); rebuildWorlds(); $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); renderHome(); };
+// export / import a character (with its world, if it has its own)
+$('#cmExport').onclick=()=>{ const [w,id]=cmKey.split(':'); const C=getCustom(); const ch=C.chars.find(x=>x.id===id&&x.world===w); if(!ch) return;
+  const world=C.worlds.find(x=>x.id===w); const data={livingWorldCharacter:1, character:ch, world:world||null};
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'})); a.download=`${ch.full.replace(/[^\w -]+/g,'')}.livingworld.json`; a.click(); };
+$('#crImport').onclick=()=>$('#crImportFile').click();
+$('#crImportFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ const d=JSON.parse(await f.text()); if(!d.livingWorldCharacter||!d.character) throw new Error('That file is not a Living World character.');
+    const C=getCustom(); const ch={...d.character, id:'c'+Date.now().toString(36)};
+    if(d.world){ const nw={...d.world, id:'w'+Date.now().toString(36)}; nw.opening={...nw.opening, companions:(nw.opening.companions||[]).includes(d.character.id)?[ch.id]:[]}; ch.world=nw.id; C.worlds.push(nw); }
+    else if(!WORLDS.some(w=>w.id===ch.world)) ch.world=WORLDS[0].id;
+    C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome(); setTimeout(()=>openChar(ch.world+':'+ch.id),200);
+  }catch(err){ $('#crMsg').textContent='Could not import: '+err.message; } };
+$('#cmEdit').onclick=()=>{ $('#charModal').classList.remove('on'); openCreator(cmKey); };
+$('#homeCreate').onclick=()=>openCreator();
+
 // ======================= screens =======================
 function showScreen(name){
   SCREEN=name;
@@ -1214,6 +1395,7 @@ function enterWorld(id, opts={}){
   updateSchedules(); showScreen('world'); render(); save();
   if(!CFG.key) setTimeout(openSettings,300); else if(!PS.list.length) setTimeout(()=>openPersonas(),300);
   else if(!persona().gender){ setTimeout(()=>{ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; },300); }
+  else if(!S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the story. Open the scenario vividly from the user's starting place, show who is here and what is going on, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }
   else if(S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the one-on-one scene. Set the place and moment from the scenario, introduce ${charById(S.branch.charId).full} vividly, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }
 }
 $('#homeBtn').onclick=()=>{ if(S) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); showScreen('home'); };

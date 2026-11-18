@@ -1,13 +1,16 @@
 {
- "version": "0.8.0",
+ "version": "0.9.0",
  "date": "2026-11-17",
  "notes": [
-  "Realism is now on by default, all of it: weather, physics, bodies, hygiene, household life, clothes and wet fabric, touch, pacing, menstrual cycles, boredom and schedules apply in every scene.",
-  "Off-screen lives follow the core realism rules too.",
-  "Settings > Realism: Full (default), Standard (core rules plus details when relevant, uses fewer tokens), or Off.",
-  "Your edits to Realism entries in the Lorebook are used, and switching an entry off removes it."
+  "Create your own characters: + Create on the main menu opens a 4-step editor (Basics, Character sheet, Schedule, World).",
+  "Upload a picture for any character you make; it shows on their card and page.",
+  "\u2728 AI helpers: write the short summary from the sheet, and suggest a full weekly schedule from their job and habits.",
+  "Put a character in an existing world (they share its city and clock) or give them a brand-new world with its own scenario, opening and start time. Leave the opening empty and the AI writes it.",
+  "New worlds get the full realism rules and their own lorebook automatically.",
+  "Edit, delete, export and import your characters (share them as a file).",
+  "Characters marked under 18 are automatically kept age-appropriate."
  ],
  "file": "index.html",
- "sha256": "e56f4bc01ae4b39fa414851ee9fceaf123308fa861c89c1645cdb56e0428fce6",
+ "sha256": "d3031ed545e3a25a1bee1daefdc1edcf6097ca3dee2a7b0136b5e4104fd4b773",
  "minShell": "0.5.0"
 }
