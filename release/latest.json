@@ -1,15 +1,12 @@
 {
- "version": "0.10.0",
+ "version": "0.10.1",
  "date": "2026-11-17",
  "notes": [
-  "New \ud83d\udcc5 Events button in the chat: see every character's schedule for any day, with what they're doing right now highlighted.",
-  "Upcoming events: see what's coming and add your own, either for one character (it moves them there at that time) or for everyone (a festival, a storm, a sale the world can hear about).",
-  "Menstrual cycles now run on the story clock: period days, PMS and ovulation, shown on a little calendar bar with the next period date. You can change the length, mark when a period started, or turn tracking on or off.",
-  "The narrator and off-screen scenes now know who's on their period or has PMS today, and show it through small natural details.",
-  "Phoenix, Dialyn, Zhao and Promeia have cycles; the character creator has a cycle option too.",
-  "Off-screen scenes in your own worlds now use that world's setting."
+  "Characters now have genders, and the AI is told each one.",
+  "Cycles only appear for characters who could have one: Banyue is no longer offered a period.",
+  "The character creator asks for gender (required, including transgender options) and whether they are a robot or construct; the cycle option hides when it doesn't apply."
  ],
  "file": "index.html",
- "sha256": "b51c17714aa19a70862c374a652e2a1f928e783be38d2fc3bb6d3a20df40e6a8",
+ "sha256": "0e42bd3a191b74453ea77e517d71ba4788e8a09bf1eb8fcdfd9fc3f4f49ab5ab",
  "minShell": "0.5.0"
 }

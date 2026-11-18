@@ -522,15 +522,20 @@ function saveCfg(){ try{ localStorage.setItem(SET_KEY, JSON.stringify(CFG)); }ca
 function allEvents(){ return [...(W.events||[]), ...((S&&S.events)||[])]; }
 const DAYMS=1440*MIN;
 // ---- menstrual cycles ----
+const BUILTIN_GENDER={phoenix:'Female', dialyn:'Female', zhao:'Female', promeia:'Female', banyue:'Male'};
+const NOCYCLE={banyue:'an Intelligent Construct'};
+function genderOf(c){ return c.gender||BUILTIN_GENDER[c.id]||''; }
+// who can have a cycle: anyone with a uterus could; trans men and non-binary people may or may not, so it's up to you
+function canCycle(c){ if(NOCYCLE[c.id]||c.construct) return false; const g=genderOf(c); return g!=='Male' && g!=='Transgender woman'; }
 const BUILTIN_CYCLES={phoenix:{len:28,days:5}, dialyn:{len:30,days:5}, zhao:{len:27,days:4}, promeia:{len:29,days:6}};
 function hashStr(s){ let x=0; for(const ch of s) x=(x*31+ch.charCodeAt(0))>>>0; return x; }
 function defaultCycle(c){
   const d=c.cycle&&c.cycle.on?{len:+c.cycle.len||28, days:+c.cycle.days||5}:(!c.custom&&BUILTIN_CYCLES[c.id]);
-  if(!d) return {on:false, len:28, days:5, start:0};
+  if(!d||!canCycle(c)) return {on:false, len:28, days:5, start:0};
   const base=parseStart(W.start.date,'00:00'); return {on:true, len:d.len, days:d.days, start:base-(hashStr(W.id+c.id)%d.len)*DAYMS};
 }
 function cycleInfo(c, ms){
-  const cy=S.chars[c.id]?.cycle; if(!cy||!cy.on) return null;
+  const cy=S.chars[c.id]?.cycle; if(!cy||!cy.on||!canCycle(c)) return null;
   const len=cy.len, days=cy.days; const dn=Math.floor((Math.floor(ms/DAYMS)*DAYMS-cy.start)/DAYMS);
   const day=((dn%len)+len)%len+1; const ov=len-14; const minor=!!c.minor;
   let key, label, note;
@@ -714,11 +719,11 @@ LAST WASHED: ${washedLine()}
 ${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
   const ctx=recentContext(4);
-  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${c.sheet}\n\nWHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What they were just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
+  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${genderOf(c)?'Gender: '+genderOf(c)+'\n':''}${c.sheet}\n\nWHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What they were just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
   const lore=matchLore(ctx+'\n'+pres.map(c=>c.full).join(' '));
   if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters may text the user or arrive only if it makes sense for their schedule):\n`;
-  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}: at ${st.loc}, ${st.act}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
+  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${genderOf(c)?' ('+genderOf(c).toLowerCase()+')':''}: at ${st.loc}, ${st.act}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   s+=`
 REPLY FORMAT
 1. Begin the reply with this line: |HH:MM (Next: Name: event HH:MM)|District, exact spot|MM/DD (Weekday)|Weather, temperature|
@@ -831,7 +836,7 @@ async function beat(ids){
   const sys=`You write short off-screen moments in the lives of characters in a living-world roleplay set in ${W.custom?(W.setting||'their world'):'New Eridu (Zenless Zone Zero)'}. These scenes happen while the user is elsewhere; the user is never present.
 Style: third person, present tense. *Italics* for actions and narration, "quotes" for speech. Each spoken line starts with the speaker's name, and under it goes one short italic sentence describing the tone. Vivid sensory detail, micro-reactions, hair/cloth/fur physics. Use "~" at most once. Never state body measurements as numbers. Keep characters exactly as described; never invent big past events.${realismBlock(true)}
 
-${cs.map(c=>`=== ${c.full} ===\n${c.brief}\nThings they remember:\n${memLines(c.id,(S.chars[c.id].act||'')+' '+(S.chars[c.id].loc||''),6)||'(nothing yet)'}\nRecent moments:\n${recentLog(c.id,3)||'(none yet)'}`).join('\n\n')}`;
+${cs.map(c=>`=== ${c.full} ===\n${genderOf(c)?'Gender: '+genderOf(c)+'\n':''}${c.brief}\nThings they remember:\n${memLines(c.id,(S.chars[c.id].act||'')+' '+(S.chars[c.id].loc||''),6)||'(nothing yet)'}\nRecent moments:\n${recentLog(c.id,3)||'(none yet)'}`).join('\n\n')}`;
   const pres=present(); const userBits = pres.length?`(Elsewhere, ${persona().name||'the user'} is at ${S.user.loc} with ${pres.map(c=>c.name).join(', ')}; these characters may think about them but are not with them.)`:'';
   const prompt=`Write the next off-screen moment.
 TIME: ${timeLine(now)} (about ${since} minutes since their last moment)
@@ -1083,8 +1088,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.10.0';
+const APP_VERSION = '0.10.1';
 const CHANGELOG = [
+ {v:'0.10.1', d:'2026-11-17', notes:['Characters now have genders, and the AI is told each one.','Cycles only appear for characters who could have one: Banyue is no longer offered a period.','The character creator asks for gender (required, including transgender options) and whether they are a robot or construct; the cycle option hides when it doesn\'t apply.']},
  {v:'0.10.0', d:'2026-11-17', notes:['New 📅 Events button in the chat: see every character\'s schedule for any day, with what they\'re doing right now highlighted.','Upcoming events: see what\'s coming and add your own, either for one character (it moves them there at that time) or for everyone (a festival, a storm, a sale the world can hear about).','Menstrual cycles now run on the story clock: period days, PMS and ovulation, shown on a little calendar bar with the next period date. You can change the length, mark when a period started, or turn tracking on or off.','The narrator and off-screen scenes now know who\'s on their period or has PMS today, and show it through small natural details.','Phoenix, Dialyn, Zhao and Promeia have cycles; the character creator has a cycle option too.','Off-screen scenes in your own worlds now use that world\'s setting.']},
  {v:'0.9.0', d:'2026-11-17', notes:['Create your own characters: + Create on the main menu opens a 4-step editor (Basics, Character sheet, Schedule, World).','Upload a picture for any character you make; it shows on their card and page.','✨ AI helpers: write the short summary from the sheet, and suggest a full weekly schedule from their job and habits.','Put a character in an existing world (they share its city and clock) or give them a brand-new world with its own scenario, opening and start time. Leave the opening empty and the AI writes it.','New worlds get the full realism rules and their own lorebook automatically.','Edit, delete, export and import your characters (share them as a file).','Characters marked under 18 are automatically kept age-appropriate.']},
  {v:'0.8.0', d:'2026-11-17', notes:['Realism is now on by default, all of it: weather, physics, bodies, hygiene, household life, clothes and wet fabric, touch, pacing, menstrual cycles, boredom and schedules apply in every scene.','Off-screen lives follow the core realism rules too.','Settings > Realism: Full (default), Standard (core rules plus details when relevant, uses fewer tokens), or Off.','Your edits to Realism entries in the Lorebook are used, and switching an entry off removes it.']},
@@ -1326,7 +1332,7 @@ function renderEvents(){
     B.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ S.events=S.events.filter(e=>e.id!==b.dataset.del); save(); updateSchedules(); renderEvents(); });
   }
   if(evTab==='cycles'){
-    const adults=cs.filter(c=>!c.minor);
+    const adults=cs.filter(c=>!c.minor&&canCycle(c));
     B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">Characters' cycles run on the story clock. The narrator gets what's going on today (cramps, PMS, supplies) and shows it through small details. Change the length, the period length, or mark when a period actually started in the story.</div>`+
       adults.map(c=>{ const cy=S.chars[c.id].cycle||{on:false}; const i=cycleInfo(c,S.clock);
         if(!cy.on) return `<div class="ev-card" style="display:flex;align-items:center;gap:10px"><span class="ev-dot" style="background:${c.color}"></span><b>${esc(c.full)}</b><span class="small">Not tracked</span><button class="ghost" data-cyon="${c.id}" style="margin-left:auto">Track a cycle</button></div>`;
@@ -1337,7 +1343,7 @@ function renderEvents(){
           <div class="small">${i.note?esc(i.note)+' · ':''}Next period: <b>${wdName(i.nextStart)} ${mmdd(i.nextStart)}</b> (in ${i.toNext} day${i.toNext===1?'':'s'})${ovIn>0?` · ovulation in about ${ovIn} days`:''}</div>
           <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="small" style="margin:0">Cycle length <input type="number" min="21" max="40" value="${cy.len}" data-len="${c.id}" style="width:64px;padding:4px"></label><label class="small" style="margin:0">Period lasts <input type="number" min="2" max="8" value="${cy.days}" data-days="${c.id}" style="width:56px;padding:4px"> days</label>
           <button class="ghost" data-pstart="${c.id}">Period started today</button><button class="ghost" data-cyoff="${c.id}">Stop tracking</button></div></div>`; }).join('')+
-      (cs.some(c=>c.minor)?`<div class="small" style="margin-top:6px">Characters under 18 aren't shown here. If they have a cycle, the narrator only handles the practical side of their periods.</div>`:'');
+      (cs.some(c=>!c.minor&&!canCycle(c))?`<div class="small" style="margin-top:6px">Not shown (no cycle): ${cs.filter(c=>!c.minor&&!canCycle(c)).map(c=>esc(c.name)+' ('+(NOCYCLE[c.id]||c.construct&&'a construct'||genderOf(c).toLowerCase())+')').join(', ')}.</div>`:'')+(cs.some(c=>c.minor)?`<div class="small" style="margin-top:6px">Characters under 18 aren't shown here. If they have a cycle, the narrator only handles the practical side of their periods.</div>`:'');
     const cyc=id=>S.chars[id].cycle; const upd=()=>{ save(); renderEvents(); };
     B.querySelectorAll('[data-cyon]').forEach(b=>b.onclick=()=>{ const c=charById(b.dataset.cyon); S.chars[c.id].cycle={on:true,len:28,days:5,start:Math.floor(S.clock/DAYMS)*DAYMS-((hashStr(c.id)%28))*DAYMS,custom:true}; upd(); });
     B.querySelectorAll('[data-cyoff]').forEach(b=>b.onclick=()=>{ Object.assign(cyc(b.dataset.cyoff),{on:false,custom:true}); upd(); });
@@ -1351,7 +1357,7 @@ $('#evBtn').onclick=openEvents;
 // ======================= character creator =======================
 const DAYS=['M','T','W','T','F','S','S'];
 let CR=null, crStep=0;
-function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
+function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', gender:'', construct:false, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
 function openCreator(editKey){
   if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id); if(!c) return; CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
@@ -1362,7 +1368,7 @@ function openCreator(editKey){
 }
 function crCollect(){ // read the visible step's fields into CR
   const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined; };
-  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
+  if(crStep===0){ CR.name=v('crName').trim(); CR.full=v('crFull').trim(); CR.tagline=v('crTagline').trim(); CR.tags=v('crTags').split(',').map(x=>x.trim()).filter(Boolean); CR.age=v('crAge').trim(); CR.minor=$('#crMinor').checked; CR.gender=v('crGender')==='__other'?(v('crGenderOther')||'').trim():v('crGender'); CR.construct=$('#crConstruct').checked; CR.cycle={on:$('#crCyc').checked, len:Math.max(21,Math.min(40,+v('crCycLen')||28)), days:Math.max(2,Math.min(8,+v('crCycDays')||5))}; }
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
@@ -1381,13 +1387,19 @@ function renderCreator(){
         <div class="grid2"><div><label>Short name (used in chat)</label><input id="crName" value="${esc(c.name)}" placeholder="e.g. Zhao"></div><div><label>Full name</label><input id="crFull" value="${esc(c.full)}" placeholder="e.g. Zhao Lin"></div></div>
         <label>Tagline (one line for their card)</label><input id="crTagline" value="${esc(c.tagline)}" placeholder="e.g. Tiny rabbit supervisor. Value, equivalent exchange, and salad.">
         <label>Tags (comma-separated; used for search and recommendations)</label><input id="crTags" value="${esc(c.tags.join(', '))}" placeholder="e.g. Thiren, Bunny, Calculating, Caretaker">
+        <div class="grid2"><div><label>Gender <span style="color:var(--danger)">*</span></label><select id="crGender"><option value="">Choose…</option><option>Male</option><option>Female</option><option>Transgender man</option><option>Transgender woman</option><option>Non-binary</option><option value="__other">Other (type your own)</option></select><input id="crGenderOther" placeholder="Their gender" style="margin-top:6px;display:none"></div>
+        <div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crConstruct" style="width:auto" ${c.construct?'checked':''}>Not a living body (robot, construct, android)</label></div></div>
         <div class="grid2"><div><label>Age</label><input id="crAge" value="${esc(c.age||'')}" placeholder="e.g. 24"></div>
         <div><label>&nbsp;</label><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:8px 0 0"><input type="checkbox" id="crMinor" style="width:auto" ${c.minor?'checked':''}>This character is under 18</label></div></div>
-        <label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crCyc" style="width:auto" ${c.cycle&&c.cycle.on?'checked':''}>Has a menstrual cycle</label>
+        <div id="crCycBox"><label style="display:flex;gap:7px;align-items:center;color:var(--text);margin:12px 0 0"><input type="checkbox" id="crCyc" style="width:auto" ${c.cycle&&c.cycle.on?'checked':''}>Has a menstrual cycle</label>
         <div style="display:flex;gap:10px;align-items:center;margin-top:4px"><span class="small">Cycle length</span><input id="crCycLen" type="number" min="21" max="40" value="${(c.cycle||{}).len||28}" style="width:70px;padding:5px"><span class="small">days · period lasts</span><input id="crCycDays" type="number" min="2" max="8" value="${(c.cycle||{}).days||5}" style="width:60px;padding:5px"><span class="small">days</span></div>
-        <div class="hint">The cycle runs on the story clock and shows in the chat's 📅 Events panel.</div>
+        <div class="hint">The cycle runs on the story clock and shows in the chat's 📅 Events panel.</div></div>
         <div class="hint">Under 18 keeps everything about them age-appropriate: they're never part of romantic or sexual content, their body is never described beyond height and general build, and no romance happens while they're present.</div>
       </div></div>`;
+    { const std=['','Male','Female','Transgender man','Transgender woman','Non-binary']; const gs=$('#crGender'), go=$('#crGenderOther');
+      if(std.includes(c.gender)) gs.value=c.gender; else { gs.value='__other'; go.value=c.gender; go.style.display=''; }
+      const syncCyc=()=>{ crCollect(); const ok=canCycle(CR); $('#crCycBox').style.display=ok?'':'none'; if(!ok) $('#crCyc').checked=false; };
+      gs.onchange=()=>{ go.style.display=gs.value==='__other'?'':'none'; syncCyc(); }; $('#crConstruct').onchange=syncCyc; setTimeout(()=>{ if(!canCycle(CR)) $('#crCycBox').style.display='none'; }); }
     $('#crAv').onclick=()=>$('#crImgFile').click(); const del=$('#crImgDel'); if(del) del.onclick=()=>{ crCollect(); CR.img=''; renderCreator(); };
     $('#crColors').querySelectorAll('span').forEach(el=>el.onclick=()=>{ crCollect(); CR.color=el.dataset.c; renderCreator(); });
     $('#crName').oninput=e=>{ if(!CR.img) $('#crAv').textContent=(e.target.value||'?')[0]; };
@@ -1449,6 +1461,7 @@ function shrinkImage(file,max){ return new Promise((res,rej)=>{ const img=new Im
 $('#crSave').onclick=()=>{
   crCollect(); const c=CR; const msg=t=>{ $('#crMsg').textContent=t; };
   if(!c.name){ crStep=0; renderCreator(); return msg('Give them a name.'); }
+  if(!c.gender){ crStep=0; renderCreator(); return msg('Choose their gender.'); }
   if(!c.sheet.trim()){ crStep=1; renderCreator(); return msg('Write their character sheet.'); }
   if(!c.full) c.full=c.name; if(!c.brief.trim()) c.brief=c.sheet.replace(/\s+/g,' ').slice(0,600);
   const C=getCustom();
@@ -1462,7 +1475,7 @@ $('#crSave').onclick=()=>{
   }
   const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
-    brief:c.brief, cycle:c.cycle||{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
+    brief:c.brief, gender:c.gender, construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
   // drop worlds of ours that no longer have anyone in them
   C.worlds=C.worlds.filter(w=>C.chars.some(x=>x.world===w.id));
