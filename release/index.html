@@ -143,6 +143,18 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .card .needs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.card .needs span{font-size:10.5px;padding:1px 7px;border-radius:20px;background:#2a2433;color:#d9c9f3}.card .needs span.ow{background:#1f2a33;color:#bcd6e8}
 .wr-row{display:grid;grid-template-columns:1.1fr 110px 2fr 30px;gap:6px;margin-bottom:6px}
 @media (max-width:760px){.wr-row{grid-template-columns:1fr 100px 30px}.wr-row .wd{grid-column:1/-1}}
+.msg{position:relative}
+.mtools{position:absolute;top:-14px;right:20px;display:none;gap:2px;background:#1b1d25;border:1px solid var(--line);border-radius:20px;padding:2px 6px;z-index:2;align-items:center;font-family:var(--font)}
+.mtools button{background:none;border:0;padding:2px 6px;font-size:13px;cursor:pointer;color:var(--text)}
+.mtools span{font-size:11px;color:var(--muted)}
+.msg:hover .mtools,.msg.showtools .mtools{display:flex}
+.msg.pinned{border-left:3px solid var(--accent);padding-left:17px}
+.medit{width:100%;font-family:var(--serif);font-size:15px}
+.earlier{text-align:center;margin:0 0 18px}
+.recap{max-width:780px;margin:0 auto 22px;border:1px solid #4a3b1c;background:linear-gradient(180deg,#221d12,#1a1710);border-radius:14px;padding:14px 18px;font-family:var(--serif);line-height:1.6;position:relative}
+.recap h4{margin:0 0 6px;font-family:var(--font);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+.recap #recapX{position:absolute;top:8px;right:10px}
+.tl-item{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.tl-item .tw{font-size:12px;color:var(--muted)}.tl-item .tt b{display:block}
 /* sign-in gate */
 #authModal.gate{background:radial-gradient(ellipse at 50% -10%,#2a2333 0%,var(--bg) 60%)}
 #authModal.gate #auClose{display:none}
@@ -415,7 +427,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
     <div class="sec" id="searchSec" style="display:none"><h3>Search results</h3><div class="sub" id="searchSub"></div><div class="cgrid" id="searchGrid"></div></div>
     <div id="homeSecs">
       <div class="sec" id="studioSec" style="display:none"><h3>Popular in the Studio <button class="ghost" id="homeStudioMore" style="font-size:12px;padding:3px 10px">See all</button></h3><div class="sub">Races, characters and worlds shared by other people.</div><div class="cgrid" id="homeStudioGrid"></div></div>
-      <div class="sec" id="branchSec" style="display:none"><h3>Your 1-on-1 chats</h3><div class="sub">Private stories with one character, separate from the main world.</div><div class="bgrid" id="branchGrid"></div></div>
+      <div class="sec" id="branchSec" style="display:none"><h3>Your 1-on-1 chats &amp; timelines</h3><div class="sub">Private stories with one character, and alternate timelines you branched off a story.</div><div class="bgrid" id="branchGrid"></div></div>
       <div class="sec"><h3>Top characters</h3><div class="sub">The most loved characters, boosted by who you spend time with.</div><div class="cgrid" id="topGrid"></div></div>
       <div class="sec"><h3>Recommended for you</h3><div class="sub" id="recSub"></div><div class="cgrid" id="recGrid"></div></div>
       <div class="sec"><h3>Worlds</h3><div class="sub">Each world keeps running on its own clock while it's open.</div><div class="wgrid" id="worldGrid"></div></div>
@@ -480,7 +492,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 
 <div class="modal" id="evModal"><div class="box">
   <div class="lb-head"><h2 style="margin:0;font-size:18px">Events</h2>
-    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button><button data-ev="wear">Clothes &amp; bag</button></div>
+    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button><button data-ev="wear">Clothes &amp; bag</button><button data-ev="tl">Timeline</button></div>
     <span class="small" id="evNow"></span><button class="ghost" id="evClose" style="margin-left:auto">Close</button></div>
   <div class="ev-body" id="evBody"></div>
 </div></div>
@@ -818,7 +830,7 @@ function load(){
   if(!S&&fresh) S=fresh;
   if(!S||S.world!==W.id) S=newState();
   for(const c of W.characters) if(!S.chars[c.id]) S.chars[c.id]={loc:c.loc,act:c.act,lastBeat:S.clock,log:[],washed:S.clock,trust:0};
-  S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel(); S.user.bag=S.user.bag||[];
+  S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel(); S.user.bag=S.user.bag||[]; if(!S.startSnap&&!S.chat.length) S.startSnap=snapState(); S.pins=S.pins||[];
   setTimeout(()=>{ if(!S) return; for(const c of W.characters) if(!wardrobeOf(c).length) genWardrobe(c); }, 3000);
   for(const c of W.characters){ const st=S.chars[c.id]; if(!st.cycle || (st.cycle.custom!==true && (c.custom||c.edited) && c.cycle && (!!c.cycle.on!==st.cycle.on || (c.cycle.on && (+c.cycle.len!==st.cycle.len || +c.cycle.days!==st.cycle.days))))) st.cycle=defaultCycle(c); }
   // older saves kept one memory string per character: turn each into a memory entry
@@ -826,7 +838,7 @@ function load(){
   if(!S.personaId || !PS.list.find(p=>p.id===S.personaId)) S.personaId = PS.defaultId;
 }
 let saveTimer=null;
-function save(){ if(!W||!S) return; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
+function save(){ if(!W||!S) return; S.lastPlayed=Date.now(); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
 function saveCfg(){ try{ LS.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 
 // ======================= schedule engine =======================
@@ -1313,6 +1325,11 @@ ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in 
   for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   return subUser(s);
 }
+function snapState(){ return JSON.parse(JSON.stringify({clock:S.clock, user:S.user, trust:Object.fromEntries(Object.entries(S.chars).map(([k,v])=>[k,{trust:v.trust,washed:v.washed,mood:v.mood||null,outfit:v.outfit||null}])), contacts:(S.phone&&S.phone.contacts)||null, rel:S.rel||null})); }
+function restoreSnap(sn){ if(!sn) return false; S.clock=sn.clock; S.user=JSON.parse(JSON.stringify(sn.user));
+  for(const [k,v] of Object.entries(sn.trust||{})) if(S.chars[k]) Object.assign(S.chars[k],v);
+  if(sn.contacts&&S.phone) S.phone.contacts=[...sn.contacts]; if(sn.rel) S.rel=JSON.parse(JSON.stringify(sn.rel)); updateSchedules(); return true; }
+function snapBefore(i){ for(let j=i-1;j>=0;j--) if(S.chat[j].snap) return S.chat[j].snap; return S.startSnap||null; }
 function chatMessages(){
   const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
   for(const m of recent){
@@ -1346,7 +1363,7 @@ async function generateReply(){
     if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
     syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
     const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text);
-    maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
+    msg.snap=snapState(); maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
   busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
 }
@@ -1376,14 +1393,15 @@ function syncClockFromStamp(text){
   if(target<S.clock-6*60*MIN) target+=1440*MIN; // crossed midnight
   if(target>S.clock && target-S.clock<12*60*MIN) S.clock=target;
 }
+let summarizing=false;
 async function maybeSummarize(){
-  if(S.chat.length<44) return;
-  const old=S.chat.splice(0,S.chat.length-24);
+  const from=S.sumTo||0, end=S.chat.length-24; if(summarizing||end-from<20) return; summarizing=true;
+  const old=S.chat.slice(from,end);
   const txt=old.map(m=>(m.role==='user'?(persona().name||'User')+': ':m.role==='text'?'Text from '+m.from+': ':'')+m.text).join('\n\n').slice(-24000);
   try{
     const sum=await callAI({system:'You keep running summaries of a roleplay story. Be factual and specific: who did what, where, when, promises, feelings, injuries, items, and unresolved threads.', messages:[{role:'user',content:`Summarize the story so far in under 350 words. Previous summary:\n${S.summary||'(none)'}\n\nNew events:\n${txt}`}], model:CFG.bg, maxTokens:600});
-    S.summary=sum.trim();
-  }catch(e){ S.chat.unshift(...old); }
+    S.summary=sum.trim(); S.sumTo=end; save();
+  }catch(e){} finally{ summarizing=false; }
 }
 
 // ======================= off-screen lives =======================
@@ -1480,12 +1498,18 @@ function renderFeed(){
   const f=$('#feed'); const atBottom=f.scrollHeight-f.scrollTop-f.clientHeight<80;
   let h='';
   if(S.view==='me'){
+    const vis=S.chat.filter(m=>!(m.role==='user'&&m.hidden)); const firstShown=Math.max(0, S.chat.indexOf(vis[Math.max(0,vis.length-(S.showN||120))]||S.chat[0]));
     for(const m of S.chat){
       if(m.role==='user'&&m.hidden) continue;
-      if(m.role==='user') h+=`<div class="msg user"><div class="who">${esc(m.pname||persona().name||'You')} · ${mmdd(m.t)} ${hhmm(m.t)}</div><div class="bubble">${fmt(m.text)}</div></div>`;
+      const ix=S.chat.indexOf(m); if(ix<firstShown) continue;
+      const pin=(S.pins||[]).some(p=>p.t===m.t&&p.text===m.text.slice(0,200));
+      const tools=m.streaming?'':`<div class="mtools">${m.role==='assistant'&&(m.versions||[]).length>1?`<button data-ver="${ix}|-1" title="Previous version">◀</button><span>${(m.vi??m.versions.length-1)+1}/${m.versions.length}</span><button data-ver="${ix}|1" title="Next version">▶</button>`:''}<button data-edit="${ix}" title="Edit">✏️</button><button data-pin="${ix}" title="${pin?'Unpin from timeline':'Pin to timeline'}">${pin?'📌':'📍'}</button><button data-rew="${ix}" title="Rewind to here">⤺</button><button data-fork="${ix}" title="Branch a new timeline from here">⑂</button></div>`;
+      if(m.role==='user') h+=`<div class="msg user" data-i="${ix}">${tools}<div class="who">${esc(m.pname||persona().name||'You')} · ${mmdd(m.t)} ${hhmm(m.t)}</div><div class="bubble">${fmt(m.text)}</div></div>`;
       else if(m.role==='text') h+=`<div class="notice"><div class="in">📱 <b>${esc(m.from)}</b> texts you (${hhmm(m.t)}): ${esc(m.text)}</div></div>`;
-      else h+=`<div class="msg" ${m.streaming?'id="streaming"':''}>${fmt(m.text||'…')}</div>`;
+      else h+=`<div class="msg ai${pin?' pinned':''}" data-i="${ix}" ${m.streaming?'id="streaming"':''}>${tools}${fmt(m.text||'…')}</div>`;
     }
+    if(firstShown>0) h=`<div class="earlier"><button id="showEarlier">Show earlier messages (${firstShown})</button></div>`+h;
+    if(recapHTML) h=recapHTML+h;
     if(!S.chat.length) h='<div class="notice"><div class="in">Your story starts here.</div></div>';
   } else {
     const items=[]; const seen=new Set();
@@ -1497,7 +1521,36 @@ function renderFeed(){
     if(!items.length) h=`<div class="notice"><div class="in">Nothing yet. Off-screen moments appear here as the world's clock runs (every ${CFG.beat} game minutes per character).${CFG.bgOn==='0'?' Background lives are turned off in Settings.':''}</div></div>`;
   }
   f.innerHTML=h; if(atBottom||S.view!=='me'||busyMain) f.scrollTop=f.scrollHeight;
+  if(S.view==='me') bindMsgTools(f);
 }
+let recapHTML='';
+async function makeRecap(){ const last=S.chat.filter(m=>m.role!=='text'&&!m.hidden).slice(-8).map(m=>(m.role==='user'?(persona().name||'You')+': ':'')+m.text.replace(/^\|.*\|\s*/,'')).join('\n\n').slice(-6000);
+  try{ const t=await callAI({system:'Write a short "Previously…" recap for a roleplay the reader is coming back to: 3 to 5 sentences, second person for the user ("you"), past tense, specific (names, places, what was left hanging). End with where things stand right now. No preamble.', messages:[{role:'user',content:`${S.summary?'Story so far: '+S.summary+'\n\n':''}Most recent moments:\n${last}`}], model:CFG.bg, maxTokens:260});
+    if(!t.trim()) return; recapHTML=`<div class="recap"><button class="ghost" id="recapX" title="Hide">✕</button><h4>Previously…</h4>${fmt(t.trim())}</div>`; if(SCREEN==='world'&&S.view==='me') renderFeed(); }catch(e){} }
+function bindMsgTools(f){
+  const se=$('#showEarlier'); if(se) se.onclick=()=>{ const h0=f.scrollHeight; S.showN=(S.showN||120)+120; renderFeed(); f.scrollTop=f.scrollHeight-h0; };
+  const rc=$('#recapX'); if(rc) rc.onclick=()=>{ recapHTML=''; renderFeed(); };
+  f.querySelectorAll('.msg[data-i]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('.mtools,textarea,button,a')) return; f.querySelectorAll('.msg.showtools').forEach(x=>{ if(x!==el) x.classList.remove('showtools'); }); el.classList.toggle('showtools'); }));
+  f.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>{ const [i,d]=b.dataset.ver.split('|').map(Number); const m=S.chat[i]; const n=m.versions.length; m.vi=((m.vi??n-1)+d+n)%n; m.text=m.versions[m.vi]; renderFeed(); save(); });
+  f.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ if(busyMain) return; const i=+b.dataset.edit; const m=S.chat[i]; const el=b.closest('.msg');
+    el.innerHTML=`<textarea class="medit" rows="${Math.min(18,Math.max(3,m.text.split('\n').length+1))}">${esc(m.text)}</textarea><div class="rowbtns"><button class="primary" data-esave>Save</button><button class="ghost" data-ecancel>Cancel</button><span class="small">Editing changes the text only; the story continues from your edit.</span></div>`;
+    el.querySelector('[data-ecancel]').onclick=()=>renderFeed();
+    el.querySelector('[data-esave]').onclick=()=>{ const v=el.querySelector('textarea').value.trim(); if(!v) return; m.text=v; if(m.versions){ m.versions[m.vi??m.versions.length-1]=v; } renderFeed(); save(); }; });
+  f.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>{ const m=S.chat[+b.dataset.pin]; const k=m.text.slice(0,200); const i=(S.pins||[]).findIndex(p=>p.t===m.t&&p.text===k);
+    if(i>=0) S.pins.splice(i,1); else { const title=prompt('Name this moment for your timeline:', m.text.replace(/^\|.*\|\s*/,'').replace(/[*"]/g,'').slice(0,60)); if(title===null) return; S.pins.push({t:m.t, text:k, title:title.trim()||'Pinned moment', role:m.role}); } renderFeed(); save(); });
+  f.querySelectorAll('[data-rew]').forEach(b=>b.onclick=()=>{ if(busyMain) return; const i=+b.dataset.rew; const n=S.chat.length-1-i; if(n<=0){ notice('This is already the latest message.'); return; }
+    if(!confirm(`Rewind the story to this message? The ${n} message${n>1?'s':''} after it will be permanently deleted, and the clock, places, trust and phone contacts go back to how they were here.\n\nWant to keep them? Cancel and use ⑂ Branch instead.`)) return;
+    const snap=S.chat[i].role==='assistant'?S.chat[i].snap:snapBefore(i); S.chat.splice(i+1); restoreSnap(snap); if((S.sumTo||0)>S.chat.length) S.sumTo=0; render(); save(); notice('Rewound. Continue from here.'); });
+  f.querySelectorAll('[data-fork]').forEach(b=>b.onclick=()=>forkTimeline(+b.dataset.fork));
+}
+// ---- alternate timelines: a full copy of the story up to a message ----
+function forkTimeline(i){ if(busyMain) return; const name=prompt('Name this new timeline:', `What if… (${mmdd(S.chat[i].t)} ${hhmm(S.chat[i].t)})`); if(name===null) return;
+  flushSave(); const copy=JSON.parse(JSON.stringify(S)); copy.chat=copy.chat.slice(0,i+1); const snap=copy.chat[i].role==='assistant'?copy.chat[i].snap:snapBefore(i);
+  const keepS=S; S=copy; restoreSnap(snap); if((S.sumTo||0)>S.chat.length) S.sumTo=0; const forked=S; S=keepS;
+  const id='t'+Date.now().toString(36); const list=getBranches(); list.push({id, world:W.id, kind:'timeline', title:name.trim()||'New timeline', charId:null, created:Date.now(), last:Date.now(), from:SAVE_KEY});
+  setBranches(list); LS.setItem(branchSaveKey(W.id,id), JSON.stringify(forked));
+  notice(`Made the timeline "${name.trim()||'New timeline'}". Opening it now; your original story is untouched.`);
+  setTimeout(()=>enterWorld(W.id,{branchId:id}),600); }
 function renderStreaming(m){ const el=$('#streaming'); if(el){ el.innerHTML=fmt(m.text); const f=$('#feed'); f.scrollTop=f.scrollHeight; } }
 function renderClock(){ const w=weather(S.clock); $('#clock').textContent=`${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)} ${hhmm(S.clock)}`; $('#weather').textContent=`${w.desc}, ${w.temp}°F`; $('#pauseBtn').textContent=S.paused?'Resume':'Pause'; }
 function renderCards(){
@@ -1535,7 +1588,13 @@ $('#myStoryCard').onclick=()=>{ S.view='me'; render(); };
 $('#allCard').onclick=()=>{ S.view='all'; render(); save(); };
 $('#speed').onchange=e=>{ S.speed=+e.target.value; save(); };
 $('#pauseBtn').onclick=()=>{ S.paused=!S.paused; renderClock(); save(); };
-$('#regenBtn').onclick=async()=>{ if(busyMain) return; const roles=S.chat.map(m=>m.role); const lastA=roles.lastIndexOf('assistant'), lastU=roles.lastIndexOf('user'); if(lastU>lastA){ await generateReply(); return; } if(lastA<=0) return; S.chat.splice(lastA,1); render(); await generateReply(); };
+$('#regenBtn').onclick=()=>regenAt(S.chat.length-1);
+async function regenAt(idx){ if(busyMain) return; const roles=S.chat.map(m=>m.role); const lastA=roles.lastIndexOf('assistant'), lastU=roles.lastIndexOf('user');
+  if(lastU>lastA){ await generateReply(); return; } if(lastA<=0) return;
+  const old=S.chat[lastA]; const versions=old.versions||[old.text]; restoreSnap(snapBefore(lastA)); S.chat.splice(lastA,1); render();
+  await generateReply(); const nm=S.chat[S.chat.length-1];
+  if(nm&&nm.role==='assistant'&&nm!==old){ nm.versions=[...versions, nm.text]; nm.vi=nm.versions.length-1; } else if(!S.chat.includes(old)){ S.chat.push(old); }
+  render(); save(); }
 $('#undoBtn').onclick=()=>{ if(busyMain) return; let i=S.chat.map(m=>m.role).lastIndexOf('user'); if(i<0) return; const t=S.chat[i].text;
   const n=S.chat.length-i; if(!confirm(`Are you sure? This permanently deletes your last message${n>1?` and the ${n-1} message${n>2?'s':''} after it`:''} from the story. It can't be brought back.\n\nYour message: "${String(t).slice(0,140)}${String(t).length>140?'…':''}"`)) return; S.chat.splice(i); $('#input').value=t; render(); save(); };
 $('#moveBtn').onclick=()=>{ $('#moveSel').innerHTML='<option value="">— choose —</option>'+W.locations.map(l=>`<option>${esc(l)}</option>`).join(''); $('#moveFree').value=''; $('#moveModal').classList.add('on'); };
@@ -1681,8 +1740,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.18.0';
 const CHANGELOG = [
+ {v:'0.18.0', d:'2026-11-18', notes:['Your whole story is kept now. Older messages used to disappear once the story summary was written; now you can scroll all the way back (Show earlier messages).','Hover or tap any message for tools: ✏️ edit it, 📍 pin it to your timeline, ⤺ rewind the story to it, or ⑂ branch a new timeline from it.','Rewinding also rewinds the world: the clock, where you are, who\'s with you, trust, moods, outfits and phone contacts go back to how they were.','↻ Regenerate keeps the old reply: flip between versions with ◀ ▶. It also rewinds the world before trying again.','Alternate timelines: branch from any message to try a different choice; your original story stays untouched. Timelines show up with your 1-on-1 chats.','"Previously…" recap when you come back to a story after a while.','📅 Events → Timeline: pinned moments, big memories and relationship changes.']},
  {v:'0.17.0', d:'2026-11-18', notes:['Needs and moods: characters get hungry, tired and stressed over the day (work stresses them, free time and sleep calm them down), and their mood changes with what happens. It shows on their card and drives how they act.','Boredom: doing the same thing over and over gets old. Characters notice when their routine repeats a lot.','Wardrobes: everyone has their own clothes (made from their sheet if you didn\'t write any) and changes on their own for work, sleep, the gym or a formal event. The story can buy, return and change clothes too.','Your bag: the story keeps track of what you pick up, receive or lose.','See and edit clothes and your bag in 📅 Events → Clothes & bag. The creator has a Wardrobe box with a ✨ suggest button.']},
  {v:'0.16.4', d:'2026-11-18', notes:['Real conflict: arguments don\'t magically resolve. If nobody is swayed, someone may walk away or stand their ground, and anger and grudges carry over into later scenes, texts and off-screen life.','Physical fights aren\'t avoided anymore when a character would really throw a punch. Fights play out beat by beat with real injuries that take time to heal, and real consequences.']},
  {v:'0.16.3', d:'2026-11-18', notes:['Much faster replies: DeepSeek\'s "thinking" step is now off (it spent a long time thinking first, and sometimes used up the whole reply on thinking so nothing came back). You can turn it back on in Settings.','The AI request is now arranged so DeepSeek can reuse most of it from turn to turn (prompt caching), which makes replies start sooner and cost less.','Replies never hang forever: if the AI doesn\'t answer within 2 minutes you get a clear message, and your message is kept.','While a reply is being written, the Send button becomes ■ Stop.','If a reply fails, ↻ Regenerate now retries it (it used to delete the previous reply instead).','Off-screen scenes and memories no longer slow down your own replies, and the story summary runs in the background.']},
@@ -1828,13 +1888,17 @@ function newBranchState(b){
 function renderBranchSection(){
   const list=getBranches().filter(b=>WORLDS.some(w=>w.id===b.world));
   $('#branchSec').style.display=list.length?'':'none';
-  $('#branchGrid').innerHTML=list.map(b=>{ const w=WORLDS.find(x=>x.id===b.world); const c=w.characters.find(x=>x.id===b.charId); if(!c) return '';
+  $('#branchGrid').innerHTML=list.map(b=>{ const w=WORLDS.find(x=>x.id===b.world);
+    if(b.kind==='timeline'){ let s=null; try{ s=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c0=w.characters[0]||{color:'#5b4a8a'};
+      return `<div class="bcard" data-b="${b.id}"><div class="bav" style="background:radial-gradient(circle at 30% 25%,${c0.color},#1a1b22)">⑂</div><div style="min-width:0;flex:1"><div class="bt">${esc(b.title)}</div><div class="bm">Timeline of ${esc(w.title.split(':')[0])}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}`:''}</div></div><button class="ghost" data-bdel="${b.id}" title="Delete this timeline" style="padding:2px 8px">✕</button></div>`; }
+    const c=w.characters.find(x=>x.id===b.charId); if(!c) return '';
     let s=null; try{ s=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){}
     return `<div class="bcard" data-b="${b.id}"><div class="bav" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div style="min-width:0"><div class="bt">${esc(c.full)}</div><div class="bm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.title)}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${s.chat.filter(m=>m.role!=='user'||!m.hidden).length} messages`:'Not started'}</div></div></div>`; }).join('');
-  $('#branchGrid').querySelectorAll('.bcard').forEach(el=>el.onclick=()=>openBranch(el.dataset.b));
+  $('#branchGrid').querySelectorAll('.bcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-bdel]')) return; openBranch(el.dataset.b); });
+  $('#branchGrid').querySelectorAll('[data-bdel]').forEach(x=>x.onclick=()=>{ deleteBranch(x.dataset.bdel); renderHome(); });
 }
 function openBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b) return; enterWorld(b.world,{branchId:bid}); }
-function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!confirm(`Delete the 1-on-1 "${b.title}"? This can't be undone.`)) return;
+function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!confirm(`Delete ${b.kind==='timeline'?'the timeline':'the 1-on-1'} "${b.title}"? This can't be undone.`)) return;
   setBranches(getBranches().filter(x=>x.id!==bid)); LS.removeItem(branchSaveKey(b.world,bid)); }
 
 // ======================= lorebook UI =======================
@@ -2080,6 +2144,14 @@ function renderEvents(){
       if(toMin(e.end)<=toMin(e.start)){ $('#efMsg').textContent='The end time must be after the start (events end by midnight).'; return; }
       S.events.push(e); save(); updateSchedules(); renderEvents(); };
     B.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ S.events=S.events.filter(e=>e.id!==b.dataset.del); save(); updateSchedules(); renderEvents(); });
+  }
+  if(evTab==='tl'){
+    const items=[...(S.pins||[]).map(p=>({t:p.t, title:'📌 '+p.title, text:p.text.replace(/^\|.*\|\s*/,'').slice(0,220), who:'You pinned this'})),
+      ...S.memories.filter(m=>m.imp>=3||(m.imp>=2&&/invite|phone|call|met|swapped|fight|argu|kiss|confess|promise|betray|hurt|gift/i.test(m.text))).map(m=>({t:m.t, title:m.text.slice(0,120), text:'', who:m.who.map(id=>charById(id)?.name).filter(Boolean).join(', ')})),
+      ...Object.entries(S.rel||{}).flatMap(([k,r])=>r.log.filter(x=>Math.abs(x.d)>=3).map(x=>({t:x.t, title:`${k.split('|').map(id=>charById(id)?.name).join(' & ')}: ${x.d>0?'+':''}${x.d}`, text:x.why, who:'Relationship'})))]
+      .sort((a,b)=>b.t-a.t).slice(0,150);
+    B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">The big moments of this story, newest first: what you pinned (📍 on any message), important memories, and big relationship changes. ${S.summary?'<details style="margin-top:8px"><summary>Story so far (summary)</summary><div style="margin-top:6px;white-space:pre-wrap">'+esc(S.summary)+'</div></details>':''}</div>`+
+      (items.length?items.map(x=>`<div class="tl-item"><div class="tw">${wdName(x.t).slice(0,3)} ${mmdd(x.t)}<br>${hhmm(x.t)}</div><div class="tt"><b>${esc(x.title)}</b>${x.text?`<span class="small">${esc(x.text)}</span><br>`:''}<span class="small">${esc(x.who)}</span></div></div>`).join(''):'<div class="small">Nothing yet. Pin a message with 📍 to add it.</div>');
   }
   if(evTab==='wear'){
     const kinds=k=>OUTFIT_KINDS.map(x=>`<option ${x===k?'selected':''}>${x}</option>`).join('');
@@ -2679,7 +2751,9 @@ function enterWorld(id, opts={}){
   if(bid){ const list=getBranches(); const b=list.find(x=>x.id===bid); if(b){ b.last=Date.now(); setBranches(list); } }
   try{ const st=getStats(); st.lastOpen={world:W.id, branchId:bid||null, t:Date.now()}; LS.setItem(STATS_KEY,JSON.stringify(st)); }catch(e){}
   $('#speed').value=String(S.speed); lastReal=Date.now();
+  const away=S.lastPlayed?Date.now()-S.lastPlayed:0; recapHTML='';
   updateSchedules(); showScreen('world'); render(); save();
+  if(away>2*3600000&&S.chat.filter(m=>m.role==='assistant').length>=2) makeRecap();
   if(!CFG.key) setTimeout(openSettings,300); else if(!PS.list.length) setTimeout(()=>openPersonas(),300);
   else if(!persona().gender){ setTimeout(()=>{ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; },300); }
   else if(!S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the story. Open the scenario vividly from the user's starting place, show who is here and what is going on, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }

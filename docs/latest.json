@@ -1,14 +1,16 @@
 {
- "version": "0.17.0",
+ "version": "0.18.0",
  "date": "2026-11-18",
  "notes": [
-  "Needs and moods: characters get hungry, tired and stressed over the day (work stresses them, free time and sleep calm them down), and their mood changes with what happens. It shows on their card and drives how they act.",
-  "Boredom: doing the same thing over and over gets old. Characters notice when their routine repeats a lot.",
-  "Wardrobes: everyone has their own clothes (made from their sheet if you didn't write any) and changes on their own for work, sleep, the gym or a formal event. The story can buy, return and change clothes too.",
-  "Your bag: the story keeps track of what you pick up, receive or lose.",
-  "See and edit clothes and your bag in \ud83d\udcc5 Events \u2192 Clothes & bag. The creator has a Wardrobe box with a \u2728 suggest button."
+  "Your whole story is kept now. Older messages used to disappear once the story summary was written; now you can scroll all the way back (Show earlier messages).",
+  "Hover or tap any message for tools: \u270f\ufe0f edit it, \ud83d\udccd pin it to your timeline, \u293a rewind the story to it, or \u2442 branch a new timeline from it.",
+  "Rewinding also rewinds the world: the clock, where you are, who's with you, trust, moods, outfits and phone contacts go back to how they were.",
+  "\u21bb Regenerate keeps the old reply: flip between versions with \u25c0 \u25b6. It also rewinds the world before trying again.",
+  "Alternate timelines: branch from any message to try a different choice; your original story stays untouched. Timelines show up with your 1-on-1 chats.",
+  "\"Previously\u2026\" recap when you come back to a story after a while.",
+  "\ud83d\udcc5 Events \u2192 Timeline: pinned moments, big memories and relationship changes."
  ],
  "file": "index.html",
- "sha256": "e8104e1a8ca719b34c25b5561ac7a6eb33f7a7b07b2cad35fe230cf4f7a56d04",
+ "sha256": "75e5506f62d7b00578a89c1f3ede7c1a5586dc7c0c0042fbdc3f3c7e64e06dd0",
  "minShell": "0.5.0"
 }
