@@ -1,13 +1,10 @@
 {
- "version": "0.21.0",
+ "version": "0.21.1",
  "date": "2026-11-18",
  "notes": [
-  "Characters can die now. If the story truly leads there (a fight gone too far, an accident, an illness), a character can die and stays gone; everyone who knew them grieves. Off-screen scenes can end that way too.",
-  "Each character has a \"Can die\" option in the creator (and when editing built-ins). Characters who can't die, like Phoenix, survive or come back the way their sheet says, but still get hurt.",
-  "Settings has a switch to turn deaths off for everything. Events \u2192 Timeline lists who has died, with Undo death.",
-  "More alive on screen: rain, snow, fog, stars or drifting dust behind the story to match the weather, light that shifts with the hour, new messages and the clock ribbon slide in, the text cursor blinks while a reply is written, and a character's card flashes when they move somewhere new. Turn the effects off in Settings; they also stay off if your device asks for less motion."
+  "When you untick \"Can die\" for a character, you can now explain why they can't die. The AI reads it and plays it that way (for example, regenerating painfully, or coming back days later)."
  ],
  "file": "index.html",
- "sha256": "0500c3e8f57c67f4bd8896d0bde96116f17c28bf689e984c29f7dc85a99192de",
+ "sha256": "9c4ce8d3807eb84fd5840b5375b7082c7dfd62f01e7fc6763d19ddc139e42ff4",
  "minShell": "0.5.0"
 }
