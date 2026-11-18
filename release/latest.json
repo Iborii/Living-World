@@ -1,14 +1,12 @@
 {
- "version": "0.7.0",
+ "version": "0.7.1",
  "date": "2026-11-17",
  "notes": [
-  "1-on-1 chats: start a private story with any single character from their page. Have as many as you like; they show up under \"Your 1-on-1 chats\" on the main menu.",
-  "New Lorebook (\ud83d\udcd6 Lore) with two kinds of lore: World lore (keyword entries, like before) and Memories.",
-  "Memories are written automatically after every scene. Each one belongs to the characters who were there, so characters only remember what actually happened to them.",
-  "View, edit, pin or forget any memory, and add, edit or switch off world lore entries.",
-  "For testing, only the Krampus world is on the menu for now."
+  "Personas now require a gender: Male, Female, Transgender man, Transgender woman, Non-binary, or type your own.",
+  "Picking a gender fills in matching pronouns (you can still change them).",
+  "Existing personas without a gender are asked to set one before you play."
  ],
  "file": "index.html",
- "sha256": "38123806f47d9ce5d1d05a3cba665fb36c69a6768d9d04eb9ad9652cffc404a1",
+ "sha256": "ee1248e38081b8f5dd6426f31d3142c4557c37f76477ec81249edc49e96b67a2",
  "minShell": "0.5.0"
 }

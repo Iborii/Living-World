@@ -262,12 +262,13 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
     <div class="head"><div class="pav" id="pmAv">?</div><div><div class="small">Editing</div><div id="pmTitle" style="font-size:20px;font-weight:700">New persona</div></div><button class="ghost" id="pmClose" style="margin-left:auto">Close</button></div>
     <div class="grid2">
       <div><label>Name</label><input id="pmName" placeholder="What characters call you"></div>
-      <div><label>Pronouns</label><input id="pmPron" list="pronList" placeholder="he/him, she/her, they/them…"><datalist id="pronList"><option>he/him</option><option>she/her</option><option>they/them</option></datalist></div>
+      <div><label>Gender <span style="color:var(--danger)">*</span></label><select id="pmGender"><option value="">Choose…</option><option>Male</option><option>Female</option><option>Transgender man</option><option>Transgender woman</option><option>Non-binary</option><option value="__other">Other (type your own)</option></select><input id="pmGenderOther" placeholder="Describe your gender" style="display:none;margin-top:6px"></div>
     </div>
     <div class="grid2">
+      <div><label>Pronouns</label><input id="pmPron" list="pronList" placeholder="he/him, she/her, they/them…"><datalist id="pronList"><option>he/him</option><option>she/her</option><option>they/them</option></datalist></div>
       <div><label>Age (optional)</label><input id="pmAge" placeholder="e.g. 22"></div>
-      <div><label>Color</label><div class="colors" id="pmColors"></div></div>
     </div>
+    <label>Color</label><div class="colors" id="pmColors"></div>
     <label>Appearance (height, build, hair, eyes, clothes, anything characters would notice)</label><textarea id="pmLook" rows="4"></textarea>
     <label>Personality and background (job, history, how you act; only what characters could know or sense)</label><textarea id="pmBg" rows="4"></textarea>
     <div class="rowbtns"><button class="primary" id="pmSave">Save persona</button><button id="pmDefault">Use as default</button><button id="pmUse" style="display:none">Play as this in the current story</button><button class="ghost" id="pmDelete" style="margin-left:auto;border-color:var(--danger)">Delete</button></div>
@@ -393,7 +394,7 @@ function loadPersonas(){
 function savePersonas(){ try{ localStorage.setItem(PERSONA_KEY, JSON.stringify(PS)); }catch(e){} }
 function persona(){ const id=(W&&S&&S.personaId)||PS.defaultId; return PS.list.find(p=>p.id===id)||PS.list.find(p=>p.id===PS.defaultId)||PS.list[0]||{name:'',pronouns:'',age:'',look:'',bg:'',color:PCOLORS[0]}; }
 function personaText(p){ p=p||persona(); const bits=[];
-  bits.push(`The user plays ${p.name||'an unnamed person'}${p.pronouns?` (${p.pronouns})`:''}${p.age?`, age ${p.age}`:''}.`);
+  bits.push(`The user plays ${p.name||'an unnamed person'}${p.pronouns?` (${p.pronouns})`:''}${p.age?`, age ${p.age}`:''}.`); if(p.gender) bits.push('Gender: '+p.gender+'. Treat this exactly as stated: characters see, address and refer to the user accordingly.');
   if(p.look) bits.push('Appearance: '+p.look); if(p.bg) bits.push('Personality and background: '+p.bg); return bits.join('\n'); }
 const uname = () => persona().name||'you';
 const subUser = s => String(s||'').replace(/\{\{user\}\}/g, uname()).replace(/\{\{char\}\}/g,'the characters');
@@ -648,6 +649,7 @@ let busyMain=false, mainAbort=null;
 async function send(text){
   if(busyMain) return;
   text=(text||'').trim(); if(!text) return;
+  if(PS.list.length && !persona().gender){ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; return; }
   S.chat.push({role:'user',text,t:S.clock,pid:S.personaId,pname:persona().name}); S.view='me'; bumpStats(present().map(c=>c.id)); render(); save();
   await generateReply();
 }
@@ -978,8 +980,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.7.1';
 const CHANGELOG = [
+ {v:'0.7.1', d:'2026-11-17', notes:['Personas now require a gender: Male, Female, Transgender man, Transgender woman, Non-binary, or type your own.','Picking a gender fills in matching pronouns (you can still change them).','Existing personas without a gender are asked to set one before you play.']},
  {v:'0.7.0', d:'2026-11-17', notes:['1-on-1 chats: start a private story with any single character from their page. Have as many as you like; they show up under "Your 1-on-1 chats" on the main menu.','New Lorebook (📖 Lore) with two kinds of lore: World lore (keyword entries, like before) and Memories.','Memories are written automatically after every scene. Each one belongs to the characters who were there, so characters only remember what actually happened to them.','View, edit, pin or forget any memory, and add, edit or switch off world lore entries.','For testing, only the Krampus world is on the menu for now.']},
  {v:'0.6.0', d:'2026-11-17', notes:['Living World now installs like a normal Windows program (Start menu, desktop shortcut, and Settings > Apps to remove it).','New in Settings > Data & privacy: wipe all your data automatically when the app is uninstalled.','New "Wipe all data now" button to erase every story, persona, setting and your API key.','Automatic updates are now connected.']},
  {v:'0.5.0', d:'2026-11-17', notes:['Automatic updates: the app checks for new versions and lets you restart now or later.','This update log. Open it any time from "What\'s new" on the main menu.','Settings shows your version and has a "Check for updates" button.']},
@@ -1026,10 +1029,12 @@ function openPersonas(selectId){
   renderPersonaModal(); $('#personaModal').classList.add('on');
 }
 function renderPersonaModal(){
-  $('#pmList').innerHTML=PS.list.map(p=>`<div class="pcard ${p.id===pmEditing?'sel':''}" data-id="${p.id}"><div class="pav" style="background:${p.color}">${esc((p.name||'?')[0])}</div><div><div class="pn">${esc(p.name||'(unnamed)')}</div><div class="pp">${esc(p.pronouns||'')}${p.age?' · '+esc(p.age):''}</div></div>${p.id===PS.defaultId?'<span class="def">default</span>':''}</div>`).join('')||'<div class="small">No personas yet. Fill in the form to make your first one.</div>';
+  $('#pmList').innerHTML=PS.list.map(p=>`<div class="pcard ${p.id===pmEditing?'sel':''}" data-id="${p.id}"><div class="pav" style="background:${p.color}">${esc((p.name||'?')[0])}</div><div><div class="pn">${esc(p.name||'(unnamed)')}</div><div class="pp">${p.gender?esc(p.gender):'<span style="color:var(--danger)">gender not set</span>'}${p.pronouns?' · '+esc(p.pronouns):''}${p.age?' · '+esc(p.age):''}</div></div>${p.id===PS.defaultId?'<span class="def">default</span>':''}</div>`).join('')||'<div class="small">No personas yet. Fill in the form to make your first one.</div>';
   $('#pmList').querySelectorAll('.pcard').forEach(el=>el.onclick=()=>{ pmEditing=el.dataset.id; renderPersonaModal(); });
   const p=PS.list.find(x=>x.id===pmEditing)||{name:'',pronouns:'',age:'',look:'',bg:'',color:PCOLORS[PS.list.length%PCOLORS.length]};
-  pmColor=p.color; $('#pmName').value=p.name; $('#pmPron').value=p.pronouns; $('#pmAge').value=p.age; $('#pmLook').value=p.look; $('#pmBg').value=p.bg;
+  pmColor=p.color||PCOLORS[0]; $('#pmName').value=p.name||''; $('#pmPron').value=p.pronouns||'';
+  const gStd=['Male','Female','Transgender man','Transgender woman','Non-binary']; const g=p.gender||'';
+  $('#pmGender').value=!g?'':gStd.includes(g)?g:'__other'; $('#pmGenderOther').value=gStd.includes(g)?'':g; $('#pmGenderOther').style.display=$('#pmGender').value==='__other'?'':'none'; $('#pmAge').value=p.age||''; $('#pmLook').value=p.look||''; $('#pmBg').value=p.bg||'';
   $('#pmTitle').textContent=pmEditing?(p.name||'(unnamed)'):'New persona'; pmPaintAv();
   $('#pmColors').innerHTML=PCOLORS.map(c=>`<span data-c="${c}" style="background:${c}" class="${c===pmColor?'sel':''}"></span>`).join('');
   $('#pmColors').querySelectorAll('span').forEach(el=>el.onclick=()=>{ pmColor=el.dataset.c; $('#pmColors').querySelectorAll('span').forEach(s=>s.classList.toggle('sel',s===el)); pmPaintAv(); });
@@ -1039,10 +1044,15 @@ function renderPersonaModal(){
 }
 function pmPaintAv(){ $('#pmAv').style.background=pmColor; $('#pmAv').textContent=($('#pmName').value||'?')[0]; }
 $('#pmName').oninput=pmPaintAv;
+const PRON_FOR={'Male':'he/him','Female':'she/her','Transgender man':'he/him','Transgender woman':'she/her','Non-binary':'they/them'};
+$('#pmGender').onchange=e=>{ const v=e.target.value; $('#pmGenderOther').style.display=v==='__other'?'':'none'; if(v==='__other') $('#pmGenderOther').focus();
+  if(PRON_FOR[v] && (!$('#pmPron').value.trim() || Object.values(PRON_FOR).includes($('#pmPron').value.trim()))) $('#pmPron').value=PRON_FOR[v]; };
 $('#pmNew').onclick=()=>{ pmEditing=null; renderPersonaModal(); $('#pmName').focus(); };
 $('#pmSave').onclick=()=>{
   const name=$('#pmName').value.trim(); if(!name){ $('#pmMsg').textContent='Give your persona a name first.'; return; }
-  const data={name, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor};
+  const gsel=$('#pmGender').value; const gender=gsel==='__other'?$('#pmGenderOther').value.trim():gsel;
+  if(!gender){ $('#pmMsg').textContent='Choose a gender first (it\'s required so characters treat you correctly).'; $('#pmGender').focus(); return; }
+  const data={name, gender, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor};
   if(pmEditing){ Object.assign(PS.list.find(x=>x.id===pmEditing),data); }
   else { const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),...data}; PS.list.push(p); pmEditing=p.id; if(!PS.defaultId) PS.defaultId=p.id; if(W&&S&&!S.personaId) S.personaId=p.id; }
   savePersonas(); renderPersonaModal(); $('#pmMsg').textContent='Saved.'; if(SCREEN==='world'){ render(); save(); } else renderHome();
@@ -1191,6 +1201,7 @@ function enterWorld(id, opts={}){
   $('#speed').value=String(S.speed); lastReal=Date.now();
   updateSchedules(); showScreen('world'); render(); save();
   if(!CFG.key) setTimeout(openSettings,300); else if(!PS.list.length) setTimeout(()=>openPersonas(),300);
+  else if(!persona().gender){ setTimeout(()=>{ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; },300); }
   else if(S.branch && !S.chat.length){ S.chat.push({role:'user', hidden:true, t:S.clock, text:`(Begin the one-on-one scene. Set the place and moment from the scenario, introduce ${charById(S.branch.charId).full} vividly, and end where the user can respond. Start with the time stamp line, using ${timeLine(S.clock)}.)`}); render(); generateReply(); }
 }
 $('#homeBtn').onclick=()=>{ if(S) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); showScreen('home'); };
