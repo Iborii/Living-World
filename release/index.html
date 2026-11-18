@@ -139,6 +139,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .wcard .bot{padding:12px 18px;display:flex;gap:8px;align-items:center}
 .wcard .bot .prog{margin-right:auto;font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:13.5px;padding:18px;border:1px dashed var(--line);border-radius:14px}
+#sendBtn.stopping{background:#5a2030;border-color:#c0475f;color:#ffd5dc}
 /* sign-in gate */
 #authModal.gate{background:radial-gradient(ellipse at 50% -10%,#2a2333 0%,var(--bg) 60%)}
 #authModal.gate #auClose{display:none}
@@ -593,6 +594,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
   </div>
   <div class="grid2">
     <div><label>Background lives on/off</label><select id="sBgOn"><option value="1">On</option><option value="0">Off (save money)</option></select></div>
+    <div><label>AI thinking before replying (DeepSeek)</label><select id="sThink"><option value="0">Off: fast replies (recommended)</option><option value="1">On: slower, sometimes smarter</option></select></div>
     <div><label>When you come back to the app</label><select id="sAway"><option value="pause">Pick up where you left off (the world waited)</option><option value="catchup">Catch up: the time you were away passed in the world too</option></select></div>
     <div><label>Realism</label><select id="sRealism"><option value="full">Full: every realism rule, always (default)</option><option value="standard">Standard: core rules + details when relevant</option><option value="off">Off</option></select></div>
   </div>
@@ -1064,8 +1066,22 @@ function updateSchedules(){
 
 // ======================= AI client =======================
 const _spareUsage={inT:0,outT:0}; function USE(){ return (typeof S!=="undefined"&&S&&S.usage)||_spareUsage; }
-async function callAI({system, messages, model, maxTokens, onText, signal}){
-  if((CFG.key||'').trim().toLowerCase()==='demo') return demoAI({system,messages,onText});
+// Background calls (off-screen scenes, memories, texts) take turns so they never crowd out your story replies.
+let aiRunning=0; const aiQueue=[];
+const bgSlot=()=>new Promise(res=>{ if(aiRunning<3){ aiRunning++; res(); } else aiQueue.push(res); });
+const bgDone=()=>{ const n=aiQueue.shift(); if(n) n(); else aiRunning--; };
+async function callAI(opts){
+  if((CFG.key||'').trim().toLowerCase()==='demo') return demoAI(opts);
+  const story=!!opts.onText; if(!story) await bgSlot();
+  // time limits so nothing hangs forever: the story gets 2 minutes to start answering, background jobs 90 seconds in total
+  const ctl=new AbortController(); let timedOut=false; if(opts.signal){ if(opts.signal.aborted) ctl.abort(); opts.signal.addEventListener('abort',()=>ctl.abort()); }
+  let timer=setTimeout(()=>{ timedOut=true; ctl.abort(); }, story?120000:90000);
+  const kick=()=>{ if(!story) return; clearTimeout(timer); timer=setTimeout(()=>{ timedOut=true; ctl.abort(); },60000); };
+  try{ return await callAIraw({...opts, signal:ctl.signal, onText:story?(t=>{ kick(); opts.onText(t); }):undefined}); }
+  catch(e){ if(timedOut) throw new Error(story?'The AI took too long to answer. Your message is kept: press ↻ Regenerate to try again.':'A background request timed out.'); if(ctl.signal.aborted&&opts.signal&&opts.signal.aborted){ const er=new Error('Stopped.'); er.stopped=true; throw er; } if(e instanceof TypeError) throw new Error('Couldn\'t reach the AI (check your internet). Your message is kept: press ↻ Regenerate to try again.'); throw e; }
+  finally{ clearTimeout(timer); if(!story) bgDone(); }
+}
+async function callAIraw({system, messages, model, maxTokens, onText, signal}){
   if(!CFG.key) throw new Error('No API key yet. Open Settings and paste your key (or type "demo" to test).');
   if(CFG.provider==='anthropic'){
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':CFG.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -1082,7 +1098,7 @@ async function callAI({system, messages, model, maxTokens, onText, signal}){
     const base=CFG.provider==='deepseek'?'https://api.deepseek.com':(CFG.base||'https://openrouter.ai/api/v1');
     const url=base.replace(/\/$/,'')+'/chat/completions';
     const res=await fetch(url,{method:'POST',signal,headers:{'content-type':'application/json','authorization':'Bearer '+CFG.key},
-      body:JSON.stringify({model, max_tokens:maxTokens, stream:!!onText, messages:[{role:'system',content:system},...messages]})});
+      body:JSON.stringify({model, max_tokens:maxTokens, stream:!!onText, messages:[{role:'system',content:system},...messages], ...(CFG.provider==='deepseek'?{thinking:{type:CFG.think==='1'?'enabled':'disabled'}}:{})})});
     if(!res.ok) throw new Error('AI error '+res.status+': '+(await res.text()).slice(0,300));
     if(!onText){ const j=await res.json(); USE().inT+=j.usage?.prompt_tokens||0; USE().outT+=j.usage?.completion_tokens||0; return j.choices?.[0]?.message?.content||''; }
     let text=''; await readSSE(res, ev=>{ const d=ev.choices?.[0]?.delta?.content; if(d){ text+=d; onText(text); } if(ev.usage){ USE().inT+=ev.usage.prompt_tokens||0; USE().outT+=ev.usage.completion_tokens||0; } }); return text;
@@ -1175,6 +1191,8 @@ function recentLog(id,n){ return S.chars[id].log.slice(-n).map(e=>`[${mmdd(e.t)}
 
 function mainSystem(){
   const pres=present(); const absent=W.characters.filter(c=>!pres.includes(c));
+  const ctx=recentContext(4);
+  // Parts that rarely change come first so the AI provider can reuse them (prompt caching): much faster replies.
   let s=W.rules+realismBlock(false)+`
 
 THE USER
@@ -1185,25 +1203,11 @@ SCENARIO
 ${S.branch?`This is a private one-on-one story between the user and ${charById(S.branch.charId).full}. It is separate from the main world story. Other main characters do not appear in person unless the user brings them in (they can be mentioned, call, or text).
 ${S.branch.scenario}`:W.scenario}
 
-${S.summary?('STORY SO FAR\n'+S.summary+'\n\n'):''}CURRENT TIME: ${timeLine(S.clock)}
-USER'S LOCATION: ${S.user.loc}
-CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
-TRUST TOWARD THE USER: ${trustLine()}${phonesOn()?`
-PHONE CONTACTS: The user has the numbers of ${phone().contacts.map(id=>charById(id)?.name).filter(Boolean).join(', ')||'nobody yet'}. Everyone else can't text or call the user (and the user can't text them) until they swap numbers in the story; when someone gives their number or takes the user's, add [[NUMBER: Name]].`:''}
-LAST WASHED: ${washedLine()}
-${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
 `;
-  const ctx=recentContext(4);
-  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\nWHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What they were just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
-  const lore=matchLore(ctx+'\n'+pres.map(c=>c.full).join(' '));
-  if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
-  s+=raceLoreBlock([...pres, persona()], ctx);
-  if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
-  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   s+=`
 REPLY FORMAT
 1. Begin the reply with this line: |HH:MM (Next: Name: event HH:MM)|District, exact spot|MM/DD (Weekday)|Weather, temperature|
-   Use the current time as the starting point and move it forward realistically for what happens. Next events for people here: ${nextEventsFor(pres)||'none'}.
+   Use the current time as the starting point and move it forward realistically for what happens.
 2. Then the story.
 3. At the very end, add control lines when something changed (each on its own line, nothing after them):
    [[MOVE: District, exact spot]]  when the user goes somewhere new
@@ -1214,6 +1218,25 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[NUMBER: Name]]  when a character and the user swap phone numbers
    [[BOND: Name / Name +N: reason]]  when something changes how two characters feel about each other (usually 1 to 3)
    Do not write a status line; the app shows it.`;
+  s+='\n\n';
+  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\n`; }
+  if(S.summary) s+='STORY SO FAR\n'+S.summary+'\n\n';
+  // What's true right now
+  s+=`CURRENT TIME: ${timeLine(S.clock)}
+USER'S LOCATION: ${S.user.loc}
+CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
+TRUST TOWARD THE USER: ${trustLine()}${phonesOn()?`
+PHONE CONTACTS: The user has the numbers of ${phone().contacts.map(id=>charById(id)?.name).filter(Boolean).join(', ')||'nobody yet'}. Everyone else can't text or call the user (and the user can't text them) until they swap numbers in the story; when someone gives their number or takes the user's, add [[NUMBER: Name]].`:''}
+LAST WASHED: ${washedLine()}
+${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}
+`;
+  s+=`NEXT EVENTS for people here: ${nextEventsFor(pres)||'none'}.\n\n`;
+  for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What ${c.name} was just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
+  const lore=matchLore(ctx+'\n'+pres.map(c=>c.full).join(' '));
+  if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
+  s+=raceLoreBlock([...pres, persona()], ctx);
+  if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
+  for(const c of absent){ const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
   return subUser(s);
 }
 function chatMessages(){
@@ -1239,18 +1262,20 @@ async function send(text){
   await generateReply();
 }
 async function generateReply(){
+  let errMsg='';
   busyMain=true; setBusyUI();
   const msg={role:'assistant',text:'',t:S.clock,streaming:true}; S.chat.push(msg); renderFeed();
   mainAbort=new AbortController();
   try{
     const full=await callAI({system:mainSystem(), messages:chatMessages(), model:CFG.main, maxTokens:+CFG.maxTok||1600, signal:mainAbort.signal,
       onText:t=>{ msg.text=t; renderStreaming(msg); }});
+    if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
     msg.text=applyControls(full); delete msg.streaming;
     syncClockFromStamp(msg.text);
     const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text);
-    await maybeSummarize();
-  }catch(e){ S.chat.splice(S.chat.indexOf(msg),1); notice(e.message,true); }
-  busyMain=false; setBusyUI(); render(); save();
+    maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
+  }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
+  busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
 }
 function applyControls(text){
   const lines=text.split('\n'); const keep=[];
@@ -1424,17 +1449,17 @@ function renderViewbar(){
 }
 function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return; sel.innerHTML=PS.list.map(p=>`<option value="${p.id}">Playing as ${esc(p.name||'(unnamed)')}</option>`).join('')+'<option value="__manage">Manage personas…</option>'; sel.value=S.personaId||''; }
 function render(){ renderPersonaSel(); $('#worldTitle').textContent=S.branch?`${charById(S.branch.charId).full} · 1-on-1`:W.title; renderClock(); renderCards(); renderViewbar(); renderFeed(); renderStatus(); }
-function setBusyUI(){ $('#sendBtn').disabled=busyMain; $('#sendBtn').textContent=busyMain?'Writing…':'Send'; }
+function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; $('#sendBtn').classList.toggle('stopping',busyMain); }
 function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>d.remove(), err?15000:6000); }
 
 // ======================= UI wiring =======================
-$('#sendBtn').onclick=()=>{ const t=$('#input').value; $('#input').value=''; send(t); };
+$('#sendBtn').onclick=()=>{ if(busyMain){ mainAbort&&mainAbort.abort(); return; } const t=$('#input').value; $('#input').value=''; send(t); };
 $('#input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); $('#sendBtn').click(); } });
 $('#myStoryCard').onclick=()=>{ S.view='me'; render(); };
 $('#allCard').onclick=()=>{ S.view='all'; render(); save(); };
 $('#speed').onchange=e=>{ S.speed=+e.target.value; save(); };
 $('#pauseBtn').onclick=()=>{ S.paused=!S.paused; renderClock(); save(); };
-$('#regenBtn').onclick=async()=>{ if(busyMain) return; const i=S.chat.map(m=>m.role).lastIndexOf('assistant'); if(i<=0) return; S.chat.splice(i,1); render(); await generateReply(); };
+$('#regenBtn').onclick=async()=>{ if(busyMain) return; const roles=S.chat.map(m=>m.role); const lastA=roles.lastIndexOf('assistant'), lastU=roles.lastIndexOf('user'); if(lastU>lastA){ await generateReply(); return; } if(lastA<=0) return; S.chat.splice(lastA,1); render(); await generateReply(); };
 $('#undoBtn').onclick=()=>{ if(busyMain) return; let i=S.chat.map(m=>m.role).lastIndexOf('user'); if(i<0) return; const t=S.chat[i].text;
   const n=S.chat.length-i; if(!confirm(`Are you sure? This permanently deletes your last message${n>1?` and the ${n-1} message${n>2?'s':''} after it`:''} from the story. It can't be brought back.\n\nYour message: "${String(t).slice(0,140)}${String(t).length>140?'…':''}"`)) return; S.chat.splice(i); $('#input').value=t; render(); save(); };
 $('#moveBtn').onclick=()=>{ $('#moveSel').innerHTML='<option value="">— choose —</option>'+W.locations.map(l=>`<option>${esc(l)}</option>`).join(''); $('#moveFree').value=''; $('#moveModal').classList.add('on'); };
@@ -1454,7 +1479,7 @@ function openSettings(){
   refreshWipeToggle();
   $('#verLine').textContent=`Version ${APP_VERSION}`+(window.lwUpdate?'':WEBAPP?' (phone/web app)':' (browser version)');
   $('#resetBtn').style.display=W?'':'none'; $('#exportBtn').style.display=W?'':'none'; $('#importBtn').style.display=W?'':'none';
-  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause';
+  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0';
   $('#baseRow').style.display=CFG.provider==='openai'?'':'none';
   $('#costNote').textContent='Tip: the story model writes your scenes (use a strong one). The background model writes everyone else\'s lives many times an hour, so a small cheap model keeps costs down. Raise "update every" to save more.';
   $('#settingsModal').classList.add('on');
@@ -1463,7 +1488,7 @@ $('#settingsBtn').onclick=openSettings;
 $('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
-$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||1600,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
+$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||1600,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
 $('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`livingworld-${W.id}-${isoDate(S.clock)}.json`; a.click(); };
 $('#importBtn').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); if(j.world!==W.id) throw new Error('That save is for a different world.'); S=j; save(); render(); notice('Save loaded.'); }catch(err){ notice('Could not load: '+err.message,true); } };
@@ -1580,8 +1605,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.16.2';
+const APP_VERSION = '0.16.3';
 const CHANGELOG = [
+ {v:'0.16.3', d:'2026-11-18', notes:['Much faster replies: DeepSeek\'s "thinking" step is now off (it spent a long time thinking first, and sometimes used up the whole reply on thinking so nothing came back). You can turn it back on in Settings.','The AI request is now arranged so DeepSeek can reuse most of it from turn to turn (prompt caching), which makes replies start sooner and cost less.','Replies never hang forever: if the AI doesn\'t answer within 2 minutes you get a clear message, and your message is kept.','While a reply is being written, the Send button becomes ■ Stop.','If a reply fails, ↻ Regenerate now retries it (it used to delete the previous reply instead).','Off-screen scenes and memories no longer slow down your own replies, and the story summary runs in the background.']},
  {v:'0.16.2', d:'2026-11-17', notes:['Undo last now asks "Are you sure?" first and shows what will be deleted, so you can\'t wipe part of a story by accident.']},
  {v:'0.16.1', d:'2026-11-17', notes:['You can now edit the built-in characters too (their page → Edit): pictures, phone picture, sheet, schedule, gender, race, cycle, everything. Edited ones show an "edited" tag, and Reset to original undoes your changes.']},
  {v:'0.16.0', d:'2026-11-17', notes:['You don\'t start with everyone\'s number anymore. Swap numbers with someone while you\'re with them (Messages → Swap numbers), or they can give you theirs in the story. Only contacts can text, call or invite you, and only they show on the Map.','Phone profile pictures: set one for each character in the creator, and one for yourself in Personas. You can also tap any contact\'s picture in a chat to give them your own contact photo.','New worlds: choose whether you already have each other\'s numbers.']},

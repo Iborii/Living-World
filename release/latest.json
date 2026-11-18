@@ -1,10 +1,15 @@
 {
- "version": "0.16.2",
- "date": "2026-11-17",
+ "version": "0.16.3",
+ "date": "2026-11-18",
  "notes": [
-  "Undo last now asks \"Are you sure?\" first and shows what will be deleted, so you can't wipe part of a story by accident."
+  "Much faster replies: DeepSeek's \"thinking\" step is now off (it spent a long time thinking first, and sometimes used up the whole reply on thinking so nothing came back). You can turn it back on in Settings.",
+  "The AI request is now arranged so DeepSeek can reuse most of it from turn to turn (prompt caching), which makes replies start sooner and cost less.",
+  "Replies never hang forever: if the AI doesn't answer within 2 minutes you get a clear message, and your message is kept.",
+  "While a reply is being written, the Send button becomes \u25a0 Stop.",
+  "If a reply fails, \u21bb Regenerate now retries it (it used to delete the previous reply instead).",
+  "Off-screen scenes and memories no longer slow down your own replies, and the story summary runs in the background."
  ],
  "file": "index.html",
- "sha256": "7cb36002a2e6ed5eb9b967ea09afe0bf359a5edb094a46793768b9c7fdac00f0",
+ "sha256": "d534d892ac5da458237d0e35e2b3659254dda33514ac8632193426e6973624a1",
  "minShell": "0.5.0"
 }
