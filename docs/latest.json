@@ -1,10 +1,10 @@
 {
- "version": "0.22.3",
+ "version": "0.22.4",
  "date": "2026-11-18",
  "notes": [
-  "Owner build only: Yunkui Summit is back, Suibian Temple with Yixuan, Ju Fufu, Ye Shunguang, Pan Yinhu, Belle and Wise. It sits in the Zenless Zone Zero universe next to Krampus, with Knock Knock and the Inter-Knot."
+  "Owner build only: Belle and Wise in Yunkui Summit are back to their regular selves. Who they are to you now comes only from the scene, not their character sheets."
  ],
  "file": "index.html",
- "sha256": "58c8270a3cd0117b29a3cdc169f80836f09bea37961bdf79e144d83d544c5690",
+ "sha256": "f0fedbf799ca319e9c45e48685347db1a53d339adf3b5049e60c326c8c725518",
  "minShell": "0.5.0"
 }
