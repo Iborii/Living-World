@@ -1,0 +1,12 @@
+{
+ "version": "0.22.0",
+ "date": "2026-11-18",
+ "notes": [
+  "Main menu reorganized: worlds are grouped by universe (like Zenless Zone Zero). Open a world to chat with everyone, start a 1-on-1 with any of its characters, see its cast, or pick up your 1-on-1s and timelines there.",
+  "Only a character's creator can edit them. Built-in characters can only be edited by the app owner's account. Everyone else can make their own copy to change.",
+  "New worlds can be given a universe or series name."
+ ],
+ "file": "index.html",
+ "sha256": "1276773dd5a111428836014b9ed8d4e61feb8394278b0451aac759d8d680c4ac",
+ "minShell": "0.5.0"
+}

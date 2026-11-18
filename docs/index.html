@@ -158,6 +158,17 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .recap h4{margin:0 0 6px;font-family:var(--font);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
 .recap #recapX{position:absolute;top:8px;right:10px}
 .tl-item{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.tl-item .tw{font-size:12px;color:var(--muted)}.tl-item .tt b{display:block}
+.ugroup{margin-bottom:22px}.uname{font-family:var(--serif);font-weight:600;font-size:17px;margin:4px 0 10px;color:var(--accent)}
+.wcard{cursor:pointer}
+.wm-head{padding:22px 24px 18px;background:var(--wbg);border-bottom:1px solid var(--line)}
+.wm-head h2{font-family:var(--serif);font-size:28px;margin:2px 0}
+.wm-head p{max-width:62ch;line-height:1.55}
+.wm-sec{padding:16px 24px}
+.wm-sec h3{margin:0 0 10px;font-size:15px}
+.wm-row{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.wm-row:last-child{border-bottom:0}
+.wm-av{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:20px;flex:none;background-size:cover!important}
+.wm-tx{flex:1;min-width:0}.wm-tx b{display:block}.wm-tx span{font-size:12.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* sign-in gate */
 #authModal.gate{background:radial-gradient(ellipse at 50% -10%,#2a2333 0%,var(--bg) 60%)}
 #authModal.gate #auClose{display:none}
@@ -547,13 +558,16 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
     <div class="sec" id="searchSec" style="display:none"><h3>Search results</h3><div class="sub" id="searchSub"></div><div class="cgrid" id="searchGrid"></div></div>
     <div id="homeSecs">
       <div class="sec" id="studioSec" style="display:none"><h3>Popular in the Studio <button class="ghost" id="homeStudioMore" style="font-size:12px;padding:3px 10px">See all</button></h3><div class="sub">Races, characters and worlds shared by other people.</div><div class="cgrid" id="homeStudioGrid"></div></div>
+      <div class="sec"><h3>Worlds</h3><div class="sub">Open a world to chat with everyone, start a 1-on-1 with one character, or pick up a timeline.</div><div id="worldGrid"></div></div>
       <div class="sec" id="branchSec" style="display:none"><h3>Your 1-on-1 chats &amp; timelines</h3><div class="sub">Private stories with one character, and alternate timelines you branched off a story.</div><div class="bgrid" id="branchGrid"></div></div>
       <div class="sec"><h3>Top characters</h3><div class="sub">The most loved characters, boosted by who you spend time with.</div><div class="cgrid" id="topGrid"></div></div>
       <div class="sec"><h3>Recommended for you</h3><div class="sub" id="recSub"></div><div class="cgrid" id="recGrid"></div></div>
-      <div class="sec"><h3>Worlds</h3><div class="sub">Each world keeps running on its own clock while it's open.</div><div class="wgrid" id="worldGrid"></div></div>
+      
     </div>
   </div>
 </div>
+
+<div class="modal" id="worldModal"><div class="box" style="width:min(860px,96vw);max-height:92vh;overflow:auto;padding:0"><div id="wmBody"></div></div></div>
 
 <div class="modal" id="soloModal"><div class="box">
   <h2 id="soloTitle">New 1-on-1</h2>
@@ -677,7 +691,7 @@ aside h3{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;col
     <div class="cm-stats" id="cmStats"></div>
     <div class="brief" id="cmBrief"></div>
     <div class="cm-branches" id="cmBranches"></div>
-    <div class="rowbtns"><button class="primary" id="cmChat">Chat</button><button id="cmSolo">1-on-1 chat</button><button id="cmWatch">Watch their story</button><button id="cmEdit" class="ghost" style="display:none">Edit</button><button id="cmExport" class="ghost" style="display:none">Export</button><button class="ghost" id="cmClose" style="margin-left:auto">Close</button></div>
+    <div class="rowbtns"><button class="primary" id="cmChat">Chat</button><button id="cmSolo">1-on-1 chat</button><button id="cmWatch">Watch their story</button><button id="cmCopy" class="ghost" style="display:none">Make my own copy</button><button id="cmEdit" class="ghost" style="display:none">Edit</button><button id="cmExport" class="ghost" style="display:none">Export</button><button class="ghost" id="cmClose" style="margin-left:auto">Close</button></div>
   </div>
 </div></div>
 
@@ -891,6 +905,8 @@ function setCustom(c){ try{ LS.setItem(CUSTOM_KEY, JSON.stringify(c)); return tr
 const OVR_KEY='livingworld_overrides';
 function getOverrides(){ try{ return JSON.parse(LS.getItem(OVR_KEY)||'{}')||{}; }catch(e){ return {}; } }
 function setOverrides(o){ try{ LS.setItem(OVR_KEY,JSON.stringify(o)); return true; }catch(e){ alert('Could not save: storage is full.'); return false; } }
+const BUILTIN_UNIVERSE={krampus:'Zenless Zone Zero', saltwind:'Original stories'};
+function universeOf(w){ return (w.universe||BUILTIN_UNIVERSE[w.id]||(w.custom?'Your worlds':'Other worlds')).trim(); }
 function rebuildWorlds(){
   const C=getCustom(); WORLDS.length=0;
   for(const b of BUILTIN) WORLDS.push(JSON.parse(JSON.stringify(b)));
@@ -1927,11 +1943,12 @@ function renderHomeHero(st){
 function renderHomeRest(st){
   const top=topChars(); $('#topGrid').innerHTML=top.map((c,i)=>charCardHTML(c,i,{rank:true})).join(''); bindCards($('#topGrid'));
   const rec=recommendations(); $('#recSub').textContent=rec.sub; $('#recGrid').innerHTML=rec.list.map((r,i)=>charCardHTML(r.c,i,{why:r.why})).join(''); bindCards($('#recGrid'));
-  $('#worldGrid').innerHTML=WORLDS.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1;
-    return `<div class="wcard"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.setting)} · ${esc(w.title.split(': ')[1]||'')}</div><div class="bl">${esc(w.blurb)}</div>
-      <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div>
-      <div class="chips">${w.tags.slice(1).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div></div>
-      <div class="bot"><span class="prog">${started?`In progress · ${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}</span>${started?`<button data-new="${w.id}" class="ghost">New story</button>`:''}<button class="primary" data-go="${w.id}">${started?'Continue':'Start'}</button></div></div>`; }).join('');
+  const groups={}; for(const w of WORLDS) (groups[universeOf(w)]=groups[universeOf(w)]||[]).push(w);
+  $('#worldGrid').innerHTML=Object.entries(groups).map(([u,ws])=>`<div class="ugroup"><h4 class="uname">${esc(u)}</h4><div class="wgrid">${ws.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1; const subs=getBranches().filter(b=>b.world===w.id).length;
+    return `<div class="wcard" data-wopen="${w.id}"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.title.split(': ')[1]||w.setting)}</div><div class="bl">${esc(w.blurb)}</div>
+      <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
+      <div class="bot"><span class="prog">${started?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}${subs?` · ${subs} more chat${subs>1?'s':''}`:''}</span><button data-wopen="${w.id}" class="ghost">Open</button><button class="primary" data-go="${w.id}">${started?'Chat now':'Start'}</button></div></div>`; }).join('')}</div></div>`).join('');
+  $('#worldGrid').querySelectorAll('.wcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-go]')) return; openWorldPage(el.dataset.wopen); });
   $('#worldGrid').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>enterWorld(b.dataset.go));
   [['#topGrid',top.length],['#recGrid',rec.list.length],['#worldGrid',WORLDS.length]].forEach(([s,n])=>{ $(s).closest('.sec').style.display=n?'':'none'; });
   $('#worldGrid').querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{ if(confirm('Start this world over from the beginning? (Export first in Settings if you want to keep it.)')){ LS.removeItem('livingworld_save_'+b.dataset.new); enterWorld(b.dataset.new); } });
@@ -1946,10 +1963,29 @@ function doSearch(){
   $('#searchGrid').innerHTML=res.map((c,i)=>charCardHTML(c,i)).join(''); bindCards($('#searchGrid'));
 }
 let cmKey=null;
+function openWorldPage(wid){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
+  const subs=getBranches().filter(b=>b.world===w.id);
+  const subRow=b=>{ let bs=null; try{ bs=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c=b.charId&&w.characters.find(x=>x.id===b.charId);
+    return `<div class="wm-row"><div class="wm-av" style="background:${c?avatarBg(c.color,c.img):`radial-gradient(circle at 30% 25%,${w.characters[0].color},#1a1b22)`}">${c?(c.img?'':esc(c.name[0])):'⑂'}</div><div class="wm-tx"><b>${esc(b.kind==='timeline'?b.title:(c?c.full+': '+b.title:b.title))}</b><span>${b.kind==='timeline'?'Timeline':'1-on-1'}${bs?` · ${wdName(bs.clock).slice(0,3)} ${mmdd(bs.clock)} ${hhmm(bs.clock)}`:''}</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`; };
+  $('#wmBody').innerHTML=`<div class="wm-head" style="--wbg:linear-gradient(135deg,${w.characters[0].color}55,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)">
+      <button class="ghost" id="wmClose" style="float:right">Close</button><div class="small">${esc(universeOf(w))}</div><h2>${esc(w.title.split(':')[0])}</h2><div class="small">${esc(w.title.split(': ')[1]||'')}${w.setting?' · '+esc(w.setting):''}</div><p>${esc(w.blurb||'')}</p>
+      <div class="rowbtns"><button class="primary" id="wmGo">${started?'Chat now with everyone':'Start the story'}</button>${started?`<span class="small" style="align-self:center">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span><button class="ghost" id="wmNew">Start over</button>`:''}<button class="ghost" id="wmLore">Lorebook</button></div></div>
+    <div class="wm-sec"><h3>Characters</h3>${w.characters.map(c=>`<div class="wm-row"><div class="wm-av" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div class="wm-tx"><b>${esc(c.full)}</b><span>${esc(c.tagline||'')}</span></div><button data-wmsolo="${c.id}">1-on-1</button><button class="ghost" data-wmchar="${c.id}">Profile</button></div>`).join('')}</div>
+    ${subs.length?`<div class="wm-sec"><h3>Your 1-on-1 chats and timelines here</h3>${subs.map(subRow).join('')}</div>`:''}`;
+  $('#worldModal').classList.add('on');
+  const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close;
+  $('#wmGo').onclick=()=>{ close(); enterWorld(w.id); };
+  const nw=$('#wmNew'); if(nw) nw.onclick=()=>{ if(confirm('Start this world over from the beginning? The current story is deleted (your 1-on-1s and timelines stay).')){ LS.removeItem('livingworld_save_'+w.id); close(); enterWorld(w.id); } };
+  $('#wmLore').onclick=()=>{ close(); LORE_WORLD=w.id; openLore(); };
+  $('#wmBody').querySelectorAll('[data-wmsolo]').forEach(b=>b.onclick=()=>{ close(); openSolo(w.id+':'+b.dataset.wmsolo); });
+  $('#wmBody').querySelectorAll('[data-wmchar]').forEach(b=>b.onclick=()=>{ close(); openChar(w.id+':'+b.dataset.wmchar); });
+  $('#wmBody').querySelectorAll('[data-wmb]').forEach(b=>b.onclick=()=>{ close(); openBranch(b.dataset.wmb); });
+  $('#wmBody').querySelectorAll('[data-wmdel]').forEach(b=>b.onclick=()=>{ deleteBranch(b.dataset.wmdel); openWorldPage(w.id); renderHome(); });
+}
 function openChar(key){
   const c=allChars().find(x=>x.key===key); if(!c) return; cmKey=key; const st=getStats(); const s=worldProgress(c.world);
   $('#cmAv').style.background=avatarBg(c.color,c.img); $('#cmAv').textContent=c.img?'':c.name[0];
-  $('#cmEdit').style.display=''; $('#cmExport').style.display=c.custom?'':'none';
+  $('#cmEdit').style.display=canEdit(c)?'':'none'; $('#cmCopy').style.display=canEdit(c)?'none':''; $('#cmExport').style.display=c.custom&&canEdit(c)?'':'none';
   document.querySelector('#charModal .cm-top').style.setProperty('--cbg',`linear-gradient(120deg,${c.color}44,transparent 70%)`);
   $('#cmWorld').textContent=c.world.title.split(':')[0]; $('#cmName').textContent=c.full; $('#cmTag').textContent=c.tagline;
   $('#cmChips').innerHTML=c.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
@@ -1973,8 +2009,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.21.1';
+const APP_VERSION = '0.22.0';
 const CHANGELOG = [
+ {v:'0.22.0', d:'2026-11-18', notes:['Main menu reorganized: worlds are grouped by universe (like Zenless Zone Zero). Open a world to chat with everyone, start a 1-on-1 with any of its characters, see its cast, or pick up your 1-on-1s and timelines there.','Only a character\'s creator can edit them. Built-in characters can only be edited by the app owner\'s account. Everyone else can make their own copy to change.','New worlds can be given a universe or series name.']},
  {v:'0.21.1', d:'2026-11-18', notes:['When you untick "Can die" for a character, you can now explain why they can\'t die. The AI reads it and plays it that way (for example, regenerating painfully, or coming back days later).']},
  {v:'0.21.0', d:'2026-11-18', notes:['Characters can die now. If the story truly leads there (a fight gone too far, an accident, an illness), a character can die and stays gone; everyone who knew them grieves. Off-screen scenes can end that way too.','Each character has a "Can die" option in the creator (and when editing built-ins). Characters who can\'t die, like Phoenix, survive or come back the way their sheet says, but still get hurt.','Settings has a switch to turn deaths off for everything. Events → Timeline lists who has died, with Undo death.','More alive on screen: rain, snow, fog, stars or drifting dust behind the story to match the weather, light that shifts with the hour, new messages and the clock ribbon slide in, the text cursor blinks while a reply is written, and a character\'s card flashes when they move somewhere new. Turn the effects off in Settings; they also stay off if your device asks for less motion.']},
  {v:'0.20.0', d:'2026-11-18', notes:['New look: a deep dusk-blue theme with lantern gold and tide teal, new fonts made for reading long stories, and calmer menus and windows.','Every reply opens with a big clock ribbon showing the time, place, date and weather, so you always know where the world is.','Your turns now read like notes in the margin instead of chat bubbles, and off-screen scenes have their own teal edge.','Clearer keyboard focus, and animations calm down if your device asks for reduced motion.']},
@@ -2042,6 +2079,7 @@ if(window.lwUpdate){ window.lwUpdate.onReady(showUpdate); window.lwUpdate.onStat
 const WEBAPP=!window.lwUpdate&&/^https:/.test(location.protocol);
 const vNewer=(a,b)=>{ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0); } return false; };
 async function webCheck(manual){ try{ const j=await fetch('latest.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()); if(vNewer(j.version,APP_VERSION)){ if(!UPD.pending||UPD.pending.version!==j.version) showUpdate(j); return `Version ${j.version} is ready.`; } return 'You have the latest version.'; }catch(e){ return 'Could not check (offline?).'; } }
+setTimeout(()=>{ if(AUTH) refreshAdmin(); }, 2500);
 if(WEBAPP){ setTimeout(webCheck,4000); setInterval(webCheck,30*60000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) webCheck(); }); }
 setInterval(()=>{ if(SCREEN==='world'||SCREEN==='home') flushSave(); }, 15000);
 
@@ -2125,7 +2163,7 @@ function newBranchState(b){
 }
 function renderBranchSection(){
   const list=getBranches().filter(b=>WORLDS.some(w=>w.id===b.world));
-  $('#branchSec').style.display=list.length?'':'none';
+  $('#branchSec').style.display='none'; // these now live inside each world's page
   $('#branchGrid').innerHTML=list.map(b=>{ const w=WORLDS.find(x=>x.id===b.world);
     if(b.kind==='timeline'){ let s=null; try{ s=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c0=w.characters[0]||{color:'#5b4a8a'};
       return `<div class="bcard" data-b="${b.id}"><div class="bav" style="background:radial-gradient(circle at 30% 25%,${c0.color},#1a1b22)">⑂</div><div style="min-width:0;flex:1"><div class="bt">${esc(b.title)}</div><div class="bm">Timeline of ${esc(w.title.split(':')[0])}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}`:''}</div></div><button class="ghost" data-bdel="${b.id}" title="Delete this timeline" style="padding:2px 8px">✕</button></div>`; }
@@ -2142,7 +2180,8 @@ function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!c
 // ======================= lorebook UI =======================
 let lbTab='world', lbSel=null;
 function openLore(){ if(!loreWorld()){ alert('Make a world first: create a character and give them a new world.'); return; } lbTab=W&&S&&SCREEN==='world'?lbTab:'world'; lbSel=null; $('#loreModal').classList.add('on'); renderLore(); }
-function loreWorld(){ return W||WORLDS[0]; }
+let LORE_WORLD=null;
+function loreWorld(){ if(LORE_WORLD&&!W){ const w=WORLDS.find(x=>x.id===LORE_WORLD); if(w) return w; } return W||WORLDS[0]; }
 function renderLore(){
   $('#lbTabWorld').classList.toggle('on',lbTab==='world'); $('#lbTabMem').classList.toggle('on',lbTab==='mem');
   const inStory=W&&S&&SCREEN==='world';
@@ -2472,7 +2511,17 @@ const DAYS=['M','T','W','T','F','S','S'];
 let CR=null, crStep=0;
 function blankChar(){ return {id:'c'+Date.now().toString(36), name:'', full:'', tagline:'', tags:[], color:PCOLORS[Math.floor(Math.random()*PCOLORS.length)], img:'', phoneImg:'', gender:'', race:'', animal:'', construct:false, phone:true, mortal:true, minor:false, cycle:{on:false,len:28,days:5}, age:'', sheet:'', brief:'', schedule:[], loc:'', act:'', world:WORLDS[0]?.id||'__new', rank:20,
   _newWorld:{title:'', setting:'', blurb:'', scenario:'', opening:'', date:new Date().toISOString().slice(0,10), time:'09:00', userLoc:'', withUser:true, extraRules:''}}; }
+// Only a character's creator can edit it. Built-in characters belong to the app's owner (an admin account).
+function myId(){ return AUTH&&AUTH.user?AUTH.user.id:''; }
+function isAppOwner(){ return !studioReady()||!!(AUTH&&AUTH.isAdmin); }
+function canEdit(c){ if(!c) return false; if(!c.custom) return isAppOwner(); if(c.src) return !!c.ownerId&&c.ownerId===myId(); return !c.ownerId||!myId()||c.ownerId===myId()||isAppOwner(); }
+function copyChar(key){ const [w,id]=key.split(':'); const wo=WORLDS.find(x=>x.id===w); const src=wo&&wo.characters.find(x=>x.id===id); if(!src) return;
+  const C=getCustom(); const {custom,edited,src:_s,...base}=JSON.parse(JSON.stringify(src)); const nid='c'+Date.now().toString(36);
+  const ch={...base, id:nid, world:w, name:base.name, full:(base.full||base.name)+' (my copy)', ownerId:myId(), gender:genderOf(src), race:raceOf(src).race||base.race||'', animal:raceOf(src).animal||base.animal||'', mortal:canDie(src), rank:10};
+  C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); renderHome(); notice?.(`Made your own copy of ${src.full}.`); setTimeout(()=>openCreator(w+':'+nid),150); }
+async function refreshAdmin(){ if(!AUTH||!studioReady()) return; try{ const p=await sb('profiles?select=name,is_admin&id=eq.'+AUTH.user.id,{auth:true}); if(p[0]) saveAuth({...AUTH, name:p[0].name||AUTH.name, isAdmin:!!p[0].is_admin}); }catch(e){} }
 function openCreator(editKey){
+  if(editKey){ const [w0,id0]=editKey.split(':'); const wo=WORLDS.find(x=>x.id===w0); const co=wo&&wo.characters.find(x=>x.id===id0); if(co&&!canEdit(co)){ alert(`Only ${co.custom?'the person who made':'the owner of'} ${co.full} can edit them. You can make your own copy instead.`); return; } }
   if(editKey){ const C=getCustom(); const [w,id]=editKey.split(':'); const c=C.chars.find(x=>x.world===w&&x.id===id);
     if(!c){ const bw=WORLDS.find(x=>x.id===w&&!x.custom); const bc=bw&&bw.characters.find(x=>x.id===id); if(!bc) return;
       const r=BUILTIN_RACE[bc.id]&&!bc.edited?BUILTIN_RACE[bc.id]:{race:bc.race||'',animal:bc.animal||''}; const bcy=BUILTIN_CYCLES[bc.id];
@@ -2480,7 +2529,7 @@ function openCreator(editKey){
         cycle:bc.cycle||(bcy?{on:true,len:bcy.len,days:bcy.days}:{on:false,len:28,days:5}), _builtin:true, _editing:true, _newWorld:blankChar()._newWorld};
       crStep=0; $('#crTitle').textContent=`Edit ${CR.full||CR.name}`; $('#crDelete').style.display=bc.edited?'':'none'; $('#crDelete').textContent='Reset to original';
       $('#createModal').classList.add('on'); renderCreator(); return; } CR=JSON.parse(JSON.stringify(c)); CR._editing=true;
-    const cw=C.worlds.find(x=>x.id===c.world); CR._newWorld=cw?{title:cw.title,setting:cw.setting,blurb:cw.blurb,scenario:cw.scenario,opening:cw.opening.text,date:cw.start.date,time:cw.start.time,userLoc:cw.opening.userLoc,withUser:(cw.opening.companions||[]).includes(c.id),extraRules:cw.extraRules||'',phoneStyle:(cw.phone||{}).style||'standard'}:blankChar()._newWorld; CR._worldIsMine=!!cw; }
+    const cw=C.worlds.find(x=>x.id===c.world); CR._newWorld=cw?{title:cw.title,setting:cw.setting,blurb:cw.blurb,scenario:cw.scenario,opening:cw.opening.text,date:cw.start.date,time:cw.start.time,userLoc:cw.opening.userLoc,withUser:(cw.opening.companions||[]).includes(c.id),extraRules:cw.extraRules||'',universe:cw.universe||'',phoneStyle:(cw.phone||{}).style||'standard'}:blankChar()._newWorld; CR._worldIsMine=!!cw; }
   else { CR=blankChar(); }
   crStep=0; $('#crTitle').textContent=CR._editing?`Edit ${CR.full||CR.name}`:'Create a character'; $('#crDelete').style.display=CR._editing?'':'none'; $('#crDelete').textContent='Delete character';
   $('#createModal').classList.add('on'); renderCreator();
@@ -2491,7 +2540,7 @@ function crCollect(){ // read the visible step's fields into CR
   if(crStep===1){ CR.sheet=v('crSheet'); CR.brief=v('crBrief').trim(); CR.wardrobe=(v('crWard')||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const m=l.match(/^(.+?)\s*\((\w+)\)\s*:?\s*(.*)$/); return m?{name:m[1].trim().slice(0,60), kind:OUTFIT_KINDS.includes(m[2].toLowerCase())?m[2].toLowerCase():'casual', desc:m[3].trim().slice(0,300)}:{name:l.split(':')[0].trim().slice(0,60), kind:'casual', desc:(l.split(':').slice(1).join(':')||'').trim()}; }); }
   if(crStep===2){ CR.schedule=[...document.querySelectorAll('.srow')].map(r=>({days:[...r.querySelectorAll('.days input')].map((x,i)=>x.checked?i+1:0).filter(Boolean), start:r.querySelector('.s1').value||'00:00', end:r.querySelector('.s2').value||'23:59', loc:r.querySelector('.s3').value.trim(), act:r.querySelector('.s4').value.trim()})).filter(s=>s.days.length&&(s.loc||s.act));
     CR.loc=v('crLoc').trim(); CR.act=v('crAct').trim(); }
-  if(crStep===3&&!CR._builtin){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard', climate:v('nwClimate')||nw.climate||'temperate'}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
+  if(crStep===3&&!CR._builtin){ CR.world=v('crWorld'); const nw=CR._newWorld; Object.assign(nw,{title:v('nwTitle')?.trim()??nw.title, setting:v('nwSetting')?.trim()??nw.setting, blurb:v('nwBlurb')?.trim()??nw.blurb, scenario:v('nwScenario')??nw.scenario, opening:v('nwOpening')??nw.opening, date:v('nwDate')||nw.date, time:v('nwTime')||nw.time, userLoc:v('nwUserLoc')?.trim()??nw.userLoc, extraRules:v('nwRules')??nw.extraRules, phoneStyle:v('nwPhone')||nw.phoneStyle||'standard', climate:v('nwClimate')||nw.climate||'temperate', universe:(v('nwUniverse')??nw.universe??'').trim()}); if($('#nwWith')) nw.withUser=$('#nwWith').checked; if($('#nwNum')) nw.hasNumber=$('#nwNum').checked; }
 }
 function renderCreator(){
   document.querySelectorAll('.cr-steps button').forEach(b=>b.classList.toggle('on',+b.dataset.step===crStep));
@@ -2577,6 +2626,7 @@ function renderCreator(){
       <div class="hint">Joining a world means they share its clock and city with everyone there, run into them, and get their own off-screen life. A new world starts its own story with this character.</div>
       ${isNew?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div class="grid2"><div><label>World title</label><input id="nwTitle" value="${esc(nw.title)}" placeholder="e.g. Rainy Season at the Café"></div><div><label>Setting (City, District)</label><input id="nwSetting" value="${esc(nw.setting)}" placeholder="e.g. Harbor City, Old Market, or any world you like"></div></div>
+        <label>Universe or series (groups your worlds on the main menu; optional)</label><input id="nwUniverse" value="${esc(nw.universe||'')}" placeholder="e.g. Zenless Zone Zero, or my own fantasy series">
         <label>One-line blurb for the world card</label><input id="nwBlurb" value="${esc(nw.blurb)}">
         <label>Scenario: who you are, how you know them, what's going on right now</label><textarea id="nwScenario" rows="5">${esc(nw.scenario)}</textarea>
         <label>Opening message (optional: leave empty and the AI writes it when you start)</label><textarea id="nwOpening" rows="5">${esc(nw.opening)}</textarea>
@@ -2612,11 +2662,12 @@ $('#crSave').onclick=()=>{
   if(wid==='__new'){ const nw=c._newWorld; if(!nw.title){ crStep=3; renderCreator(); return msg('Give the new world a title.'); }
     const existing=c._editing&&C.worlds.find(w=>w.id===C.chars.find(x=>x.id===c.id)?.world);
     wid=existing?existing.id:('w'+Date.now().toString(36));
-    const world={id:wid, title:nw.title, setting:nw.setting||'', blurb:nw.blurb||'', tags:['Custom',...c.tags.slice(0,3)], start:{date:nw.date, time:nw.time||'09:00'}, scenario:nw.scenario||'', extraRules:nw.extraRules||'', events:[],
+    const world={id:wid, universe:nw.universe||'', title:nw.title, setting:nw.setting||'', blurb:nw.blurb||'', tags:['Custom',...c.tags.slice(0,3)], start:{date:nw.date, time:nw.time||'09:00'}, scenario:nw.scenario||'', extraRules:nw.extraRules||'', events:[],
       phone:{style:nw.phoneStyle||'standard'}, climate:nw.climate||'temperate', opening:{userLoc:nw.userLoc||c.loc||nw.setting||'', companions:nw.withUser?[c.id]:[], contacts:nw.hasNumber!==false?[c.id]:[], text:nw.opening||'', washed:{}}};
     C.worlds=C.worlds.filter(w=>w.id!==wid); C.worlds.push(world);
   }
-  const ch={id:c.id, world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
+  const prevOwner=(C.chars.find(x=>x.id===c.id)||{}).ownerId;
+  const ch={id:c.id, ownerId:prevOwner||c.ownerId||myId(), world:wid, name:c.name, full:c.full, tagline:c.tagline||'', tags:c.tags.length?c.tags:['Custom'], color:c.color, img:c.img||'', minor:!!c.minor, age:c.age||'',
     sheet:(c.minor?`IMPORTANT: ${c.full} is under 18${c.age?` (age ${c.age})`:''}. Keep everything about them age-appropriate: never part of romantic or sexual content, body never described beyond height and general build, and no romance happens while they are present.\n\n`:'')+c.sheet.replace(/^IMPORTANT: .*? is under 18[^\n]*\n\n/,''),
     brief:c.brief, wardrobe:c.wardrobe||[], phoneImg:c.phoneImg||'', gender:c.gender, phone:c.phone!==false, mortal:c.mortal!==false, undyingReason:c.mortal===false?(c.undyingReason||''):'', race:c.race, raceId:c.raceId||'', animal:c.animal||'', construct:!!c.construct, cycle:canCycle(c)?(c.cycle||{on:false,len:28,days:5}):{on:false,len:28,days:5}, schedule:c.schedule, loc:c.loc||c.schedule[0]?.loc||c._newWorld.userLoc||'', act:c.act||c.schedule[0]?.act||'going about their day', rank:20};
   C.chars=C.chars.filter(x=>x.id!==c.id); C.chars.push(ch);
@@ -2644,6 +2695,7 @@ $('#crImportFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value
     C.chars.push(ch); if(!setCustom(C)) return; rebuildWorlds(); $('#createModal').classList.remove('on'); renderHome(); setTimeout(()=>openChar(ch.world+':'+ch.id),200);
   }catch(err){ $('#crMsg').textContent='Could not import: '+err.message; } };
 $('#cmEdit').onclick=()=>{ $('#charModal').classList.remove('on'); openCreator(cmKey); };
+$('#cmCopy').onclick=()=>{ $('#charModal').classList.remove('on'); copyChar(cmKey); };
 $('#homeCreate').onclick=()=>openCreator();
 $('#homeAcct').onclick=()=>openAuth(); $('#homeStudio').onclick=()=>openStudio('discover'); $('#homeStudioMore').onclick=()=>openStudio('discover');
 
@@ -2874,12 +2926,12 @@ function addRacesFrom(list, srcId){ const rs=getRaces(); const map={};
 function installItem(it){ const d=it.data||{};
   if(it.kind==='race'){ const rs=getRaces(); const ex=rs.find(x=>x.src===it.id); const r={...blankRace(), ...d.race, src:it.id}; if(ex){ r.id=ex.id; rs[rs.indexOf(ex)]=r; } else r.id='r'+Date.now().toString(36); setRaces(rs.filter(x=>x.id!==r.id).concat([r])); return ex?`Updated ${r.name} in your races.`:`${r.name} is in your races now. Pick it when you make a character or persona.`; }
   const C=getCustom(); const stamp=Date.now().toString(36);
-  if(it.kind==='character'){ const rmap=addRacesFrom(d.races, it.id); const ch={...d.character, id:'c'+stamp, src:it.id}; if(ch.raceId) ch.raceId=rmap[ch.raceId]||'';
+  if(it.kind==='character'){ const rmap=addRacesFrom(d.races, it.id); const ch={...d.character, id:'c'+stamp, src:it.id, ownerId:it.owner}; if(ch.raceId) ch.raceId=rmap[ch.raceId]||'';
     if(d.world){ const nw={...d.world, id:'w'+stamp, src:it.id}; nw.opening={...nw.opening, companions:(nw.opening?.companions||[]).includes(d.character.id)?[ch.id]:[]}; ch.world=nw.id; C.worlds.push(nw); }
     else { const pick=WORLDS[0]; if(!pick) throw new Error('This character joins an existing world, and you don\'t have one yet. Make a world first (create a character with a new world).'); ch.world=pick.id; }
     C.chars.push(ch); if(!setCustom(C)) throw new Error('Storage is full.'); rebuildWorlds(); return `${ch.full||ch.name} is in your app${d.world?` with their world "${d.world.title}"`:` in ${WORLDS.find(w=>w.id===ch.world)?.title.split(':')[0]}`}. Find them on the main menu.`; }
   if(it.kind==='world'){ const rmap=addRacesFrom(d.races, it.id); const wid='w'+stamp; const idmap={};
-    const chars=(d.characters||[]).map((c,i)=>{ const nid='c'+stamp+i; idmap[c.id]=nid; return {...c, id:nid, world:wid, src:it.id, raceId:c.raceId?(rmap[c.raceId]||''):''}; });
+    const chars=(d.characters||[]).map((c,i)=>{ const nid='c'+stamp+i; idmap[c.id]=nid; return {...c, id:nid, world:wid, src:it.id, ownerId:it.owner, raceId:c.raceId?(rmap[c.raceId]||''):''}; });
     const w={...d.world, id:wid, src:it.id}; w.opening={...w.opening, companions:(w.opening?.companions||[]).map(x=>idmap[x]).filter(Boolean)};
     C.worlds.push(w); C.chars.push(...chars); if(!setCustom(C)) throw new Error('Storage is full.');
     try{ LS.setItem('livingworld_lore_'+wid, JSON.stringify([...(BASE.realismLore||[]).map(e=>({...e,on:true,always:false})), ...(d.lore||[]).map(e=>({...e,on:e.on!==false}))])); }catch(e){}
@@ -2934,7 +2986,7 @@ function syncLine(){ const s=LS.sync?LS.sync.state:{on:false}; if(!AUTH) return 
 async function afterSync(changed){ if(changed&&changed.length){ await LS.flush(); notice?.('Loaded your things from your account.'); location.reload(); } }
 async function enableSync(pw){ try{ return await LS.sync.enable(pw, AUTH); }catch(e){
     if(LS.sync.state.state==='error'&&/unlock/i.test(LS.sync.state.msg)&&confirm('Your account\'s saved data was locked with an older password and can\'t be opened. Replace it with what\'s on this device?')){ await LS.sync.resetRemote(); return await LS.sync.enable(pw, AUTH); } throw e; } }
-async function signInWith(email, pw){ const j=await sbAuth('token?grant_type=password',{email,password:pw}); saveAuth(authFrom(j)); try{ const p=await sb('profiles?select=name&id=eq.'+AUTH.user.id,{auth:true}); if(p[0]) saveAuth({...AUTH,name:p[0].name}); }catch(e){} return j; }
+async function signInWith(email, pw){ const j=await sbAuth('token?grant_type=password',{email,password:pw}); saveAuth(authFrom(j)); await refreshAdmin(); try{ const p=await sb('profiles?select=name&id=eq.'+AUTH.user.id,{auth:true}); if(p[0]) saveAuth({...AUTH,name:p[0].name}); }catch(e){} return j; }
 const needGate=()=>studioReady()&&!AUTH;
 function openGate(){ $('#authModal').classList.add('gate'); openAuth(); }
 function passGate(){ if($('#authModal').classList.contains('gate')){ $('#authModal').classList.remove('gate','on'); } }
@@ -2948,6 +3000,7 @@ function openAuth(why){
       <label>Display name (shown on what you publish in the Studio)</label><input id="auName" value="${esc(AUTH.name||'')}" maxlength="40">
       <div class="rowbtns" style="margin-top:12px"><span class="small" id="auMsg"></span><button id="auOut" class="ghost">Sign out</button><button class="primary" id="auSave" style="margin-left:auto">Save name</button></div>`;
     const msg=t=>$('#auMsg').textContent=t;
+    if(AUTH.isAdmin) $('#auBody').insertAdjacentHTML('afterbegin','<p class="small" style="color:var(--accent)">App owner: you can edit the built-in characters.</p>');
     $('#auOut').onclick=async()=>{ if(!confirm('Sign out? You\'ll need to sign in again to use the app. This device keeps its copy of your things.')) return; flushSave(); await LS.sync?.disable(); saveAuth(null); MYLIKES=new Set(); likesLoaded=false; await LS.flush(); location.reload(); };
     $('#auSave').onclick=async()=>{ const n=$('#auName').value.trim(); if(!n) return; try{ await sb('profiles?id=eq.'+AUTH.user.id,{method:'PATCH',auth:true,body:{name:n}}); saveAuth({...AUTH,name:n}); msg('Saved.'); renderStudioNav(); }catch(e){ msg(e.message); } };
     const sn=$('#auSyncNow'); if(sn) sn.onclick=async()=>{ flushSave(); sn.disabled=true; try{ await LS.sync.push(); const ch=await LS.sync.pull(); await afterSync(ch); }catch(e){ msg(e.message); } sn.disabled=false; $('#auSync').textContent=syncLine(); };

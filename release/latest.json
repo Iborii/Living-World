@@ -1,10 +1,12 @@
 {
- "version": "0.21.1",
+ "version": "0.22.0",
  "date": "2026-11-18",
  "notes": [
-  "When you untick \"Can die\" for a character, you can now explain why they can't die. The AI reads it and plays it that way (for example, regenerating painfully, or coming back days later)."
+  "Main menu reorganized: worlds are grouped by universe (like Zenless Zone Zero). Open a world to chat with everyone, start a 1-on-1 with any of its characters, see its cast, or pick up your 1-on-1s and timelines there.",
+  "Only a character's creator can edit them. Built-in characters can only be edited by the app owner's account. Everyone else can make their own copy to change.",
+  "New worlds can be given a universe or series name."
  ],
  "file": "index.html",
- "sha256": "9c4ce8d3807eb84fd5840b5375b7082c7dfd62f01e7fc6763d19ddc139e42ff4",
+ "sha256": "1276773dd5a111428836014b9ed8d4e61feb8394278b0451aac759d8d680c4ac",
  "minShell": "0.5.0"
 }
