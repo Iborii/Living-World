@@ -1,0 +1,13 @@
+{
+ "version": "0.14.0",
+ "date": "2026-11-17",
+ "notes": [
+  "\ud83d\udcf1 Living World now works on phones, including iPhone: open the web link in Safari and choose Share \u2192 Add to Home Screen. It opens fullscreen like a normal app, works offline (except the AI), and updates itself.",
+  "Phone-sized layout: the cast list slides in from the \ud83d\udc65 button, and every window becomes full screen.",
+  "Saves now live in a much bigger storage area, so long stories, pictures and wallpapers have room. Your existing saves move over automatically.",
+  "New setting: when you come back to the app after it was closed or your phone was locked, either pick up where you left off (default) or let that time pass in the world too."
+ ],
+ "file": "index.html",
+ "sha256": "40cbf95364ba306da11812afd20936d1f0cae1474fad9a4e60d8a33fdacf3d94",
+ "minShell": "0.5.0"
+}

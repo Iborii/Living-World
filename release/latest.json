@@ -1,13 +1,13 @@
 {
- "version": "0.13.1",
+ "version": "0.14.0",
  "date": "2026-11-17",
  "notes": [
-  "Phones are optional: pick Standard, Zenless Zone Zero or No phones for each world (in the creator, in Settings, or in the phone's own Settings app).",
-  "Standard phones use Messages and Social; Zenless Zone Zero worlds use Knock Knock and Inter-Knot (Krampus, and any world set in New Eridu, picks this automatically).",
-  "Each character can have a phone or not (creator \u2192 Basics). Characters without one don't show in your contacts and never text, call or post.",
-  "Customize the phone: rename the apps, pick its color and wallpaper (or your own picture), and choose which apps show on the home screen."
+  "\ud83d\udcf1 Living World now works on phones, including iPhone: open the web link in Safari and choose Share \u2192 Add to Home Screen. It opens fullscreen like a normal app, works offline (except the AI), and updates itself.",
+  "Phone-sized layout: the cast list slides in from the \ud83d\udc65 button, and every window becomes full screen.",
+  "Saves now live in a much bigger storage area, so long stories, pictures and wallpapers have room. Your existing saves move over automatically.",
+  "New setting: when you come back to the app after it was closed or your phone was locked, either pick up where you left off (default) or let that time pass in the world too."
  ],
  "file": "index.html",
- "sha256": "b63fb95605118d5c6d9c15883a23da1a203be5318798dc6e809b9ffd417a3b8e",
+ "sha256": "40cbf95364ba306da11812afd20936d1f0cae1474fad9a4e60d8a33fdacf3d94",
  "minShell": "0.5.0"
 }
