@@ -1,11 +1,11 @@
 {
- "version": "0.22.1",
+ "version": "0.22.2",
  "date": "2026-11-18",
  "notes": [
-  "Main menu now shows universes first. Enter Zenless Zone Zero to see all its worlds, then open a world for its characters, 1-on-1s and timelines.",
-  "When making a world, pick an existing universe from the list so it lands in the same place."
+  "Replies no longer stop half-way through a sentence. If the AI hits its length limit or the connection drops, the app has it pick up exactly where it left off.",
+  "Longer default reply length (3000 tokens). You only pay for what is actually written."
  ],
  "file": "index.html",
- "sha256": "5bf5321fb532c901268f1a13fc835fbce0080f3b0a9f8c2b6cbd4eac2cd97009",
+ "sha256": "b68bfae4e520d51a7c7d5d2cf29a2b3c1c36763f579bc02d9b928380013d6ad7",
  "minShell": "0.5.0"
 }

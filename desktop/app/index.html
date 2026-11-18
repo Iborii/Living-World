@@ -980,7 +980,7 @@ function holidayLines(){ const out=[]; const today=isoDate(S.clock).slice(5);
 
 // ======================= state =======================
 let S, CFG;
-function defaultCfg(){ return {mature:false, away:'pause', provider:'deepseek', key:'', base:'https://openrouter.ai/api/v1', main:'deepseek-v4-pro', bg:'deepseek-flash', beat:30, maxTok:1600, name:'', persona:'', bgOn:'1', realism:'full'}; }
+function defaultCfg(){ return {mature:false, away:'pause', provider:'deepseek', key:'', base:'https://openrouter.ai/api/v1', main:'deepseek-v4-pro', bg:'deepseek-flash', beat:30, maxTok:3000, name:'', persona:'', bgOn:'1', realism:'full'}; }
 function newState(){
   const t0=parseStart(W.start.date,W.start.time);
   const chars={};
@@ -992,7 +992,7 @@ function newState(){
   return s;
 }
 function stripStatus(t){ return t.split('\n').filter(l=>!/\d+\/100\s*\|/.test(l)).join('\n').trim(); }
-function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } }
+function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } if(+CFG.maxTok===1600) CFG.maxTok=3000; }
 function load(){
   const fresh=(S&&S.branch&&S.world===W.id&&SAVE_KEY.endsWith('~'+S.branch.id)&&!S.chat.length)?S:null;
   try{ const raw=LS.getItem(SAVE_KEY); S=raw?JSON.parse(raw):null; }catch(e){ S=null; }
@@ -1346,21 +1346,24 @@ async function callAI(opts){
   const ctl=new AbortController(); let timedOut=false; if(opts.signal){ if(opts.signal.aborted) ctl.abort(); opts.signal.addEventListener('abort',()=>ctl.abort()); }
   let timer=setTimeout(()=>{ timedOut=true; ctl.abort(); }, story?120000:90000);
   const kick=()=>{ if(!story) return; clearTimeout(timer); timer=setTimeout(()=>{ timedOut=true; ctl.abort(); },60000); };
-  try{ return await callAIraw({...opts, signal:ctl.signal, onText:story?(t=>{ kick(); opts.onText(t); }):undefined}); }
-  catch(e){ if(timedOut) throw new Error(story?'The AI took too long to answer. Your message is kept: press ↻ Regenerate to try again.':'A background request timed out.'); if(ctl.signal.aborted&&opts.signal&&opts.signal.aborted){ const er=new Error('Stopped.'); er.stopped=true; throw er; } if(e instanceof TypeError) throw new Error('Couldn\'t reach the AI (check your internet). Your message is kept: press ↻ Regenerate to try again.'); throw e; }
+  let partial='';
+  try{ return await callAIraw({...opts, signal:ctl.signal, onText:story?(t=>{ partial=t; kick(); opts.onText(t); }):undefined}); }
+  catch(e){ if(story&&partial.trim().length>40&&!(opts.signal&&opts.signal.aborted)){ LAST_FINISH='cut'; return partial; } if(timedOut) throw new Error(story?'The AI took too long to answer. Your message is kept: press ↻ Regenerate to try again.':'A background request timed out.'); if(ctl.signal.aborted&&opts.signal&&opts.signal.aborted){ const er=new Error('Stopped.'); er.stopped=true; throw er; } if(e instanceof TypeError) throw new Error('Couldn\'t reach the AI (check your internet). Your message is kept: press ↻ Regenerate to try again.'); throw e; }
   finally{ clearTimeout(timer); if(!story) bgDone(); }
 }
+let LAST_FINISH=''; // why the last AI call stopped: 'done', 'length' (hit the word limit) or 'cut' (connection ended early)
 async function callAIraw({system, messages, model, maxTokens, onText, signal}){
+  LAST_FINISH='cut';
   if(!CFG.key) throw new Error('No API key yet. Open Settings and paste your key (or type "demo" to test).');
   if(CFG.provider==='anthropic'){
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':CFG.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model, max_tokens:maxTokens, system, messages, stream:!!onText})});
     if(!res.ok) throw new Error('AI error '+res.status+': '+(await res.text()).slice(0,300));
-    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.input_tokens||0; USE().outT+=j.usage?.output_tokens||0; return (j.content||[]).map(b=>b.text||'').join(''); }
+    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.input_tokens||0; USE().outT+=j.usage?.output_tokens||0; LAST_FINISH=j.stop_reason==='max_tokens'?'length':'done'; return (j.content||[]).map(b=>b.text||'').join(''); }
     let text=''; await readSSE(res, ev=>{
       if(ev.type==='content_block_delta' && ev.delta?.text){ text+=ev.delta.text; onText(text); }
       if(ev.type==='message_start') USE().inT+=ev.message?.usage?.input_tokens||0;
-      if(ev.type==='message_delta') USE().outT+=ev.usage?.output_tokens||0;
+      if(ev.type==='message_delta'){ USE().outT+=ev.usage?.output_tokens||0; if(ev.delta?.stop_reason) LAST_FINISH=ev.delta.stop_reason==='max_tokens'?'length':'done'; }
       if(ev.type==='error') throw new Error(ev.error?.message||'stream error');
     }); return text;
   } else {
@@ -1369,8 +1372,8 @@ async function callAIraw({system, messages, model, maxTokens, onText, signal}){
     const res=await fetch(url,{method:'POST',signal,headers:{'content-type':'application/json','authorization':'Bearer '+CFG.key},
       body:JSON.stringify({model, max_tokens:maxTokens, stream:!!onText, messages:[{role:'system',content:system},...messages], ...(CFG.provider==='deepseek'?{thinking:{type:CFG.think==='1'?'enabled':'disabled'}}:{}), ...(onText?{stream_options:{include_usage:true}}:{})})});
     if(!res.ok) throw new Error('AI error '+res.status+': '+(await res.text()).slice(0,300));
-    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.prompt_tokens||0; USE().outT+=j.usage?.completion_tokens||0; if(CFG.provider==='deepseek') recordSpend(model,j.usage); return j.choices?.[0]?.message?.content||''; }
-    let text=''; await readSSE(res, ev=>{ const d=ev.choices?.[0]?.delta?.content; if(d){ text+=d; onText(text); } if(ev.usage){ USE().inT+=ev.usage.prompt_tokens||0; USE().outT+=ev.usage.completion_tokens||0; if(CFG.provider==='deepseek') recordSpend(model,ev.usage); } }); return text;
+    if(!onText){ const j=await res.json(); USE().inT+=j.usage?.prompt_tokens||0; USE().outT+=j.usage?.completion_tokens||0; if(CFG.provider==='deepseek') recordSpend(model,j.usage); const fr=j.choices?.[0]?.finish_reason; LAST_FINISH=fr==='length'?'length':'done'; return j.choices?.[0]?.message?.content||''; }
+    let text=''; await readSSE(res, ev=>{ const d=ev.choices?.[0]?.delta?.content; if(d){ text+=d; onText(text); } const fr=ev.choices?.[0]?.finish_reason; if(fr) LAST_FINISH=fr==='length'?'length':'done'; if(ev.usage){ USE().inT+=ev.usage.prompt_tokens||0; USE().outT+=ev.usage.completion_tokens||0; if(CFG.provider==='deepseek') recordSpend(model,ev.usage); } }); return text;
   }
 }
 async function readSSE(res, onEvent){
@@ -1566,8 +1569,15 @@ async function generateReply(){
   const msg={role:'assistant',text:'',t:S.clock,streaming:true}; S.chat.push(msg); renderFeed();
   mainAbort=new AbortController();
   try{
-    const full=await callAI({system:mainSystem(), messages:chatMessages(), model:CFG.main, maxTokens:+CFG.maxTok||1600, signal:mainAbort.signal,
+    const sys=mainSystem(), hist=chatMessages();
+    let full=await callAI({system:sys, messages:hist, model:CFG.main, maxTokens:+CFG.maxTok||3000, signal:mainAbort.signal,
       onText:t=>{ msg.text=t; renderStreaming(msg); }});
+    for(let tries=0; tries<3 && full.trim() && LAST_FINISH!=='done'; tries++){ // cut off mid-reply: ask the AI to pick up exactly where it stopped
+      const base=full;
+      const more=await callAI({system:sys, messages:[...hist,{role:'assistant',content:base},{role:'user',content:'(Your reply was cut off. Continue it from the exact character where it stopped, even mid-word or mid-sentence. Do not repeat anything, do not restart, no time stamp, no preamble. Finish the scene and any control lines normally.)'}],
+        model:CFG.main, maxTokens:+CFG.maxTok||3000, signal:mainAbort.signal, onText:t=>{ msg.text=joinCont(base,t); renderStreaming(msg); }});
+      if(!more.trim()) break; full=joinCont(base,more);
+    }
     if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
     syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
     const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text);
@@ -1575,6 +1585,10 @@ async function generateReply(){
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
   busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
 }
+function joinCont(a,b){ b=b.replace(/^\s*\|[^\n]*\|\s*\n/,''); // drop a repeated time stamp
+  for(let n=Math.min(80,a.length,b.length); n>=12; n--) if(a.endsWith(b.slice(0,n))) return a+b.slice(n); // it repeated the last few words
+  if(/\s$/.test(a)||/^[\s.,;:!?'")\]*~-]/.test(b)) return a+b;
+  return a+(/[A-Za-z]$/.test(a)&&/^[a-z]/.test(b)?'':' ')+b.replace(/^\s+/,''); }
 function applyControls(text){
   const lines=text.split('\n'); const keep=[];
   for(const l of lines){
@@ -1657,7 +1671,7 @@ Optional lines when they apply: ATE: Name (they really ate) · MOOD: Name: feeli
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
-  const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:450});
+  const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:800});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
     memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
@@ -1873,7 +1887,7 @@ $('#settingsBtn').onclick=openSettings;
 $('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
-$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||1600,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
+$('#saveSettings').onclick=()=>{ const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
 $('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`livingworld-${W.id}-${isoDate(S.clock)}.json`; a.click(); };
 $('#importBtn').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); if(j.world!==W.id) throw new Error('That save is for a different world.'); S=j; save(); render(); notice('Save loaded.'); }catch(err){ notice('Could not load: '+err.message,true); } };
@@ -2022,8 +2036,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.22.1';
+const APP_VERSION = '0.22.2';
 const CHANGELOG = [
+ {v:'0.22.2', d:'2026-11-18', notes:['Replies no longer stop half-way through a sentence. If the AI hits its length limit or the connection drops, the app has it pick up exactly where it left off.','Longer default reply length (3000 tokens). You only pay for what is actually written.']},
  {v:'0.22.1', d:'2026-11-18', notes:['Main menu now shows universes first. Enter Zenless Zone Zero to see all its worlds, then open a world for its characters, 1-on-1s and timelines.','When making a world, pick an existing universe from the list so it lands in the same place.']},
  {v:'0.22.0', d:'2026-11-18', notes:['Main menu reorganized: worlds are grouped by universe (like Zenless Zone Zero). Open a world to chat with everyone, start a 1-on-1 with any of its characters, see its cast, or pick up your 1-on-1s and timelines there.','Only a character\'s creator can edit them. Built-in characters can only be edited by the app owner\'s account. Everyone else can make their own copy to change.','New worlds can be given a universe or series name.']},
  {v:'0.21.1', d:'2026-11-18', notes:['When you untick "Can die" for a character, you can now explain why they can\'t die. The AI reads it and plays it that way (for example, regenerating painfully, or coming back days later).']},
