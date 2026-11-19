@@ -1,10 +1,12 @@
 {
- "version": "0.38.2",
+ "version": "0.39.0",
  "date": "2026-11-19",
  "notes": [
-  "Angels of Delusion: they're so close they often spend whole nights together, in Sunna's room (Friday, and after Saturday shows) or at their canon secret base in the Ballet Twins Hollow (Wednesday nights), the low-Ether hideout Nangong and Aria found so Sunna could practice where nobody could see or hear her."
+  "\"Busy\" now means a real commitment. Someone scrolling, gaming, eating, having tea, walking around or winding down shows as Available on your phone, answers texts quickly and picks up calls; only shifts, classes, missions, rehearsals, recording, live shows, commissions and the like count as Busy. The story is told the same thing: casual activities are free time, and people can drop them to talk or hang out.",
+  "The schedule maker for your own characters now leaves real free time instead of booking every hour.",
+  "Angels of Delusion: much more free time, like in the game (lazy mornings, free afternoons and evenings around Sixth Street), and Nangong's money is written the way the game shows it: she funds the group from her own trading and hides it, while whether her family is rich is left a mystery."
  ],
  "file": "index.html",
- "sha256": "3459eff279a707ae0f1b6d03f74e525ea00fe83b0c8ef151840645979c3d1340",
+ "sha256": "efe336d6f46df1b4783667c23d1ef28b3c25962e2083491438cffcc7b23d79a2",
  "minShell": "0.5.0"
 }
