@@ -1718,6 +1718,15 @@ Characters only know what they saw or heard themselves, what someone told them, 
 `}`;
   s+='\n\n';
   { const ex=worldExamples(); if(ex) s+=`HOW THESE CHARACTERS SOUND\nStyle examples written for this world. They did NOT happen in this story; never repeat them or treat them as memories. Match their voices, word choice, humor, rhythm, tone lines and level of detail, so every character sounds exactly like themselves and never flat or stoic.\n\n${subUser(ex)}\n\n`; }
+  s+=`SPOKEN DIALOGUE HAS REAL EMOTION
+Characters talk out loud with the same feeling they put into their texts, in their own way. Never write every spoken line as calm sentences of only commas and periods. Let punctuation carry the emotion, matched to who is talking and how they feel right now:
+- Exclamation marks for excitement, anger, surprise, panic or teasing ("Hey! Give that back!"); "?!" for shocked questions.
+- Trailing "..." for hesitation, sleepiness, sulking, embarrassment or trailing off; stutters when flustered ("I-it's not like that!").
+- Cut-off words and interruptions with a dash ("Wait, I didn't mea—"); ALL CAPS for real shouting; stretched words for whining or drawling ("Nooo, five more minutes...").
+- Interjections, laughs and noises in their voice: "Huh?", "Ugh.", "Pfft!", "Ehehe~", "Hmph!", "Tch."
+Calm or stoic characters can stay clipped and quiet; everyone else should sound alive, and even calm characters crack when something gets to them.
+
+`;
   for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\n`; }
   if(S.summary) s+='STORY SO FAR\n'+S.summary+'\n\n';
   // What's true right now
@@ -1741,6 +1750,7 @@ ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in 
   s+=raceLoreBlock([...pres, persona()], ctx);
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
   for(const c of absent){ if(isDead(c)) continue; const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
+  s+='\nREMEMBER: spoken dialogue shows real emotion through punctuation and sound (! ?! ... stutters, dashes, stretched words, interjections), in each character\'s own voice. Never flat lines of only commas and periods.\n';
   return subUser(s);
 }
 function snapState(){ return JSON.parse(JSON.stringify({clock:S.clock, user:S.user, trust:Object.fromEntries(Object.entries(S.chars).map(([k,v])=>[k,{trust:v.trust,washed:v.washed,mood:v.mood||null,outfit:v.outfit||null}])), contacts:(S.phone&&S.phone.contacts)||null, rel:S.rel||null})); }
@@ -2289,8 +2299,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.29.6';
+const APP_VERSION = '0.29.7';
 const CHANGELOG = [
+ {v:'0.29.7', d:'2026-11-19', notes:['Characters sound as emotional out loud as they do in texts: exclamation marks, trailing off, stutters, cut-off words, shouting, whining and little noises like "Huh?" and "Pfft!", each in their own voice, instead of flat sentences of only commas and periods.']},
  {v:'0.29.6', d:'2026-11-19', notes:['Phoenix can be killed by enemies too (cheap shots like a raider\'s thrown brick count). When something living kills her, she revives stronger and takes them out.']},
  {v:'0.29.5', d:'2026-11-19', notes:['Zenless Zone Zero death rules: agents never die for real. Anything lethal makes them retreat and rest to recover. Only nameless side characters (thugs, Ethereals, extras) can die.','Phoenix is the one exception: she dies often, always by her own doing or a ridiculous chain of events, and revives in a burst of flame.']},
  {v:'0.29.4', d:'2026-11-19', notes:['Deeper character research for Velina, Norma and the whole Yunkui Summit cast (Yixuan, Fufu, Shunguang, Yinhu, Belle and Wise): lots of small canon quirks, habits, catchphrases and likes and dislikes, so they sound more like themselves.']},

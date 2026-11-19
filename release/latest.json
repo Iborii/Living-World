@@ -1,10 +1,10 @@
 {
- "version": "0.29.6",
+ "version": "0.29.7",
  "date": "2026-11-19",
  "notes": [
-  "Phoenix can be killed by enemies too (cheap shots like a raider's thrown brick count). When something living kills her, she revives stronger and takes them out."
+  "Characters sound as emotional out loud as they do in texts: exclamation marks, trailing off, stutters, cut-off words, shouting, whining and little noises like \"Huh?\" and \"Pfft!\", each in their own voice, instead of flat sentences of only commas and periods."
  ],
  "file": "index.html",
- "sha256": "5facb79f98c61fcb3b1937988c81f0442ce08c5efe9589738ea85ed7acaeafcc",
+ "sha256": "d669abf60534411f179d415676b487dd08f813398e508d019f0abfd4bd41d1c5",
  "minShell": "0.5.0"
 }
