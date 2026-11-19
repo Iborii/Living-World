@@ -1163,8 +1163,9 @@ function recentTextsBlock(){ const out=[]; const P=phone(); const since=S.clock-
 function plansBlock(forId){ const P=phone(); const l=P.invites.filter(v=>v.status==='accepted'&&(!forId||v.id===forId)).map(v=>{ const c=charById(v.id); return c?`- ${c.name} agreed to meet ${uN()} at ${v.loc}, ${v.date===isoDate(S.clock)?'today':wdName(parseStart(v.date,'12:00'))+' '+v.date.slice(5).replace('-','/')} at ${v.start} (${v.what}).${forId?'':` Private: only ${c.name} and ${uN()} know.`}`:''; }).filter(Boolean); return l.join('\n'); }
 const SLEEPY=/asleep|sleep|in bed|nap|lights out|dozing/i, BUSY=/work|shift|class|meeting|training|teaching|judg|mission|patrol|case|operation|lesson|duty|investigat/i;
 function contactStatus(c){ const st=S.chars[c.id]; const area=(st.loc||'').split(',')[0].trim();
-  if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return {k:'with',label:'With you',sub:area};
-  if(SLEEPY.test(st.act)) return {k:'asleep',label:'Asleep',sub:'Do not disturb'};
+  const withU=S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc);
+  if(SLEEPY.test(st.act)&&!/trying to sleep|can't sleep|cannot sleep|woke/i.test(st.act)) return {k:'asleep',label:'Asleep',sub:withU?'Right next to you':'Do not disturb'};
+  if(withU) return {k:'with',label:'With you',sub:area};
   if(BUSY.test(st.act)) return {k:'busy',label:'Busy',sub:st.act.split(/[,(]/)[0].trim()};
   return {k:'free',label:'Available',sub:area}; }
 function replyDelay(c){ const k=contactStatus(c).k; if(k==='with') return 0.3+Math.random()*0.7; if(k==='busy') return 4+Math.random()*10; return 0.5+Math.random()*3.5; }
@@ -1368,7 +1369,10 @@ function nextSlot(c, ms){
   return null;
 }
 const baseLoc = l => (l||'').split(' (')[0].trim().toLowerCase();
-const sameLoc = (a,b) => (a||'').trim().toLowerCase()===(b||'').trim().toLowerCase();
+const locNorm = l => (l||'').toLowerCase().replace(/[’']/g,'').replace(/[()\[\],.;:–—-]/g,' ').replace(/\bthe\b/g,' ').replace(/\s+/g,' ').trim();
+const locSpot = l => { l=l||''; const p=l.match(/\(([^)]+)\)\s*$/); return locNorm(p?p[1]:l.split(',').slice(-1)[0]); };
+const sameLoc = (a,b) => { if(!a||!b) return false; if(locNorm(a)===locNorm(b)) return true;
+  const da=locNorm(a.split(',')[0]), db=locNorm(b.split(',')[0]); return da===db && a.includes(',') && b.includes(',') && locSpot(a)===locSpot(b) && locSpot(a).length>3; };
 const BUILTIN_UNDYING={phoenix:true};
 function canDie(c){ if(c.mortal===false) return false; if(c.mortal===true) return true; return !BUILTIN_UNDYING[c.id]; }
 const isDead=c=>!!(S&&S.chars[c.id]&&S.chars[c.id].dead);
@@ -1446,12 +1450,16 @@ function applyLifeTag(C, arg, only){ // shared by the story and off-screen scene
   if(C==='LOSE'){ S.user.bag=S.user.bag||[]; const i=S.user.bag.findIndex(x=>x.toLowerCase()===arg.trim().toLowerCase()); if(i>=0) S.user.bag.splice(i,1); return true; }
   return false; }
 
+function slotKey(c){ const sl=slotFor(c,S.clock); return isoDate(S.clock)+'|'+(sl?(sl.start||'e'+sl.end)+'|'+sl.act:'none'); }
+function setDoing(c, act){ const st=S.chars[c.id]; if(!st||st.dead) return; act=String(act||'').trim().slice(0,160); if(!act) return; st.ovr={act, slot:slotKey(c), t:S.clock}; st.act=act; st.changed=true; }
 function updateSchedules(){
-  if(S.branch){ const st=S.chars[S.branch.charId]; st.loc=S.user.loc; st.act='with you'; return; }
+  if(S.branch){ const st=S.chars[S.branch.charId]; st.loc=S.user.loc; if(st.ovr&&S.clock-(st.ovr.t||0)>4*HOUR) delete st.ovr; st.act=st.ovr?st.ovr.act+' (with you)':'with you'; return; }
   for(const c of W.characters){
     const st=S.chars[c.id];
     if(st.dead){ st.loc='—'; st.act='passed away'; continue; }
-    if(S.user.companions.includes(c.id)){ st.loc=S.user.loc; st.act='with you'; continue; }
+    if(st.ovr&&(st.ovr.slot!==slotKey(c)||S.clock-(st.ovr.t||0)>8*HOUR)) delete st.ovr; // their schedule moved on
+    if(S.user.companions.includes(c.id)){ st.loc=S.user.loc; st.act=st.ovr?st.ovr.act+' (with you)':'with you'; continue; }
+    if(st.ovr){ st.act=st.ovr.act; continue; }
     const sl=slotFor(c,S.clock);
     if(sl && (st.loc!==sl.loc || st.act!==sl.act)){ st.loc=sl.loc; st.act=sl.act; st.changed=true; }
   }
@@ -1643,6 +1651,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[NUMBER: Name]]  when a character and the user swap phone numbers
    [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
    [[MOOD: Name: feeling: why]]  when something clearly changes how a character feels (angry, hurt, giddy, sulking…)
+   [[DOING: Name: what they're doing now]]  when a main character in the scene is doing something different from their "doing" line (fell asleep, woke up, went to shower, started cooking, on a call, crying in bed…); it shows on their phone status
    [[OUTFIT: Name: what they're wearing now]]  when a character changes clothes
    [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
    [[GET: item]] / [[LOSE: item]]  when the user picks up, receives, uses up or loses something they carry
@@ -1669,7 +1678,7 @@ ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in 
 `;
   s+=`NEXT EVENTS for people here: ${nextEventsFor(pres)||'none'}.\n\n`;
   s+=deathBlock();
-  for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: ${stateLine(c)}\n${outfitLine(c)}`; }
+  for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
   if((S.user.bag||[]).length) s+=`THE USER IS CARRYING: ${S.user.bag.join(', ')}\n`;
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
@@ -1745,6 +1754,7 @@ function applyControls(text){
     else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)) S.user.companions.push(c.id); }
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
+    else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
@@ -1753,7 +1763,7 @@ function applyControls(text){
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
   if(withList) setCompanions(withList);
-  for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act='with you'; }
+  for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act=S.chars[id].ovr?S.chars[id].ovr.act+' (with you)':'with you'; }
   return keep.join('\n').trim();
 }
 // who is physically with the user; anyone dropped goes back to their own schedule (not left standing next to you)
@@ -1819,15 +1829,15 @@ STATE: ${cs.map(c=>`${c.name}: ${stateLine(c)}${S.chars[c.id].outfit?`; wearing 
 ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
-Optional lines when they apply: ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
+Optional lines when they apply: DOING: Name: what they're doing when the scene ends, if it isn't what their schedule says (fell asleep early, still out, in the bath…) · ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:800});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
-  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|ATE|MOOD|OUTFIT|BUY|HURT|DIED):.*$/gim,'').trim();
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|HURT|DIED):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -2223,8 +2233,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.26.1';
+const APP_VERSION = '0.26.2';
 const CHANGELOG = [
+ {v:'0.26.2', d:'2026-11-18', notes:['Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.','Places match more loosely, so walking into "Dialyn\'s room" counts as being where she is even if the story writes the place a little differently.','Someone asleep right next to you shows as Asleep, not just With you.']},
  {v:'0.26.1', d:'2026-11-18', notes:['The story now always knows who is with you. Every reply ends with exactly who\'s still there, so when you go off on a date with one person, the others stay behind and go back to their own day.','Side panel: anyone with you has a Leave them button (and people nearby have Bring along) so you can fix it yourself.','Plans you make by invite are private: other characters don\'t know about your date unless someone tells them.','Trust starts at a neutral 25 (stranger) instead of 0, shows a word like acquaintance or friendly next to the number, and moves more often when what you do matters to someone. Old stories stuck at 0 across the board are moved to 25.']},
  {v:'0.26.0', d:'2026-11-18', notes:['Everyone stories: a universe with more than one world (like Zenless Zone Zero) now has an Everyone option at the top of its page. Krampus and Yunkui Summit live side by side in one story with every character on their own schedule, and you can meet anyone.','There\'s no set plot in an Everyone story, so you choose who you are or write your own scene when you start. Both worlds\' lorebooks, relationships and phone apps carry over.']},
  {v:'0.25.0', d:'2026-11-18', notes:['Lorebooks are now a library. Pick any world\'s lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.','Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time.']},

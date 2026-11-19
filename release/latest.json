@@ -1,13 +1,12 @@
 {
- "version": "0.26.1",
+ "version": "0.26.2",
  "date": "2026-11-18",
  "notes": [
-  "The story now always knows who is with you. Every reply ends with exactly who's still there, so when you go off on a date with one person, the others stay behind and go back to their own day.",
-  "Side panel: anyone with you has a Leave them button (and people nearby have Bring along) so you can fix it yourself.",
-  "Plans you make by invite are private: other characters don't know about your date unless someone tells them.",
-  "Trust starts at a neutral 25 (stranger) instead of 0, shows a word like acquaintance or friendly next to the number, and moves more often when what you do matters to someone. Old stories stuck at 0 across the board are moved to 25."
+  "Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.",
+  "Places match more loosely, so walking into \"Dialyn's room\" counts as being where she is even if the story writes the place a little differently.",
+  "Someone asleep right next to you shows as Asleep, not just With you."
  ],
  "file": "index.html",
- "sha256": "ed5e3938e08e9f47fd595e0d6cd6386ac7d50fbfa6fc0d48f6f73ab31b527bbc",
+ "sha256": "3fd208fa276b36e00d5395475f24715f91de663eca0a768e010435e277c80ace",
  "minShell": "0.5.0"
 }
