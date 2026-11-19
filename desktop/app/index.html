@@ -160,6 +160,8 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 .tl-item{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.tl-item .tw{font-size:12px;color:var(--muted)}.tl-item .tt b{display:block}
 .ugroup{margin-bottom:22px}.uname{font-family:var(--serif);font-weight:600;font-size:17px;margin:4px 0 10px;color:var(--accent)}
 .wcard{cursor:pointer}
+#statusbar .tl{font-style:normal;opacity:.65;font-size:.92em}
+.card .wbtn{margin-top:6px;font-size:11.5px;padding:3px 9px;border-radius:999px}
 .everyone{display:flex;gap:16px;align-items:center;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:16px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%);flex-wrap:wrap}
 .ev-av{display:flex;flex-wrap:wrap;width:132px;gap:0}.ev-av span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;border:2px solid var(--panel);margin:-3px -4px 0 0;animation:cardIn .5s var(--ease-out,ease) backwards;animation-delay:calc(var(--k)*30ms)}
 .ev-tx{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px}.ev-tx span{font-size:13px;color:var(--muted);line-height:1.45}.ev-tx b{font-family:var(--serif);font-size:19px;font-weight:600}
@@ -1092,12 +1094,14 @@ function holidayLines(){ const out=[]; const today=isoDate(S.clock).slice(5);
 // ======================= state =======================
 let S, CFG;
 function defaultCfg(){ return {mature:false, away:'pause', provider:'deepseek', key:'', base:'https://openrouter.ai/api/v1', main:'deepseek-v4-pro', bg:'deepseek-flash', beat:30, maxTok:3000, name:'', persona:'', bgOn:'1', realism:'full'}; }
+const TRUST_START=25;
+function trustLabel(n){ return n<10?'distrusts you':n<25?'wary':n<40?'stranger':n<55?'acquaintance':n<70?'friendly':n<85?'trusts you':'very close'; }
 function newState(){
   const t0=parseStart(W.start.date,W.start.time);
   const chars={};
   const wo=(W.opening.washed||{});
   const wt=k=> wo[k]?parseStart(wo[k].split(' ')[0], wo[k].split(' ')[1]):t0-MIN*90;
-  for(const c of W.characters){ chars[c.id]={loc:c.loc, act:c.act, lastBeat:t0-MIN*20, log:[], washed:wt(c.id), trust:(W.opening.trust||{})[c.id]||0}; }
+  for(const c of W.characters){ chars[c.id]={loc:c.loc, act:c.act, lastBeat:t0-MIN*20, log:[], washed:wt(c.id), trust:((W.opening.trust||{})[c.id]!=null)?(W.opening.trust||{})[c.id]:TRUST_START}; }
   const s={v:1, world:W.id, clock:t0, speed:1, paused:false, user:{loc:W.opening.userLoc, companions:[...W.opening.companions], washed:wt('user')}, chars, chat:[], summary:'', notices:[], usage:{inT:0,outT:0}, view:'me', memories:[]};
   if((W.opening.text||'').trim()) s.chat.push({role:'assistant', text: stripStatus(W.opening.text), t:t0});
   return s;
@@ -1110,6 +1114,7 @@ function load(){
   try{ const raw=LS.getItem(SAVE_KEY); S=raw?JSON.parse(raw):null; }catch(e){ S=null; }
   if(!S&&fresh) S=fresh;
   if(!S||S.world!==W.id) S=newState();
+  if(!S.trustFix){ S.trustFix=1; const ids=Object.keys(S.chars||{}); if(ids.length&&ids.every(id=>!S.chars[id].trust)) for(const id of ids) S.chars[id].trust=TRUST_START; }
   for(const c of W.characters) if(!S.chars[c.id]) S.chars[c.id]={loc:c.loc,act:c.act,lastBeat:S.clock,log:[],washed:S.clock,trust:0};
   S.view = S.view||'me'; S.memories = S.memories||[]; S.events = S.events||[]; phone(); initRel(); S.user.bag=S.user.bag||[]; if(!S.startSnap&&!S.chat.length) S.startSnap=snapState(); S.pins=S.pins||[];
   setTimeout(()=>{ if(!S) return; for(const c of W.characters) if(!wardrobeOf(c).length) genWardrobe(c); }, 3000);
@@ -1155,7 +1160,7 @@ function recentTextsBlock(){ const out=[]; const P=phone(); const since=S.clock-
   for(const k of P.calls.filter(k=>k.t>since).slice(-4)){ const c=charById(k.id); if(c) out.push(`Call ${k.out?'to':'from'} ${c.name} at ${hhmm(k.t)}: ${k.missed?'missed':`${k.dur||1} min${k.sum?' – '+k.sum:''}`}`); }
   for(const f of P.feed.filter(f=>f.t>since).slice(-4)){ const who=f.who==='user'?uN():(charById(f.who)?.name||'?'); out.push(`${feedApp()} post by ${who} at ${hhmm(f.t)}: ${f.text}${f.comments.length?` (comments: ${f.comments.slice(-3).map(x=>(x.who==='user'?uN():charById(x.who)?.name)+': '+x.text).join(' / ')})`:''}`); }
   return out.join('\n'); }
-function plansBlock(){ const P=phone(); const l=P.invites.filter(v=>v.status==='accepted').map(v=>{ const c=charById(v.id); return c?`- ${c.name} agreed to meet ${uN()} at ${v.loc}, ${v.date===isoDate(S.clock)?'today':wdName(parseStart(v.date,'12:00'))+' '+v.date.slice(5).replace('-','/')} at ${v.start} (${v.what}).`:''; }).filter(Boolean); return l.join('\n'); }
+function plansBlock(forId){ const P=phone(); const l=P.invites.filter(v=>v.status==='accepted'&&(!forId||v.id===forId)).map(v=>{ const c=charById(v.id); return c?`- ${c.name} agreed to meet ${uN()} at ${v.loc}, ${v.date===isoDate(S.clock)?'today':wdName(parseStart(v.date,'12:00'))+' '+v.date.slice(5).replace('-','/')} at ${v.start} (${v.what}).${forId?'':` Private: only ${c.name} and ${uN()} know.`}`:''; }).filter(Boolean); return l.join('\n'); }
 const SLEEPY=/asleep|sleep|in bed|nap|lights out|dozing/i, BUSY=/work|shift|class|meeting|training|teaching|judg|mission|patrol|case|operation|lesson|duty|investigat/i;
 function contactStatus(c){ const st=S.chars[c.id]; const area=(st.loc||'').split(',')[0].trim();
   if(S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) return {k:'with',label:'With you',sub:area};
@@ -1186,8 +1191,8 @@ function charVoice(c, focusText){ const st=S.chars[c.id]; const pn=uN();
 What ${c.name} remembers about ${pn} and recent life:
 ${memLines(c.id, focusText||'', 10)||'(nothing yet)'}
 ${relLines([c].concat(W.characters.filter(x=>x.id!==c.id)), c.id)}
-Trust toward ${pn}: ${st.trust}/100.
-${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}${(()=>{ const p=plansBlock(); return p?`Plans:\n${p}\n`:''; })()}
+Trust toward ${pn}: ${st.trust}/100 (${trustLabel(st.trust)}).
+${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}${(()=>{ const p=plansBlock(c.id); return p?`Your plans with ${pn}:\n${p}\n`:''; })()}
 Right now (${timeLine(S.clock)}) ${c.name} is at ${st.loc}, ${st.act}.`; }
 function threadMsgs(th){ const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text}));
   while(msgs.length&&msgs[0].role==='assistant') msgs.shift();
@@ -1603,7 +1608,7 @@ async function extractMemories(userText, replyText){
 
 // ======================= prompts =======================
 function timeLine(ms){ const w=weather(ms); return `${wdName(ms)} ${mmdd(ms)} ${hhmm(ms)}, ${w.desc}, ${w.temp}°F, ${w.season}`; }
-function trustLine(){ return W.characters.map(c=>`${c.name} ${S.chars[c.id].trust}/100`).join(', '); }
+function trustLine(){ return W.characters.map(c=>`${c.name} ${S.chars[c.id].trust}/100 (${trustLabel(S.chars[c.id].trust)})`).join(', '); }
 function washedLine(){ const parts=W.characters.filter(c=>!c.noWash).map(c=>`${c.name} ${mmdd(S.chars[c.id].washed)} ${hhmm(S.chars[c.id].washed)}`); parts.push(`${persona().name||'User'} ${mmdd(S.user.washed)} ${hhmm(S.user.washed)}`); return parts.join(', '); }
 function nextEventsFor(chars){ return chars.map(c=>{ const n=nextSlot(c,S.clock); return n?`${c.name}: ${n.act.split(',')[0]} ${n.start}`:null; }).filter(Boolean).slice(0,3).join('; '); }
 function recentLog(id,n){ return S.chars[id].log.slice(-n).map(e=>`[${mmdd(e.t)} ${hhmm(e.t)}] ${e.text.replace(/\n+/g,' ')}`).join('\n'); }
@@ -1632,7 +1637,8 @@ REPLY FORMAT
    [[MOVE: District, exact spot]]  when the user goes somewhere new
 ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or staying with the user
    [[LEAVE: Name]]  when a main character goes off on their own
-`}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  small changes (usually 1 to 3) from what the user actually did
+   [[WITH: Name, Name]] or [[WITH: nobody]]  REQUIRED in every reply, as the last control line: exactly which main characters are physically with the user at the end of this reply. Leave out anyone who stayed behind, went home, was never there, or is only on the phone. If the user goes off with one person (a date, a walk), everyone else is left out
+`}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  whenever the user's words or actions this turn matter to a character: kindness, help, keeping or breaking a promise, rudeness, lying, flirting they did or didn't want. Usually 1 to 3, up to 8 for something big. Most replies with a real interaction should have at least one
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
    [[NUMBER: Name]]  when a character and the user swap phone numbers
    [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
@@ -1644,7 +1650,11 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
    [[DIED: Name: how]]  when a character dies (see DEATH IS REAL)
    [[BOND: Name / Name +N: reason]]  when something changes how two characters feel about each other (usually 1 to 3)
-   Do not write a status line; the app shows it.`;
+   Do not write a status line; the app shows it.
+${S.branch?'':`
+WHO KNOWS WHAT
+Characters only know what they saw or heard themselves, what someone told them, what they remember, and what was sent to them. PLANS WITH THE USER, RECENT PHONE ACTIVITY and ELSEWHERE IN THE WORLD are for you, the narrator: a plan the user made with one character is private between those two unless one of them told someone else. A character who wasn't there doesn't know what happened.
+`}`;
   s+='\n\n';
   for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\n`; }
   if(S.summary) s+='STORY SO FAR\n'+S.summary+'\n\n';
@@ -1726,7 +1736,7 @@ function joinCont(a,b){ b=b.replace(/^\s*\|[^\n]*\|\s*\n/,''); // drop a repeate
   if(/\s$/.test(a)||/^[\s.,;:!?'")\]*~-]/.test(b)) return a+b;
   return a+(/[A-Za-z]$/.test(a)&&/^[a-z]/.test(b)?'':' ')+b.replace(/^\s+/,''); }
 function applyControls(text){
-  const lines=text.split('\n'); const keep=[];
+  const lines=text.split('\n'); const keep=[]; let withList=null;
   for(const l of lines){
     const m=l.match(/^\s*\[\[(\w+):\s*([^\]]+)\]\]\s*$/);
     if(!m){ keep.push(l); continue; }
@@ -1734,6 +1744,7 @@ function applyControls(text){
     if(C==='MOVE'){ S.user.loc=arg.trim(); }
     else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)) S.user.companions.push(c.id); }
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
+    else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
@@ -1741,9 +1752,14 @@ function applyControls(text){
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
+  if(withList) setCompanions(withList);
   for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act='with you'; }
   return keep.join('\n').trim();
 }
+// who is physically with the user; anyone dropped goes back to their own schedule (not left standing next to you)
+function setCompanions(ids){ const dropped=S.user.companions.filter(id=>!ids.includes(id)); S.user.companions=[...new Set(ids)];
+  for(const id of dropped){ const c=charById(id), st=S.chars[id]; if(!c||!st||st.dead) continue; const sl=slotFor(c,S.clock);
+    st.loc=sl?sl.loc:(c.loc&&!sameLoc(c.loc,S.user.loc)?c.loc:(S.user.loc.split(' (')[0].trim()+' (off on their own)')); st.act=sl?sl.act:'off on their own'; st.lastBeat=S.clock; st.changed=true; } }
 function syncClockFromStamp(text){
   const st=(text.match(/^\s*\|([^\n]*)\|\s*$/m)||[])[1]; if(st){ const parts=st.split('|'); const loc=(parts[1]||'').trim();
     if(loc && loc.length<120 && !/^\d/.test(loc) && loc!==S.user.loc){ S.user.loc=loc; for(const id of S.user.companions){ S.chars[id].loc=loc; } } }
@@ -1957,14 +1973,18 @@ function renderCards(){
   $('#allCard').style.display=S.branch?'none':''; document.querySelectorAll('aside h3')[1].textContent=S.branch?'In this chat':'Watch the world';
   $('#charCards').innerHTML=W.characters.filter(c=>!S.branch||c.id===S.branch.charId).map(c=>{ const st=S.chars[c.id]; const withU=pres.includes(c.id);
     const mv=lastCardLoc[c.id]!==undefined&&lastCardLoc[c.id]!==st.loc; lastCardLoc[c.id]=st.loc;
-    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div>${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
-  document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=()=>{ S.view=el.dataset.id; render(); save(); closeSide(); });
+    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div>${!S.branch&&!st.dead&&(S.user.companions.includes(c.id)||withU)?`<button class="ghost wbtn" data-wtog="${c.id}">${S.user.companions.includes(c.id)?'Leave them':'Bring along'}</button>`:''}${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
+  document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-wtog]')) return; S.view=el.dataset.id; render(); save(); closeSide(); });
+  document.querySelectorAll('[data-wtog]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.wtog, c=charById(id); const was=S.user.companions.includes(id);
+    if(was){ setCompanions(S.user.companions.filter(x=>x!==id)); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.name} is no longer with ${uN()}; they went off on their own and are not in the scene anymore. Don't bring them back unless the story calls for it.)`}); notice(`${c.name} is no longer with you.`); }
+    else { setCompanions([...S.user.companions,id]); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.name} is now with ${uN()} and will come along wherever they go.)`}); notice(`${c.name} is with you now.`); }
+    updateSchedules(); render(); save(); });
   $('#myStoryCard').classList.toggle('sel',S.view==='me'); $('#allCard').classList.toggle('sel',S.view==='all');
   $('#myWhere').textContent=S.user.loc; $('#myWith').textContent=pres.length?'With: '+pres.map(i=>charById(i).name).join(', '):'Alone';
 }
 function renderStatus(){
   const CS=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
-  $('#statusbar').innerHTML=CS.map(c=>`<span style="color:${c.color}">${c.name}</span> <b>${S.chars[c.id].trust}</b>/100`).map(s=>`<span>${s}</span>`).join('')+
+  $('#statusbar').innerHTML=CS.map(c=>`<span style="color:${c.color}">${c.name}</span> <b>${S.chars[c.id].trust}</b>/100 <i class="tl">${trustLabel(S.chars[c.id].trust)}</i>`).map(s=>`<span>${s}</span>`).join('')+
     `<span>· Washed: ${CS.filter(c=>!c.noWash).map(c=>`${c.name} ${mmdd(S.chars[c.id].washed)} ${hhmm(S.chars[c.id].washed)}`).join(', ')}, You ${mmdd(S.user.washed)} ${hhmm(S.user.washed)}</span>`;
   { const s=spendSummary(); $('#usage').textContent=CFG.provider==='deepseek'&&s.today.calls?`Today ≈ $${s.today.usd.toFixed(2)}${+CFG.dailyLimit?` of $${(+CFG.dailyLimit).toFixed(2)}`:''}`:(S.usage.inT||S.usage.outT?`Tokens used: ${(S.usage.inT/1000).toFixed(1)}k in · ${(S.usage.outT/1000).toFixed(1)}k out`:''); }
 }
@@ -2131,7 +2151,7 @@ $('#scGo').onclick=()=>{ const p=scenePick; if(!p) return; let scene={mode:p.mod
   if(p.mode==='custom'){ const t=$('#scPrompt').value.trim(); if(!t){ $('#scPrompt').focus(); return; } scene.prompt=t; scene.loc=$('#scLoc').value.trim(); scene.open=$('#scOpen').value.trim(); }
   $('#sceneModal').classList.remove('on'); scenePick=null; enterWorld(p.wid,{...p.opts, scene}); };
 function applyScene(scene){ S.scene={mode:scene.mode, role:scene.role||'', prompt:scene.prompt||''}; if(scene.mode==='default') return;
-  S.chat=[]; S.phone.contacts=[]; for(const id in S.chars) S.chars[id].trust=0;
+  S.chat=[]; S.phone.contacts=[]; for(const id in S.chars) S.chars[id].trust=TRUST_START;
   if(scene.mode==='custom'){ S.user.companions=[]; if(scene.loc) S.user.loc=scene.loc; for(const c of W.characters){ S.chars[c.id].act=S.chars[c.id].act==='with you'?'going about their day':S.chars[c.id].act; }
     if(scene.open) S.chat.push({role:'assistant', text:stripStatus(scene.open), t:S.clock}); }
   S.startSnap=snapState(); }
@@ -2203,8 +2223,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.26.0';
+const APP_VERSION = '0.26.1';
 const CHANGELOG = [
+ {v:'0.26.1', d:'2026-11-18', notes:['The story now always knows who is with you. Every reply ends with exactly who\'s still there, so when you go off on a date with one person, the others stay behind and go back to their own day.','Side panel: anyone with you has a Leave them button (and people nearby have Bring along) so you can fix it yourself.','Plans you make by invite are private: other characters don\'t know about your date unless someone tells them.','Trust starts at a neutral 25 (stranger) instead of 0, shows a word like acquaintance or friendly next to the number, and moves more often when what you do matters to someone. Old stories stuck at 0 across the board are moved to 25.']},
  {v:'0.26.0', d:'2026-11-18', notes:['Everyone stories: a universe with more than one world (like Zenless Zone Zero) now has an Everyone option at the top of its page. Krampus and Yunkui Summit live side by side in one story with every character on their own schedule, and you can meet anyone.','There\'s no set plot in an Everyone story, so you choose who you are or write your own scene when you start. Both worlds\' lorebooks, relationships and phone apps carry over.']},
  {v:'0.25.0', d:'2026-11-18', notes:['Lorebooks are now a library. Pick any world\'s lorebook from the list (opening it from the main menu used to always show the first world), and press + New lorebook to make your own.','Your own lorebooks can be switched on for any worlds, or only for certain characters, so their entries come into the story when those characters are in the scene or named. Rename, duplicate or delete them any time.']},
  {v:'0.24.0', d:'2026-11-18', notes:['More motion across the app: screens and menus glide in and out, cards arrive one after another and lift when you point at them, a world\'s cast fans out on hover, buttons press in with a ripple, and bouncing dots show while the AI is starting a reply.','Characters who are busy living an off-screen moment have a breathing dot, the phone badge bumps when something new comes in, and notices slide away instead of blinking out.','Prefer stillness? Settings has a new Interface animations option: Calm turns it all off.','Fixed: a new story no longer shows a stray "Show earlier messages" button.']},
