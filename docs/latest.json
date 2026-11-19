@@ -1,10 +1,12 @@
 {
- "version": "0.37.5",
+ "version": "0.38.0",
  "date": "2026-11-19",
  "notes": [
-  "Aria: her famous accidentally aggressive \"Huh?\" (it comes out as \"HAUH?\"), walking into poles whenever she's flustered (the \"Unintelligent Construct\"), and hearing Sunna's question about \"miasma\" as \"my asthma\"."
+  "Angels of Delusion: a full deep-research rewrite of Nangong, Sunna and Aria, using Google AI Mode and the wiki together. That covers their character demos and teasers, every hangout scene, their street encounters, event stories, and the group's official social posts.",
+  "New canon in the story: Sunna's \"Hold That Grudge Properly\" (she can't stay mad at them for a second), her curfew, plushies and the capsule-hotel early days; Nangong's boredom with everything easy, her little-devil posts (\"Daily Mission: Get on Sunna's bad side\"), her traveling parents and knitted scarf, her terrible cooking; Aria's part-time gigs, Lucy's boars, the beach glitch, and the scarves Ms. Cecilia knitted them.",
+  "Schedules updated to where the game actually finds them: Nangong at Bardic Needle, Coff Cafe and Failume Heights in the mornings, Aria at Old Duyi's on Thursdays and promoting 141's fried chicken on Tuesdays. Nangong now lives at her family's home."
  ],
  "file": "index.html",
- "sha256": "91ce58e50c51b76fc0abc28039e8b85cd5f940c0fd0e96c5cf9af753a4c80a7a",
+ "sha256": "3515f9f617b3b4fdd96f670813ae75a1c739bdc3a84eb22203a6f91d50caf116",
  "minShell": "0.5.0"
 }
