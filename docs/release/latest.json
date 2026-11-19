@@ -1,10 +1,10 @@
 {
- "version": "0.39.1",
+ "version": "0.39.2",
  "date": "2026-11-19",
  "notes": [
-  "Belle and Wise are now friends with every Zenless Zone Zero character in the combined Everyone world, instead of strangers to anyone without a hand-written pair. Everyone knows the siblings are secretly the Proxy Phaethon, except Seth, who only knows them as the nice video store owners (Severian keeps it from him on purpose)."
+  "Severian now has an obvious crush on Belle that he flatly denies: he softens around her, makes time he doesn't have, princess-carried her out of danger (Wise got dangled by the collar, like in the game), and gets flustered when she calls him soft and gooey on the inside. Ready for your matchmaking in the Everyone world."
  ],
  "file": "index.html",
- "sha256": "b3fb216d104843b1b988a3e40e818f87a75542e626f69eb997326a908bd30e05",
+ "sha256": "3a8076dabfa8c5c45c4d2b3cb25565d67f60b0874612bbc7aeb11262d45a31b7",
  "minShell": "0.5.0"
 }
