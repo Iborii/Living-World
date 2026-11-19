@@ -613,6 +613,102 @@ body.calm *,body.calm *::before,body.calm *::after{animation:none!important;tran
   .stamp .t{font-size:26px}
   .card{border-radius:0 10px 10px 0}
 }
+
+/* ================= 0.36 clean modern pass ================= */
+:root{
+  --bg:#111318; --panel:#161920; --panel2:#1d2129; --line:#262b35; --line2:#323846; --text:#ebe8e2; --muted:#8b909c;
+  --ink-deep:#0c0e12; --lantern-soft:rgba(242,180,90,.10); --tide-soft:rgba(121,199,194,.10);
+  --r-sm:8px; --r-md:12px;
+}
+html,body{background:var(--bg)}
+/* top bar: nav | world + clock | you & time */
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.hgrp{display:flex;align-items:center;gap:2px;min-width:0}
+.hright{justify-content:flex-end;gap:8px}
+header button.ghost{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--r-sm);color:var(--muted);font-size:14px}
+header button.ghost:hover{color:var(--text);background:rgba(255,255,255,.05)}
+header .hi{font-size:14px;line-height:1;filter:grayscale(.35)}
+.hmid{display:flex;flex-direction:column;align-items:center;min-width:0;max-width:44vw}
+header .title{margin:0;font-size:13px;font-weight:600;color:var(--muted);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hclock{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+#clock{font-family:var(--font);font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:0}
+#weather{font-size:12.5px;color:var(--muted)}
+#personaSel{width:auto;max-width:190px;padding:6px 10px;border-radius:var(--r-sm);background:var(--panel2);border-color:transparent;font-size:13.5px}
+.timectl{display:flex;align-items:center;background:var(--panel2);border-radius:var(--r-sm);padding:2px}
+.timectl #speed{background:transparent;border:0;padding:4px 6px;font-size:13px;width:auto}
+.timectl #pauseBtn{background:transparent;border:0;border-left:1px solid var(--line2);border-radius:0 6px 6px 0;padding:4px 10px;font-size:13px}
+.timectl #pauseBtn:hover{background:rgba(255,255,255,.05)}
+#phBadge{margin-left:2px}
+/* side panel */
+aside{background:var(--panel);padding:12px 10px;border-right:1px solid var(--line)}
+aside h3{font-size:11.5px;font-weight:600;color:var(--muted);margin:12px 8px 6px;text-transform:none;letter-spacing:.2px}
+.card{display:flex;flex-direction:column;background:transparent;border:0;border-left:0;border-radius:var(--r-md);padding:8px 10px;margin-bottom:2px}
+.card:hover{background:rgba(255,255,255,.035);transform:none}
+.card.sel{background:var(--panel2);box-shadow:inset 2px 0 0 var(--cc,var(--accent))}
+#myStoryCard.sel,#allCard.sel{box-shadow:inset 2px 0 0 var(--accent)}
+.card .nm{gap:9px;font-size:14px;font-weight:600;min-width:0}
+.card .nm .cn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.card .dot{width:9px;height:9px}
+.card .cav{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(0,0,0,.65);flex:none}
+.card:hover .dot{transform:none}
+.card .act{order:3;margin:4px 0 0 37px;font-size:13px;color:var(--text);line-height:1.35}
+.card .where{order:4;margin:2px 0 0 37px;font-size:12px;color:var(--muted);line-height:1.35}
+#myStoryCard .where,#allCard .where{margin-left:18px}#myStoryCard .act{margin-left:18px;order:5;color:var(--muted);font-size:12px}
+.card .needs{order:5;margin:6px 0 0 37px}
+.card{position:relative}.card .wbtn{position:absolute;right:8px;bottom:7px;margin:0;font-size:11.5px;padding:3px 9px;color:var(--text);background:var(--panel2);border:1px solid var(--line2);opacity:0;transition:opacity .15s}
+.card:hover .wbtn,.card.sel .wbtn,.card .wbtn:focus-visible{opacity:1}
+@media (hover:none){.card .wbtn{opacity:1;position:static;align-self:flex-start;order:6;margin:6px 0 0 37px}}
+.badge{font-size:10.5px;padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--cc,var(--accent)) 22%,transparent);color:var(--text);font-weight:600;border:0;flex:none}
+.card.busy::after{right:10px;top:12px;bottom:auto}
+/* reading area */
+#viewbar{padding:7px 18px;font-size:12.5px;background:transparent;border-bottom:1px solid var(--line)}
+#feed{padding:28px 0 36px}
+.msg.user .bubble{border-left-width:2px}
+/* composer */
+#composer{background:var(--panel);border-top:1px solid var(--line);padding:12px 16px 10px}
+#composer .row{max-width:760px}
+#input{border-radius:var(--r-md);background:var(--ink-deep);border:1px solid var(--line);min-height:52px;max-height:40vh;resize:none}
+#input:focus{border-color:var(--line2)}
+#sendBtn{border-radius:var(--r-md);min-width:80px;padding:12px 16px}
+.toolrow{margin-top:8px;justify-content:space-between;align-items:center!important}
+.tools{display:flex;gap:2px;flex-wrap:wrap}
+button.tool{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 10px;border-radius:var(--r-sm);color:var(--muted)}
+button.tool .hi{opacity:.8}
+button.tool:disabled{opacity:.4;cursor:default}
+#usage{font-size:11.5px;color:var(--muted)}
+#statusbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;max-width:760px;margin:8px auto 0;font-size:12px;color:var(--muted)}
+.bond{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border-radius:999px;padding:4px 10px 4px 8px;color:var(--text)}
+.bond .bd{width:7px;height:7px;border-radius:50%;display:inline-block}
+.bond b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.bond .tl{font-style:normal;color:var(--muted);font-size:11.5px}
+.bond .bar{display:inline-block;width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.bond .bar i{display:block;height:100%;opacity:.85}
+.morebtn{font-size:12px;padding:3px 8px;color:var(--muted);margin-left:auto}
+.bondfar{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 8px;padding-top:6px;border-top:1px solid var(--line);margin-top:2px}
+.washed{flex-basis:100%;font-size:11.5px;color:var(--muted);line-height:1.5}
+/* windows */
+.modal .box{border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.ev-card,.rel-card,.lore-ent{background:var(--panel2);border:1px solid transparent}
+button{border-radius:var(--r-sm)}
+button:hover{background:#262b36}
+/* phones */
+@media (max-width:760px){
+  header{display:flex;flex-wrap:wrap;gap:4px;padding:calc(6px + env(safe-area-inset-top)) 8px 6px}
+  .hnavgrp{order:1;flex:1;gap:0}
+  header .hl{display:none}
+  header button.ghost{padding:6px 9px;font-size:16px}
+  header .hi{font-size:17px}
+  .hmid{order:2;align-items:flex-end;max-width:none}
+  header .title,#weather{display:none}
+  #clock{font-size:15px}
+  .hright{order:3;flex-basis:100%;justify-content:space-between;gap:6px}
+  #personaSel{flex:1;max-width:none;font-size:14px}
+  #composer .row button.tool{font-size:12.5px;padding:5px 8px}
+  .tools .hl{display:inline}
+  #statusbar{max-height:none;overflow:visible}
+  .bond .bar,.bond .tl{display:none}
+}
+@media (max-width:359px){ .tools .hl{display:none} button.tool{font-size:15px;padding:6px 11px} }
 </style>
 </head>
 <body>
@@ -793,14 +889,24 @@ body.calm *,body.calm *::before,body.calm *::after{animation:none!important;tran
 
 <div id="app" style="display:none">
   <header>
-    <button class="ghost" id="sideBtn" title="Who's where">👥</button><button class="ghost" id="homeBtn" title="Main menu">⌂ Home</button><button class="ghost" id="loreBtn" title="World lore and memories">📖 Lore</button><button class="ghost" id="evBtn" title="Schedules, events, cycles and relationships">📅 Events</button><button class="ghost" id="phoneBtn" title="Your phone">📱 Phone<span id="phBadge"></span></button><div class="title" id="worldTitle">Living World</div>
-    <select id="personaSel" title="Who you are playing in this story"></select><span id="weather"></span>
-    <span id="clock">--</span>
-    <select id="speed" title="How fast the world's clock runs while the app is open">
-      <option value="1">1× real time</option><option value="5">5×</option><option value="15">15×</option><option value="60">60×</option>
-    </select>
-    <button id="pauseBtn">Pause</button>
-    <button id="settingsBtn">Settings</button>
+    <div class="hgrp hnavgrp">
+      <button class="ghost" id="sideBtn" title="Who's where">👥</button>
+      <button class="ghost" id="homeBtn" title="Main menu"><span class="hi">⌂</span><span class="hl">Home</span></button>
+      <button class="ghost" id="loreBtn" title="World lore and memories"><span class="hi">📖</span><span class="hl">Lore</span></button>
+      <button class="ghost" id="evBtn" title="Schedules, events, cycles and relationships"><span class="hi">📅</span><span class="hl">Events</span></button>
+      <button class="ghost" id="phoneBtn" title="Your phone"><span class="hi">📱</span><span class="hl">Phone</span><span id="phBadge"></span></button>
+    </div>
+    <div class="hmid"><div class="title" id="worldTitle">Living World</div><div class="hclock"><span id="clock">--</span><span id="weather"></span></div></div>
+    <div class="hgrp hright">
+      <select id="personaSel" title="Who you are playing in this story"></select>
+      <div class="timectl" title="How fast the world's clock runs while the app is open">
+        <select id="speed">
+          <option value="1">1× real time</option><option value="5">5×</option><option value="15">15×</option><option value="60">60×</option>
+        </select>
+        <button id="pauseBtn">Pause</button>
+      </div>
+      <button class="ghost" id="settingsBtn" title="Settings"><span class="hi">⚙</span><span class="hl">Settings</span></button>
+    </div>
   </header>
   <div id="sideShade"></div>
   <div id="main">
@@ -819,12 +925,12 @@ body.calm *,body.calm *::before,body.calm *::after{animation:none!important;tran
           <textarea id="input" placeholder="What do you do or say?" title="Enter to send, Shift+Enter for a new line"></textarea>
           <button class="primary" id="sendBtn">Send</button>
         </div>
-        <div class="row" style="margin-top:6px;justify-content:space-between">
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="ghost" id="contBtn" title="Not sure what to say? Let the scene keep going without you">▶ Continue</button>
-            <button class="ghost" id="regenBtn" title="Rewrite the last reply">↻ Regenerate</button>
-            <button class="ghost" id="undoBtn" title="Remove the last exchange">⌫ Undo last</button>
-            <button class="ghost" id="moveBtn" title="Go somewhere else">⇢ Go somewhere</button>
+        <div class="row toolrow">
+          <div class="tools">
+            <button class="ghost tool" id="contBtn" title="Not sure what to say? Let the scene keep going without you"><span class="hi">▶</span><span class="hl">Continue</span></button>
+            <button class="ghost tool" id="regenBtn" title="Rewrite the last reply"><span class="hi">↻</span><span class="hl">Regenerate</span></button>
+            <button class="ghost tool" id="undoBtn" title="Remove the last exchange"><span class="hi">⌫</span><span class="hl">Undo</span></button>
+            <button class="ghost tool" id="moveBtn" title="Go somewhere else"><span class="hi">⇢</span><span class="hl">Go somewhere</span></button>
           </div>
           <span class="tag" id="usage"></span>
         </div>
@@ -2143,7 +2249,7 @@ function renderCards(){
   $('#allCard').style.display=S.branch?'none':''; document.querySelectorAll('aside h3')[1].textContent=S.branch?'In this chat':'Watch the world';
   $('#charCards').innerHTML=W.characters.filter(c=>!S.branch||c.id===S.branch.charId).map(c=>{ const st=S.chars[c.id]; const withU=pres.includes(c.id);
     const mv=lastCardLoc[c.id]!==undefined&&lastCardLoc[c.id]!==st.loc; lastCardLoc[c.id]=st.loc;
-    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''}" data-id="${c.id}"><div class="nm"><span class="dot" style="background:${c.color}"></span>${esc(c.full)}${withU?'<span class="badge">with you</span>':''}</div>${!S.branch&&!st.dead&&(S.user.companions.includes(c.id)||withU)?`<button class="ghost wbtn" data-wtog="${c.id}">${S.user.companions.includes(c.id)?'Leave them':'Bring along'}</button>`:''}${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div><div class="act">${esc(st.act)}</div>`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
+    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''} ${withU?'withu':''}" data-id="${c.id}" style="--cc:${c.color}"><div class="nm"><span class="dot cav" style="background:${c.img?`center/cover url('${c.img}')`:c.color}">${c.img?'':esc((c.name||'?')[0])}</span><span class="cn">${esc(c.full)}</span>${withU?'<span class="badge">with you</span>':''}</div>${!S.branch&&!st.dead&&(S.user.companions.includes(c.id)||withU)?`<button class="ghost wbtn" data-wtog="${c.id}">${S.user.companions.includes(c.id)?'Leave them':'Bring along'}</button>`:''}${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div>${withU&&/^with you$/i.test(st.act||'')?'':`<div class="act">${esc(st.act)}</div>`}`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
   document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-wtog]')) return; S.view=el.dataset.id; render(); save(); closeSide(); });
   document.querySelectorAll('[data-wtog]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.wtog, c=charById(id); const was=S.user.companions.includes(id);
     if(was){ setCompanions(S.user.companions.filter(x=>x!==id)); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.name} is no longer with ${uN()}; they went off on their own and are not in the scene anymore. Don't bring them back unless the story calls for it.)`}); notice(`${c.name} is no longer with you.`); }
@@ -2154,8 +2260,13 @@ function renderCards(){
 }
 function renderStatus(){
   const CS=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
-  $('#statusbar').innerHTML=CS.map(c=>`<span style="color:${c.color}">${c.name}</span> <b>${S.chars[c.id].trust}</b>/100 <i class="tl">${trustLabel(S.chars[c.id].trust)}</i>`).map(s=>`<span>${s}</span>`).join('')+
-    `<span>· Washed: ${CS.filter(c=>!c.noWash).map(c=>`${c.name} ${mmdd(S.chars[c.id].washed)} ${hhmm(S.chars[c.id].washed)}`).join(', ')}, You ${mmdd(S.user.washed)} ${hhmm(S.user.washed)}</span>`;
+  const presI=present().map(c=>c.id); const near=CS.filter(c=>presI.includes(c.id)), far=CS.filter(c=>!presI.includes(c.id));
+  const pill=c=>{ const t=S.chars[c.id].trust; return `<span class="bond" title="${esc(c.full)}: ${t}/100, ${trustLabel(t)}"><i class="bd" style="background:${c.color}"></i>${esc(c.name)} <b>${t}</b><i class="tl">${trustLabel(t)}</i><i class="bar"><i style="width:${t}%;background:${c.color}"></i></i></span>`; };
+  const open=$('#statusbar').classList.contains('full');
+  $('#statusbar').innerHTML=(near.length?near.map(pill).join(''):'<span class="small">Nobody with you</span>')+
+    `<button class="ghost morebtn" id="bondMore">${open?'Less':'All bonds & hygiene'}</button>`+
+    (open?`<div class="bondfar">${far.map(pill).join('')}<div class="washed">Last washed: ${CS.filter(c=>!c.noWash).map(c=>`${esc(c.name)} ${mmdd(S.chars[c.id].washed)} ${hhmm(S.chars[c.id].washed)}`).join(' · ')} · You ${mmdd(S.user.washed)} ${hhmm(S.user.washed)}</div></div>`:'');
+  $('#bondMore').onclick=()=>{ $('#statusbar').classList.toggle('full'); renderStatus(); };
   { const s=spendSummary(); $('#usage').textContent=CFG.provider==='deepseek'&&s.today.calls?`Today ≈ $${s.today.usd.toFixed(2)}${+CFG.dailyLimit?` of $${(+CFG.dailyLimit).toFixed(2)}`:''}`:(S.usage.inT||S.usage.outT?`Tokens used: ${(S.usage.inT/1000).toFixed(1)}k in · ${(S.usage.outT/1000).toFixed(1)}k out`:''); }
 }
 function renderViewbar(){
@@ -2396,8 +2507,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.35.2';
+const APP_VERSION = '0.36.0';
 const CHANGELOG = [
+ {v:'0.36.0', d:'2026-11-19', notes:['A cleaner look for the story screen. The top bar is split into three tidy groups: where to go (Home, Lore, Events, Phone), the world and its clock in the middle, and your persona, time speed and settings on the right.','The side panel now shows each character with a round initial (or their picture), their activity first and the place underneath, and the Leave them / Bring along button only when you hover.','Under the message box, the buttons are a compact toolbar, and only the people with you show their bond bars. Everyone else and the "last washed" times are one click away under All bonds & hygiene.','Calmer colors overall, with more room around the story text, and a tighter layout on phones.']},
  {v:'0.35.2', d:'2026-11-19', notes:['Periods now actually show up in the story. When someone with you is on her period or PMSing, the narrator gets a reminder on that very turn to show it through a small in-character detail (cramps, a hand on her stomach, a restroom trip for a pad or tampon, a hot water bottle, cravings, a shorter temper), picked differently each time. It comes up most on the heaviest days and stays consistent in between instead of vanishing.']},
  {v:'0.35.1', d:'2026-11-19', notes:['New ▶ Continue button under the message box. If you don\'t know what to say, press it and the scene keeps going on its own: the characters keep talking and following their plans, and the world moves around you, without the story deciding anything for you. Regenerate and Undo work on continued replies too.']},
  {v:'0.35.0', d:'2026-11-19', notes:['Owner build only: a new Zenless Zone Zero world, Obol Squad. You\'re the squad\'s new support specialist, reporting to their Defense Force dormitory on your first morning.','Seed (and Seed Sr.), Soldier 11, Trigger, and Orphie with Captain Magus as one character, each researched one by one through the wiki, Google AI Mode and your measurements sheet.','Military schedules (drills, briefings, Hollow Zero operations on Tuesdays and Thursdays) plus their off-duty lives: Waterfall Soup noodles, Trigger\'s harmonica at Port Elpis, Seed\'s cockpit movie nights, Orphie\'s stray cats.','Cunning Hares: Anby is now her S-rank self, Soldier 0, and Billy is Starlight Billy. Anby and Soldier 11 are in a careful reconciliation.']},
