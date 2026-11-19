@@ -1,12 +1,10 @@
 {
- "version": "0.37.0",
+ "version": "0.37.1",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: a new Zenless Zone Zero world, the Angels of Delusion. You're the broke idol group's new assistant manager at the 404 Livehouse on Sixth Street, starting on your first day.",
-  "Nangong Yu (just turned 18), Aria (a century-old construct who sings as a hologram), Sunna (17, kept age-appropriate) and their coach Cecilia, researched through the wiki, Google AI Mode and your measurements sheet.",
-  "Idol schedules: rehearsals, recording, Tuesday and Friday livestreams, Saturday shows at 404, Sunna's Coff Cafe shifts, Nangong's late-night stock trading, Aria's secret listeners in Blazewood and her night walks by the sea. Their first show with you is Saturday 11/21."
+  "Angels of Delusion: real heights without heels. Nangong Yu is about 4'8\" barefoot (her platform heels and halo make her look 5'1\"), and Sunna is about 4'10\" in her flat shoes."
  ],
  "file": "index.html",
- "sha256": "d160cb8312d63515f4dfaa127619ff16f3069cf6c1c9d50d225b83b228676552",
+ "sha256": "a3bab4aac36bde06580decea4e04a76afbf72f06fb590e226f97f8a0958952ab",
  "minShell": "0.5.0"
 }
