@@ -1,10 +1,13 @@
 {
- "version": "0.26.4",
+ "version": "0.27.0",
  "date": "2026-11-18",
  "notes": [
-  "Phone statuses come from the story first and the schedule second. Anyone the latest scene mentions gets checked (not only people the app already thought were with you), and if the story puts them in the room with you, the app moves them there too. The schedule only takes over again when their next scheduled activity starts."
+  "Rebuilt how the app keeps track of the story. After every reply it now checks the scene itself (instead of hoping the story AI adds hidden tags): who is actually with you, what everyone is doing, and how much each person's trust in you changed. Phoenix stops tagging along the moment the story leaves her behind, and phone statuses follow the story.",
+  "Existing stories get their relationships rated once from what has happened so far, so someone you're dating isn't stuck at 25.",
+  "Big fix: the default background model for DeepSeek was named wrong (deepseek-flash instead of deepseek-v4-flash), so everything that runs in the background (off-screen scenes, memories, text replies, these checks) was quietly failing. It's corrected automatically.",
+  "If that check can't run (for example a wrong background model in Settings), the app now tells you instead of failing silently."
  ],
  "file": "index.html",
- "sha256": "ffed9a816af3fbe2d87a4d1d279b69ccdea410264974e5a7fbfa0befa7f6e70e",
+ "sha256": "398ba4b57bb0f46f9fa00330ae9ceaa5acda7a528932782801dcd7556469a77b",
  "minShell": "0.5.0"
 }

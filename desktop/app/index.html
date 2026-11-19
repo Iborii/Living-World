@@ -1093,7 +1093,7 @@ function holidayLines(){ const out=[]; const today=isoDate(S.clock).slice(5);
 
 // ======================= state =======================
 let S, CFG;
-function defaultCfg(){ return {mature:false, away:'pause', provider:'deepseek', key:'', base:'https://openrouter.ai/api/v1', main:'deepseek-v4-pro', bg:'deepseek-flash', beat:30, maxTok:3000, name:'', persona:'', bgOn:'1', realism:'full'}; }
+function defaultCfg(){ return {mature:false, away:'pause', provider:'deepseek', key:'', base:'https://openrouter.ai/api/v1', main:'deepseek-v4-pro', bg:'deepseek-v4-flash', beat:30, maxTok:3000, name:'', persona:'', bgOn:'1', realism:'full'}; }
 const TRUST_START=25;
 function trustLabel(n){ return n<10?'distrusts you':n<25?'wary':n<40?'stranger':n<55?'acquaintance':n<70?'friendly':n<85?'trusts you':'very close'; }
 function newState(){
@@ -1108,7 +1108,7 @@ function newState(){
 }
 function stripStatus(t){ return t.split('\n').filter(l=>!/\d+\/100\s*\|/.test(l)).join('\n').trim(); }
 function applyAnim(){ document.body.classList.toggle('calm', (CFG&&CFG.anim)==='calm'); }
-function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } if(+CFG.maxTok===1600) CFG.maxTok=3000; applyAnim(); }
+function loadCfg(){ try{ CFG=Object.assign(defaultCfg(), JSON.parse(LS.getItem(SET_KEY)||'{}')); }catch(e){ CFG=defaultCfg(); } if(+CFG.maxTok===1600) CFG.maxTok=3000; if(CFG.provider==='deepseek'){ const fix={'deepseek-flash':'deepseek-v4-flash','deepseek-pro':'deepseek-v4-pro','deepseek-chat':'deepseek-v4-flash','deepseek-reasoner':'deepseek-v4-pro'}; if(fix[CFG.bg]) CFG.bg=fix[CFG.bg]; if(fix[CFG.main]) CFG.main=fix[CFG.main]; } applyAnim(); }
 function load(){
   const fresh=(S&&S.branch&&S.world===W.id&&SAVE_KEY.endsWith('~'+S.branch.id)&&!S.chat.length)?S:null;
   try{ const raw=LS.getItem(SAVE_KEY); S=raw?JSON.parse(raw):null; }catch(e){ S=null; }
@@ -1602,20 +1602,44 @@ function realismBlock(forBeats){
 }
 function recentContext(n=4){ return S.chat.filter(m=>m.text&&!m.streaming).slice(-n).map(m=>m.text).join('\n')+'\n'+(S.user.loc||''); }
 // after every reply, read the scene and note what each character in it is actually doing, so phone statuses follow the story (not just the schedule)
-async function checkDoing(replyText, force){ if(!CFG.key||!replyText||!S) return;
-  const named=W.characters.filter(c=>!isDead(c)&&new RegExp('\\b'+c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(replyText));
-  const pres=present().filter(c=>!isDead(c)); const cands=[...new Set([...pres,...named])]; if(!cands.length) return;
+// After every reply the app reads the scene itself and sets who is with the user, what everyone is doing and how trust moved.
+// This does not depend on the story AI remembering control tags.
+let sceneCheckErrShown=false, TRUST_TAGGED=new Set();
+async function aiQuick(opts){ try{ return await callAI({...opts, model:CFG.bg||CFG.main}); }catch(e){ if(CFG.bg&&CFG.bg!==CFG.main) return await callAI({...opts, model:CFG.main}); throw e; } }
+function parseJSONish(out){ const m=String(out||'').match(/\{[\s\S]*\}/); if(!m) return {}; try{ return JSON.parse(m[0]); }catch(e){ try{ return JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1')); }catch(e2){ return {}; } } }
+async function checkDoing(replyText, force, userText){ if(!CFG.key||!replyText||!S) return;
   const idx=S.chat.length; if(!force&&S.doingChecked===idx) return; S.doingChecked=idx;
-  try{ const out=await callAI({system:`You track the main characters of a roleplay. Read the end of the latest scene. For each listed character say (1) in 3 to 10 words what they are doing at the very end of it, e.g. "asleep in bed", "showering", "eating dinner", "scrolling her phone in bed", or "same" if the scene doesn't show it; and (2) whether they are physically in the same place as ${uN()} at the end (true/false, null if unclear). Return ONLY JSON: {"Name":{"doing":"...","withUser":true}}`,
-      messages:[{role:'user',content:`${uN()} is at: ${S.user.loc}\nCharacters (where the app last had them):\n${cands.map(c=>`- ${c.name}: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')} at ${S.chars[c.id].loc}`).join('\n')}\n\nEnd of the scene:\n${replyText.slice(-3500)}`}], model:CFG.bg||CFG.main, maxTokens:300});
-    const j=JSON.parse((out.match(/\{[\s\S]*\}/)||['{}'])[0]); let changed=false;
-    for(const [name,v] of Object.entries(j)){ const c=charByName(name); if(!c||!cands.includes(c)) continue; const st=S.chars[c.id];
-      const d=typeof v==='string'?{doing:v}:(v||{}); const a=String(d.doing||'').trim();
-      if(d.withUser===true&&!S.user.companions.includes(c.id)&&!sameLoc(st.loc,S.user.loc)){ st.loc=S.user.loc; changed=true; }
-      if(a&&!/^same\.?$/i.test(a)){ const cur=String(st.act||'').replace(/\s*\(with you\)$/,''); if(cur.toLowerCase()!==a.toLowerCase()){ setDoing(c,a); changed=true; } }
-      if(changed&&st.ovr&&d.withUser===true) st.ovr.loc=S.user.loc; }
-    if(changed){ updateSchedules(); save(); if(SCREEN==='world') renderCards(); if($('#phoneModal').classList.contains('on')) renderPhone(); }
-  }catch(e){ /* best effort */ } }
+  const cast=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(c=>!isDead(c)); if(!cast.length) return;
+  const tagged=TRUST_TAGGED;
+  try{ const out=await aiQuick({system:`You keep the facts of a roleplay straight. Read the user's last message and the latest scene. For EVERY listed main character answer:
+- "with": true if they are physically with ${uN()} (same room or right beside them) at the END of the scene, false if not.
+- "doing": 3 to 10 words for what they are doing at the end of the scene if the scene shows it (e.g. "asleep in bed", "showering", "cuddling ${uN()} on the couch"), otherwise "same".
+- "trust": how much this exchange changed how they feel about ${uN()}: an integer from -8 to 8, usually 0 to 3 when they shared a real moment, 0 if they weren't involved.
+Return ONLY JSON like {"Name":{"with":false,"doing":"same","trust":0}} with every listed name.`,
+      messages:[{role:'user',content:`${uN()} is at: ${S.user.loc}\nThe app currently has:\n${cast.map(c=>{ const st=S.chars[c.id]; return `- ${c.name}: ${S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)?'WITH the user':'not with the user'}; ${String(st.act||'').replace(/\s*\(with you\)$/,'')} at ${st.loc}; trust ${st.trust}/100`; }).join('\n')}\n\n${uN()}'s last message: ${String(userText||'').slice(0,1500)}\n\nThe scene:\n${replyText.slice(-4500)}`}], maxTokens:500});
+    const j=parseJSONish(out); let changed=false;
+    for(const [name,v] of Object.entries(j)){ const c=charByName(name); if(!c||!cast.includes(c)||!v||typeof v!=='object') continue; const st=S.chars[c.id];
+      const isComp=S.user.companions.includes(c.id), here=isComp||sameLoc(st.loc,S.user.loc);
+      if(!S.branch){
+        if(v.with===false&&isComp){ setCompanions(S.user.companions.filter(x=>x!==c.id)); changed=true; }
+        else if(v.with===false&&here){ const sl=slotFor(c,S.clock); st.loc=sl&&!sameLoc(sl.loc,S.user.loc)?sl.loc:(S.user.loc.split(' (')[0].trim()+' (elsewhere)'); if(st.ovr) st.ovr.loc=st.loc; changed=true; }
+        else if(v.with===true&&!here){ st.loc=S.user.loc; changed=true; }
+      }
+      const a=String(v.doing||'').trim(); if(a&&!/^same\.?$/i.test(a)){ const cur=String(st.act||'').replace(/\s*\(with you\)$/,''); if(cur.toLowerCase()!==a.toLowerCase()){ setDoing(c,a); changed=true; } }
+      if(v.with===true&&!S.user.companions.includes(c.id)&&st.ovr) st.ovr.loc=S.user.loc;
+      const t=Math.max(-8,Math.min(8,parseInt(v.trust)||0)); if(t&&!tagged.has(c.id)){ st.trust=Math.max(0,Math.min(100,st.trust+t)); changed=true; } }
+    if(changed){ updateSchedules(); save(); if(SCREEN==='world'){ renderCards(); renderStatus(); } if($('#phoneModal').classList.contains('on')) renderPhone(); }
+  }catch(e){ if(!sceneCheckErrShown){ sceneCheckErrShown=true; notice('Couldn\'t update who\'s with you and relationships: '+e.message+' (check the background model in Settings).',true); } } }
+// once per existing story: rate everyone's trust from the story so far, so an established relationship doesn't sit at the starting value
+async function calibrateTrust(){ if(!S||S.trustCal||!CFG.key) return; const said=S.chat.filter(m=>m.role==='assistant'&&!m.hidden); if(said.length<4){ return; }
+  S.trustCal=1; save(); const cast=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(c=>!isDead(c));
+  const recent=S.chat.filter(m=>!m.hidden).slice(-24).map(m=>(m.role==='user'?uN():'Story')+': '+m.text).join('\n\n').slice(-12000);
+  try{ const out=await aiQuick({system:`Rate how much each main character of a roleplay trusts and likes ${uN()} right now, 0 to 100: 0-9 distrusts or hates them, 10-24 wary, 25-39 stranger, 40-54 acquaintance, 55-69 friendly, 70-84 close friend / trusts them, 85-100 partner, family-level closeness, deeply in love. Base it only on what happened in the story. Characters who have barely met ${uN()} stay around 25-35. Return ONLY JSON {"Name":number}.`,
+      messages:[{role:'user',content:`Characters: ${cast.map(c=>c.name).join(', ')}\n\n${S.summary?'Story so far:\n'+S.summary+'\n\n':''}What characters remember:\n${cast.map(c=>`${c.name}: ${(memLines(c.id,'',6)||'(nothing)').replace(/\n/g,' ')}`).join('\n').slice(0,6000)}\n\nRecent story:\n${recent}`}], maxTokens:300});
+    const j=parseJSONish(out); const changes=[];
+    for(const [name,n] of Object.entries(j)){ const c=charByName(name); if(!c||!cast.includes(c)) continue; const v=Math.max(0,Math.min(100,Math.round(+n))); if(isNaN(v)) continue; if(v!==S.chars[c.id].trust){ S.chars[c.id].trust=v; changes.push(`${c.name} ${v}`); } }
+    if(changes.length){ save(); if(SCREEN==='world'){ renderStatus(); renderCards(); } notice('Relationships updated from your story so far: '+changes.join(', ')+'.'); }
+  }catch(e){ S.trustCal=0; save(); } }
 async function extractMemories(userText, replyText){
   const pres=present(); if(!pres.length || CFG.bgOn==='0') return;
   try{
@@ -1750,7 +1774,7 @@ async function generateReply(){
     }
     if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
     syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
-    const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text); checkDoing(msg.text);
+    const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text); checkDoing(msg.text,false,lastU&&!lastU.hidden?lastU.text:'');
     msg.snap=snapState(); if(CFG.voice==='auto') speakText(msg.text); maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
   busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
@@ -1760,7 +1784,7 @@ function joinCont(a,b){ b=b.replace(/^\s*\|[^\n]*\|\s*\n/,''); // drop a repeate
   if(/\s$/.test(a)||/^[\s.,;:!?'")\]*~-]/.test(b)) return a+b;
   return a+(/[A-Za-z]$/.test(a)&&/^[a-z]/.test(b)?'':' ')+b.replace(/^\s+/,''); }
 function applyControls(text){
-  const lines=text.split('\n'); const keep=[]; let withList=null;
+  const lines=text.split('\n'); const keep=[]; let withList=null; TRUST_TAGGED=new Set();
   for(const l of lines){
     const m=l.match(/^\s*\[\[(\w+):\s*([^\]]+)\]\]\s*$/);
     if(!m){ keep.push(l); continue; }
@@ -1770,7 +1794,7 @@ function applyControls(text){
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
     else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
-    else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
+    else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ TRUST_TAGGED.add(c.id); const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
@@ -2065,7 +2089,7 @@ function openSettings(){
   $('#settingsModal').classList.add('on');
 }
 $('#settingsBtn').onclick=openSettings;
-$('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
+$('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-v4-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
 $('#saveSettings').onclick=()=>{ setTimeout(applyAnim,0); const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, anim:$('#sAnim').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
@@ -2248,8 +2272,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.26.4';
+const APP_VERSION = '0.27.0';
 const CHANGELOG = [
+ {v:'0.27.0', d:'2026-11-18', notes:['Rebuilt how the app keeps track of the story. After every reply it now checks the scene itself (instead of hoping the story AI adds hidden tags): who is actually with you, what everyone is doing, and how much each person\'s trust in you changed. Phoenix stops tagging along the moment the story leaves her behind, and phone statuses follow the story.','Existing stories get their relationships rated once from what has happened so far, so someone you\'re dating isn\'t stuck at 25.','Big fix: the default background model for DeepSeek was named wrong (deepseek-flash instead of deepseek-v4-flash), so everything that runs in the background (off-screen scenes, memories, text replies, these checks) was quietly failing. It\'s corrected automatically.','If that check can\'t run (for example a wrong background model in Settings), the app now tells you instead of failing silently.']},
  {v:'0.26.4', d:'2026-11-18', notes:['Phone statuses come from the story first and the schedule second. Anyone the latest scene mentions gets checked (not only people the app already thought were with you), and if the story puts them in the room with you, the app moves them there too. The schedule only takes over again when their next scheduled activity starts.']},
  {v:'0.26.3', d:'2026-11-18', notes:['Phone statuses really follow the story now. After every reply the app reads the scene and notes what everyone in it is doing (asleep, showering, eating…), so it no longer depends on the AI remembering to say so. Opening the phone also catches up on the last scene.']},
  {v:'0.26.2', d:'2026-11-18', notes:['Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.','Places match more loosely, so walking into "Dialyn\'s room" counts as being where she is even if the story writes the place a little differently.','Someone asleep right next to you shows as Asleep, not just With you.']},
@@ -3355,6 +3380,7 @@ function enterWorld(id, opts={}){
   $('#speed').value=String(S.speed); lastReal=Date.now();
   const away=S.lastPlayed?Date.now()-S.lastPlayed:0; recapHTML='';
   updateSchedules(); showScreen('world'); render(); save();
+  setTimeout(()=>{ if(!S) return; calibrateTrust(); const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked!==S.chat.length) checkDoing(la.text,true,''); },1500);
   if(away>2*3600000&&S.chat.filter(m=>m.role==='assistant').length>=2) makeRecap();
   if(!CFG.key) setTimeout(openSettings,300); else if(!PS.list.length) setTimeout(()=>openPersonas(),300);
   else if(!persona().gender){ setTimeout(()=>{ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; },300); }
