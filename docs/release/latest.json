@@ -1,10 +1,10 @@
 {
- "version": "0.29.3",
+ "version": "0.29.4",
  "date": "2026-11-19",
  "notes": [
-  "The chat no longer drags you down while a reply is being written. It shows the start of the new reply, then lets you read at your own pace."
+  "Deeper character research for Velina, Norma and the whole Yunkui Summit cast (Yixuan, Fufu, Shunguang, Yinhu, Belle and Wise): lots of small canon quirks, habits, catchphrases and likes and dislikes, so they sound more like themselves."
  ],
  "file": "index.html",
- "sha256": "439a9e789c608e1a7568983a0fc056a1df3bd2701363e91bb6ca7591b7077d0a",
+ "sha256": "ea81d3106e6c5a02fd77a4254be9243b526bf297b98939ebaefce9d4cbf808cc",
  "minShell": "0.5.0"
 }
