@@ -1,10 +1,10 @@
 {
- "version": "0.29.7",
+ "version": "0.29.8",
  "date": "2026-11-19",
  "notes": [
-  "Characters sound as emotional out loud as they do in texts: exclamation marks, trailing off, stutters, cut-off words, shouting, whining and little noises like \"Huh?\" and \"Pfft!\", each in their own voice, instead of flat sentences of only commas and periods."
+  "Stronger fix for flat dialogue: every reply now gets a reminder right next to your message to give characters emotional, expressive speech, so they break out of a flat style even in older stories."
  ],
  "file": "index.html",
- "sha256": "d669abf60534411f179d415676b487dd08f813398e508d019f0abfd4bd41d1c5",
+ "sha256": "32c90b8665fbce44034c667854b62d76eb68475491b4599be74419c7fc3e9880",
  "minShell": "0.5.0"
 }

@@ -1758,6 +1758,7 @@ function restoreSnap(sn){ if(!sn) return false; S.clock=sn.clock; S.user=JSON.pa
   for(const [k,v] of Object.entries(sn.trust||{})) if(S.chars[k]) Object.assign(S.chars[k],v);
   if(sn.contacts&&S.phone) S.phone.contacts=[...sn.contacts]; if(sn.rel) S.rel=JSON.parse(JSON.stringify(sn.rel)); updateSchedules(); return true; }
 function snapBefore(i){ for(let j=i-1;j>=0;j--) if(S.chat[j].snap) return S.chat[j].snap; return S.startSnap||null; }
+const VOICE_NUDGE='(Narrator note, not part of the story: write the characters\' spoken lines with real emotion in their own voices, the way they text. Use ! and ?! for excitement, anger, surprise or teasing, "..." for hesitating or trailing off, stutters when flustered, dashes for cut-off words, stretched words for whining, and noises like "Huh?", "Ugh.", "Pfft!". Do not write every line as calm sentences ending in periods, even if earlier replies did.)';
 function chatMessages(){
   const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
   for(const m of recent){
@@ -1788,6 +1789,7 @@ async function generateReply(){
   mainAbort=new AbortController();
   try{
     const sys=mainSystem(), hist=chatMessages();
+    if(hist.length&&hist[hist.length-1].role==='user') hist[hist.length-1]={...hist[hist.length-1], content:hist[hist.length-1].content+'\n\n'+VOICE_NUDGE};
     let full=await callAI({system:sys, messages:hist, model:CFG.main, maxTokens:+CFG.maxTok||3000, signal:mainAbort.signal,
       onText:t=>{ msg.text=t; renderStreaming(msg); }});
     for(let tries=0; tries<3 && full.trim() && LAST_FINISH!=='done'; tries++){ // cut off mid-reply: ask the AI to pick up exactly where it stopped
@@ -2299,8 +2301,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.29.7';
+const APP_VERSION = '0.29.8';
 const CHANGELOG = [
+ {v:'0.29.8', d:'2026-11-19', notes:['Stronger fix for flat dialogue: every reply now gets a reminder right next to your message to give characters emotional, expressive speech, so they break out of a flat style even in older stories.']},
  {v:'0.29.7', d:'2026-11-19', notes:['Characters sound as emotional out loud as they do in texts: exclamation marks, trailing off, stutters, cut-off words, shouting, whining and little noises like "Huh?" and "Pfft!", each in their own voice, instead of flat sentences of only commas and periods.']},
  {v:'0.29.6', d:'2026-11-19', notes:['Phoenix can be killed by enemies too (cheap shots like a raider\'s thrown brick count). When something living kills her, she revives stronger and takes them out.']},
  {v:'0.29.5', d:'2026-11-19', notes:['Zenless Zone Zero death rules: agents never die for real. Anything lethal makes them retreat and rest to recover. Only nameless side characters (thugs, Ethereals, extras) can die.','Phoenix is the one exception: she dies often, always by her own doing or a ridiculous chain of events, and revives in a burst of flame.']},
