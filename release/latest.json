@@ -1,13 +1,10 @@
 {
- "version": "0.29.0",
+ "version": "0.29.1",
  "date": "2026-11-19",
  "notes": [
-  "Characters sound like themselves again. Each world's voice examples (the scenes that showed Phoenix, Dialyn and the rest exactly how they talk, from your Clank World bots) were never being loaded. Now the story reads them every turn, so voices stop drifting flat and stoic.",
-  "Yunkui Summit cast deep-searched one by one: Yixuan, Ju Fufu, Ye Shunguang, Pan Yinhu, Belle and Wise each get a canon voice section with their real lines, sayings, texting style and new details (Yinhu's puppies and char siu pride, Shunguang's \"second senior sister\", Fufu's trainee reviews, Shifu's weather-app talismans).",
-  "Roscaelifer gets its own voice examples for Velina and Norma.",
-  "Fixes: Wise isn't vegetarian (he wants MORE meat), and Shunguang's Thiren type is left unstated, like in canon."
+  "Krampus cast double-checked against their canon profiles, dialogue and DMs (and your measurements sheet): all heights, birthdays and sizes match. Phoenix, Dialyn, Zhao, Banyue and Promeia each get a canon voice section: their official lines, how they text on Knock Knock, and missing details (Phoenix sneaking out of confinement and her \"Boo-Boo Away\" spell, Dialyn's hotline menu and Banyue's hair transplant, Zhao's secret love of vegetables and her social battery, Banyue's righteous dessert-shop fury, Promeia's \"Copy that. Give me the coordinates.\")."
  ],
  "file": "index.html",
- "sha256": "a8a93686588760874dc8afe2bbb68c4e855c7775df6a1c195b1a4cb6ae17d79c",
+ "sha256": "927bf09e0a9a0d88c8f79b20332dacc09f1ee11d238dcbb20daa7c551d50fa54",
  "minShell": "0.5.0"
 }
