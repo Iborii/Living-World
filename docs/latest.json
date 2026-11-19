@@ -1,10 +1,10 @@
 {
- "version": "0.28.0",
+ "version": "0.28.1",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: Roscaelifer joins the Zenless Zone Zero universe. Velina Airgid and Norma Hollowell of the External Strategy Department, with your first day at the ESD as the opening scene, Knock Knock and the Inter-Knot, and their own weekly schedules. They're part of the Everyone story too."
+  "Owner build only: Norma is 19. Call her a kid and find out."
  ],
  "file": "index.html",
- "sha256": "3ec5b8f22ea75794e9335019c7243a25cff24facfb005b1871beda5eed034ed9",
+ "sha256": "a2aecda5bc4878a37dd7fc8b8f2deb932976ef055397ca1e841dab66f83766d9",
  "minShell": "0.5.0"
 }
