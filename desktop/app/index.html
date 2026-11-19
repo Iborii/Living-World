@@ -1408,6 +1408,21 @@ function cycleInfo(c, ms){
 function bodyLines(chars){
   return chars.map(c=>{ const i=cycleInfo(c,S.clock); if(!i||!i.note) return null; return `- ${c.name}: ${i.label}: ${i.note}`; }).filter(Boolean).join('\n');
 }
+// per-turn reminder so a period actually shows up in the story instead of getting lost in the long system prompt
+const BODY_SIGNS={
+ period:['a hand pressed low on her stomach or the small of her back','slipping off to the restroom with her bag (or asking someone for a pad or tampon)','taking a painkiller with water','a hot water bottle, heat patch or warm drink held against her','shifting in her seat, sitting carefully or curling up','less patience than usual, snapping then regretting it','craving chocolate, salty snacks or something greasy','glancing at the back of her clothes when she stands up','tired and slower, wanting to lie down','choosing dark, loose clothes and avoiding sitting on light fabric'],
+ pms:['bloated, tugging at a waistband that feels tight','sore breasts: wincing at a bump or folding her arms gingerly','irritable over small things','teary or extra sensitive','snack cravings','tired and sluggish','checking she has pads or tampons in her bag for the next few days'],
+ ovulation:['a little more energy and chattiness than usual','a brief one-sided twinge low in her belly']};
+function bodyNudge(){ const pres=(typeof present==='function'?present():[]); const out=[]; S.bodySeen=S.bodySeen||{};
+  for(const c of pres){ const i=cycleInfo(c,S.clock); if(!i||!i.note) continue; if(i.key!=='period'&&i.key!=='pms'&&i.key!=='ovulation') continue;
+    const k=c.id+'|'+isoDate(S.clock)+'|'+i.key; const n=S.bodySeen[k]||0; S.bodySeen[k]=n+1;
+    if(i.key==='ovulation'&&n>0) continue;
+    const firm = i.key==='period' ? (n<2 || n%3===0) : (n===0 || n%4===0);
+    const pool=BODY_SIGNS[i.key]; const pick=[...pool].sort(()=>Math.random()-.5).slice(0,3);
+    out.push(firm?`- ${c.name} is ${i.key==='period'?`on her period (${i.label.toLowerCase()}; ${i.note})`:i.key==='pms'?`PMSing, her period is ${i.toNext<=1?'due tomorrow':'due in '+i.toNext+' days'} (${i.note})`:`ovulating (${i.note})`}. Show it in THIS reply through at least one small, concrete, in-character detail, for example: ${pick.join('; ')}. How openly she mentions it depends on her personality and who's around.`
+      : `- ${c.name} is still ${i.key==='period'?'on her period':'PMSing'} (${i.label}). Keep it consistent: it doesn't vanish between replies, so let it color her mood, energy or posture.`); }
+  const keys=Object.keys(S.bodySeen); if(keys.length>200) for(const k of keys.slice(0,keys.length-200)) delete S.bodySeen[k];
+  return out.length?`(Narrator note, not part of the story, realism: ${out.join(' ')} Keep it natural and non-sexual, never a status readout, and don't make the whole reply about it.)`:''; }
 function worldEventLines(){ const now=S.clock, until=now+2*DAYMS;
   return allEvents().filter(e=>e.who==='all').map(e=>({...e,t:parseStart(e.date,e.start)})).filter(e=>e.t+ (toMin(e.end)-toMin(e.start))*MIN>now && e.t<until).sort((a,b)=>a.t-b.t)
     .map(e=>`- ${e.date===isoDate(now)?'Today':wdName(e.t)+' '+mmdd(e.t)} ${e.start}-${e.end} at ${e.loc}: ${e.act}`).join('\n'); }
@@ -1864,7 +1879,7 @@ async function generateReply(){
   mainAbort=new AbortController();
   try{
     const sys=mainSystem(), hist=chatMessages();
-    if(hist.length&&hist[hist.length-1].role==='user') hist[hist.length-1]={...hist[hist.length-1], content:hist[hist.length-1].content+'\n\n'+VOICE_NUDGE};
+    if(hist.length&&hist[hist.length-1].role==='user') hist[hist.length-1]={...hist[hist.length-1], content:hist[hist.length-1].content+'\n\n'+VOICE_NUDGE+((b=>b?'\n\n'+b:'')(bodyNudge()))};
     let full=await callAI({system:sys, messages:hist, model:CFG.main, maxTokens:+CFG.maxTok||3000, signal:mainAbort.signal,
       onText:t=>{ msg.text=t; renderStreaming(msg); }});
     for(let tries=0; tries<3 && full.trim() && LAST_FINISH!=='done'; tries++){ // cut off mid-reply: ask the AI to pick up exactly where it stopped
@@ -2381,8 +2396,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.35.1';
+const APP_VERSION = '0.35.2';
 const CHANGELOG = [
+ {v:'0.35.2', d:'2026-11-19', notes:['Periods now actually show up in the story. When someone with you is on her period or PMSing, the narrator gets a reminder on that very turn to show it through a small in-character detail (cramps, a hand on her stomach, a restroom trip for a pad or tampon, a hot water bottle, cravings, a shorter temper), picked differently each time. It comes up most on the heaviest days and stays consistent in between instead of vanishing.']},
  {v:'0.35.1', d:'2026-11-19', notes:['New ▶ Continue button under the message box. If you don\'t know what to say, press it and the scene keeps going on its own: the characters keep talking and following their plans, and the world moves around you, without the story deciding anything for you. Regenerate and Undo work on continued replies too.']},
  {v:'0.35.0', d:'2026-11-19', notes:['Owner build only: a new Zenless Zone Zero world, Obol Squad. You\'re the squad\'s new support specialist, reporting to their Defense Force dormitory on your first morning.','Seed (and Seed Sr.), Soldier 11, Trigger, and Orphie with Captain Magus as one character, each researched one by one through the wiki, Google AI Mode and your measurements sheet.','Military schedules (drills, briefings, Hollow Zero operations on Tuesdays and Thursdays) plus their off-duty lives: Waterfall Soup noodles, Trigger\'s harmonica at Port Elpis, Seed\'s cockpit movie nights, Orphie\'s stray cats.','Cunning Hares: Anby is now her S-rank self, Soldier 0, and Billy is Starlight Billy. Anby and Soldier 11 are in a careful reconciliation.']},
  {v:'0.34.0', d:'2026-11-19', notes:['Owner build only: a new Zenless Zone Zero world, the Cunning Hares. It\'s your first day as the newest hire at Gentle House on Sixth Street, with a debt collector already at the door.','Nicole, Anby, Billy and Nekomata, each researched one by one through the wiki (profiles, lore, texts), Google AI Mode and your measurements sheet. That includes Nicole\'s beauty mark near her cleavage, Anby\'s Soldier 0 past, Billy\'s Calydon days and Nekomata\'s Red Fang Gang history.','Real schedules (Hollow commissions on Tuesdays and Thursdays, Nicole\'s orphanage visits, Anby\'s tape runs, Billy at the arcade, Nekomata\'s sunny catnaps) and canon relationships.','Public Security: Quiz Prize now only happens once both Qingyi and Zhu Yuan are at least Friendly with you.']},

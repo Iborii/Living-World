@@ -1,10 +1,10 @@
 {
- "version": "0.35.1",
+ "version": "0.35.2",
  "date": "2026-11-19",
  "notes": [
-  "New \u25b6 Continue button under the message box. If you don't know what to say, press it and the scene keeps going on its own: the characters keep talking and following their plans, and the world moves around you, without the story deciding anything for you. Regenerate and Undo work on continued replies too."
+  "Periods now actually show up in the story. When someone with you is on her period or PMSing, the narrator gets a reminder on that very turn to show it through a small in-character detail (cramps, a hand on her stomach, a restroom trip for a pad or tampon, a hot water bottle, cravings, a shorter temper), picked differently each time. It comes up most on the heaviest days and stays consistent in between instead of vanishing."
  ],
  "file": "index.html",
- "sha256": "2d73c40572b6bdc1706b03904480a2985c70eb62431b1efdedad05def8c8ac2d",
+ "sha256": "e7a6e1f24f756ac0f3f196925ac07c7deb5f89d2473f02e4ba51ac862648ad1d",
  "minShell": "0.5.0"
 }
