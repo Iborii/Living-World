@@ -1,10 +1,10 @@
 {
- "version": "0.38.1",
+ "version": "0.38.2",
  "date": "2026-11-19",
  "notes": [
-  "Angels of Delusion: Friday and Saturday night sleepovers in Sunna's room (three-player games, Nangong trading stocks in Sunna's bed, Aria in sleep mode plugged into the wall), plus the canon wake-up scene: Aria clinging to Nangong's leg in her sleep until her foot goes numb, and Nangong waking Sunna by squishing her face."
+  "Angels of Delusion: they're so close they often spend whole nights together, in Sunna's room (Friday, and after Saturday shows) or at their canon secret base in the Ballet Twins Hollow (Wednesday nights), the low-Ether hideout Nangong and Aria found so Sunna could practice where nobody could see or hear her."
  ],
  "file": "index.html",
- "sha256": "fd5c098a7528dafe61dfbe0724e3ec9992007237faed018fb7fb5ca0bdaca7ab",
+ "sha256": "3459eff279a707ae0f1b6d03f74e525ea00fe83b0c8ef151840645979c3d1340",
  "minShell": "0.5.0"
 }
