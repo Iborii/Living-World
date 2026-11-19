@@ -1,10 +1,10 @@
 {
- "version": "0.28.1",
+ "version": "0.28.2",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: Norma is 19. Call her a kid and find out."
+  "Owner build only: the Sunbringers are about a century old."
  ],
  "file": "index.html",
- "sha256": "a2aecda5bc4878a37dd7fc8b8f2deb932976ef055397ca1e841dab66f83766d9",
+ "sha256": "cb971c59b2162a6f9cc61fb1d345b2e9399f66dc6dfec961657f6eff7b5fa6be",
  "minShell": "0.5.0"
 }
