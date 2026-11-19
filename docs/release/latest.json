@@ -1,10 +1,10 @@
 {
- "version": "0.37.1",
+ "version": "0.37.2",
  "date": "2026-11-19",
  "notes": [
-  "Angels of Delusion: real heights without heels. Nangong Yu is about 4'8\" barefoot (her platform heels and halo make her look 5'1\"), and Sunna is about 4'10\" in her flat shoes."
+  "Angels of Delusion heights, corrected again: all three wear platform shoes. Barefoot, Sunna is about 4'9\", Aria about 4'7\" and Nangong about 4'5\". Nangong's and Aria's special stage boots (and Nangong's halo) are what make them look taller."
  ],
  "file": "index.html",
- "sha256": "a3bab4aac36bde06580decea4e04a76afbf72f06fb590e226f97f8a0958952ab",
+ "sha256": "a473ccc5448af613b8df440bb8193beb1d3dd8b3dddb652d6e0fdb51ed0ab875",
  "minShell": "0.5.0"
 }
