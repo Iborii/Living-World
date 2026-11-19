@@ -1,13 +1,12 @@
 {
- "version": "0.36.0",
+ "version": "0.37.0",
  "date": "2026-11-19",
  "notes": [
-  "A cleaner look for the story screen. The top bar is split into three tidy groups: where to go (Home, Lore, Events, Phone), the world and its clock in the middle, and your persona, time speed and settings on the right.",
-  "The side panel now shows each character with a round initial (or their picture), their activity first and the place underneath, and the Leave them / Bring along button only when you hover.",
-  "Under the message box, the buttons are a compact toolbar, and only the people with you show their bond bars. Everyone else and the \"last washed\" times are one click away under All bonds & hygiene.",
-  "Calmer colors overall, with more room around the story text, and a tighter layout on phones."
+  "Owner build only: a new Zenless Zone Zero world, the Angels of Delusion. You're the broke idol group's new assistant manager at the 404 Livehouse on Sixth Street, starting on your first day.",
+  "Nangong Yu (just turned 18), Aria (a century-old construct who sings as a hologram), Sunna (17, kept age-appropriate) and their coach Cecilia, researched through the wiki, Google AI Mode and your measurements sheet.",
+  "Idol schedules: rehearsals, recording, Tuesday and Friday livestreams, Saturday shows at 404, Sunna's Coff Cafe shifts, Nangong's late-night stock trading, Aria's secret listeners in Blazewood and her night walks by the sea. Their first show with you is Saturday 11/21."
  ],
  "file": "index.html",
- "sha256": "9f604ebcef8bfb8c44628aa9d52f50aba5ebe0f7126cc2e801cb2eb1fc62c0ab",
+ "sha256": "d160cb8312d63515f4dfaa127619ff16f3069cf6c1c9d50d225b83b228676552",
  "minShell": "0.5.0"
 }
