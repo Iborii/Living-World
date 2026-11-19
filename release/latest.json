@@ -1,13 +1,10 @@
 {
- "version": "0.32.0",
+ "version": "0.32.1",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: a new Zenless Zone Zero world, Public Security. It's your first day as a rookie with the Criminal Investigation Special Response Team in Lumina Square.",
-  "Six characters, each researched one by one through the wiki (profiles, lore, dialogue and texts), Google AI Mode and your measurements sheet: Captain Zhu Yuan, Qingyi, Seth Lowell, Jane Doe, Cissia and Senior Commissioner Severian Lowell.",
-  "Real schedules (briefings, patrols, Qingyi's chess with the elderly, Jane's night shifts, Cissia's couch duty at Random Play, Severian's endless overtime), canon relationships (Seth and Severian pretending not to know each other), and Severian's inspection on Tuesday.",
-  "In the Everyone story, Public Security shares Lumina Square with Krampus. Cissia is terrified of Promeia, and Krampus keeps a file on Severian."
+  "Public Security: added the canon \"Quiz Prize\" story. Qingyi's one-question \"guessing game\" wins you Officer Zhu Yuan (\"You may take her home now\"), which really means supervising the captain's forced vacation. Also added Zhu Yuan's 79 saved-up leave days, her first-train commute and her habit of sizing up every building tactically on her days off. Qingyi may pull it again."
  ],
  "file": "index.html",
- "sha256": "45caa240b6c4cf4d0e57e43a1ab6534330861586e00b0644d4d33abaddbbcb69",
+ "sha256": "650066e06cedbb3b71831d92cf39dfaddea0101ff99176e48d04b5177f99ca0f",
  "minShell": "0.5.0"
 }
