@@ -1,12 +1,10 @@
 {
- "version": "0.26.2",
+ "version": "0.26.3",
  "date": "2026-11-18",
  "notes": [
-  "Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.",
-  "Places match more loosely, so walking into \"Dialyn's room\" counts as being where she is even if the story writes the place a little differently.",
-  "Someone asleep right next to you shows as Asleep, not just With you."
+  "Phone statuses really follow the story now. After every reply the app reads the scene and notes what everyone in it is doing (asleep, showering, eating\u2026), so it no longer depends on the AI remembering to say so. Opening the phone also catches up on the last scene."
  ],
  "file": "index.html",
- "sha256": "3fd208fa276b36e00d5395475f24715f91de663eca0a768e010435e277c80ace",
+ "sha256": "dfdbd7984b5d7971a329e0253df193d2f83aa735a573b02252559a9e710ff2e3",
  "minShell": "0.5.0"
 }

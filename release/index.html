@@ -1601,6 +1601,16 @@ function realismBlock(forBeats){
   return s;
 }
 function recentContext(n=4){ return S.chat.filter(m=>m.text&&!m.streaming).slice(-n).map(m=>m.text).join('\n')+'\n'+(S.user.loc||''); }
+// after every reply, read the scene and note what each character in it is actually doing, so phone statuses follow the story (not just the schedule)
+async function checkDoing(replyText, force){ const pres=present().filter(c=>!isDead(c)); if(!pres.length||!CFG.key||!replyText) return;
+  const idx=S.chat.length; if(!force&&S.doingChecked===idx) return; S.doingChecked=idx;
+  try{ const out=await callAI({system:`You track what characters in a roleplay are doing. Read the end of the latest scene. For each listed character, say in 3 to 10 words what they are doing at the very end of it (e.g. "asleep in bed", "showering", "eating dinner with Rin", "scrolling her phone in bed"). If the scene doesn't show them doing anything different from their listed activity, answer "same". Return ONLY JSON: {"Name":"activity or same"}.`,
+      messages:[{role:'user',content:`Characters and their listed activity:\n${pres.map(c=>`- ${c.name}: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')}`).join('\n')}\n\nEnd of the scene:\n${replyText.slice(-3500)}`}], model:CFG.bg||CFG.main, maxTokens:200});
+    const j=JSON.parse((out.match(/\{[\s\S]*\}/)||['{}'])[0]); let changed=false;
+    for(const [name,act] of Object.entries(j)){ const c=charByName(name); if(!c||!pres.includes(c)) continue; const a=String(act||'').trim(); if(!a||/^same\.?$/i.test(a)) continue;
+      const cur=String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,''); if(cur.toLowerCase()===a.toLowerCase()) continue; setDoing(c,a); changed=true; }
+    if(changed){ updateSchedules(); save(); if(SCREEN==='world') renderCards(); if($('#phoneModal').classList.contains('on')) renderPhone(); }
+  }catch(e){ /* best effort */ } }
 async function extractMemories(userText, replyText){
   const pres=present(); if(!pres.length || CFG.bgOn==='0') return;
   try{
@@ -1735,7 +1745,7 @@ async function generateReply(){
     }
     if(!full.trim()) throw new Error('The AI sent back an empty reply. Your message is kept: press ↻ Regenerate to try again.');
     syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
-    const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text);
+    const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text); checkDoing(msg.text);
     msg.snap=snapState(); if(CFG.voice==='auto') speakText(msg.text); maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
   busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
@@ -2233,8 +2243,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.26.2';
+const APP_VERSION = '0.26.3';
 const CHANGELOG = [
+ {v:'0.26.3', d:'2026-11-18', notes:['Phone statuses really follow the story now. After every reply the app reads the scene and notes what everyone in it is doing (asleep, showering, eating…), so it no longer depends on the AI remembering to say so. Opening the phone also catches up on the last scene.']},
  {v:'0.26.2', d:'2026-11-18', notes:['Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.','Places match more loosely, so walking into "Dialyn\'s room" counts as being where she is even if the story writes the place a little differently.','Someone asleep right next to you shows as Asleep, not just With you.']},
  {v:'0.26.1', d:'2026-11-18', notes:['The story now always knows who is with you. Every reply ends with exactly who\'s still there, so when you go off on a date with one person, the others stay behind and go back to their own day.','Side panel: anyone with you has a Leave them button (and people nearby have Bring along) so you can fix it yourself.','Plans you make by invite are private: other characters don\'t know about your date unless someone tells them.','Trust starts at a neutral 25 (stranger) instead of 0, shows a word like acquaintance or friendly next to the number, and moves more often when what you do matters to someone. Old stories stuck at 0 across the board are moved to 25.']},
  {v:'0.26.0', d:'2026-11-18', notes:['Everyone stories: a universe with more than one world (like Zenless Zone Zero) now has an Everyone option at the top of its page. Krampus and Yunkui Summit live side by side in one story with every character on their own schedule, and you can meet anyone.','There\'s no set plot in an Everyone story, so you choose who you are or write your own scene when you start. Both worlds\' lorebooks, relationships and phone apps carry over.']},
@@ -2516,7 +2527,7 @@ $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 let phoneOpenId=null, phView='home';
 const ST_COL={with:'#d9a441',free:'#5fcf8a',busy:'#e0566b',asleep:'#8b7bd8'};
 function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; if(n>(+b.textContent||0)){ b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } b.textContent=n; b.style.display=n?'inline-block':'none'; }
-function openPhone(view, id){ if(!S) return; phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
+function openPhone(view, id){ if(!S) return; { const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked===undefined) checkDoing(la.text,true); } phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
 function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
 function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
