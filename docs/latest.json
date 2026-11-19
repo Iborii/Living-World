@@ -1,11 +1,10 @@
 {
- "version": "0.29.5",
+ "version": "0.29.6",
  "date": "2026-11-19",
  "notes": [
-  "Zenless Zone Zero death rules: agents never die for real. Anything lethal makes them retreat and rest to recover. Only nameless side characters (thugs, Ethereals, extras) can die.",
-  "Phoenix is the one exception: she dies often, always by her own doing or a ridiculous chain of events, and revives in a burst of flame."
+  "Phoenix can be killed by enemies too (cheap shots like a raider's thrown brick count). When something living kills her, she revives stronger and takes them out."
  ],
  "file": "index.html",
- "sha256": "8d3adbdfbcaed5ed910422a117563f0d06c4369aedf107d93642bcf62b4b934c",
+ "sha256": "5facb79f98c61fcb3b1937988c81f0442ce08c5efe9589738ea85ed7acaeafcc",
  "minShell": "0.5.0"
 }
