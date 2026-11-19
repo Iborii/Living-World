@@ -1,11 +1,13 @@
 {
- "version": "0.33.0",
+ "version": "0.34.0",
  "date": "2026-11-19",
  "notes": [
-  "Story events: worlds can now have scripted events on a set date and time. When one starts, the characters involved come find you wherever you are and the story plays it out with you in it.",
-  "Public Security: \"Quiz Prize\" happens on Friday, November 20, around lunchtime. Qingyi and Zhu Yuan find you, Qingyi runs her one-question guessing game, and your prize is supervising Zhu Yuan's forced vacation for the rest of the day. Zhu Yuan is on leave that afternoon (and will try to sneak in some work)."
+  "Owner build only: a new Zenless Zone Zero world, the Cunning Hares. It's your first day as the newest hire at Gentle House on Sixth Street, with a debt collector already at the door.",
+  "Nicole, Anby, Billy and Nekomata, each researched one by one through the wiki (profiles, lore, texts), Google AI Mode and your measurements sheet. That includes Nicole's beauty mark near her cleavage, Anby's Soldier 0 past, Billy's Calydon days and Nekomata's Red Fang Gang history.",
+  "Real schedules (Hollow commissions on Tuesdays and Thursdays, Nicole's orphanage visits, Anby's tape runs, Billy at the arcade, Nekomata's sunny catnaps) and canon relationships.",
+  "Public Security: Quiz Prize now only happens once both Qingyi and Zhu Yuan are at least Friendly with you."
  ],
  "file": "index.html",
- "sha256": "e61184e8a1f9e30db760423b7327b4957525e2d4dadf9b9203051f1a46a32295",
+ "sha256": "0e9e6f685c489d4d1eaa311d3b46ca4fc5d09e8753907c1dc67c4cc8ffc4ae72",
  "minShell": "0.5.0"
 }
