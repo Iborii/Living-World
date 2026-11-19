@@ -1,13 +1,13 @@
 {
- "version": "0.31.0",
+ "version": "0.32.0",
  "date": "2026-11-19",
  "notes": [
-  "Off-screen lives now carry into the story. When you run into someone, the AI gets what really happened to them during the last day (who they were with, what went on, how it left them) and has to let it show and come up naturally. Off-screen moments also count more in their memories.",
-  "Nobody who is with you gets an off-screen life: they're in your scene, so the story itself is their life. An old activity is also cleared when someone joins you, so their status no longer says they're doing something else.",
-  "Texting someone who is right next to you now happens in the story: their phone buzzes and you see them read it and react, out loud or by texting back (their texts land in your phone).",
-  "Texts from people elsewhere fit what they're doing. Busy people answer late or briefly, and texting you becomes part of their day, so their off-screen story knows they did it."
+  "Owner build only: a new Zenless Zone Zero world, Public Security. It's your first day as a rookie with the Criminal Investigation Special Response Team in Lumina Square.",
+  "Six characters, each researched one by one through the wiki (profiles, lore, dialogue and texts), Google AI Mode and your measurements sheet: Captain Zhu Yuan, Qingyi, Seth Lowell, Jane Doe, Cissia and Senior Commissioner Severian Lowell.",
+  "Real schedules (briefings, patrols, Qingyi's chess with the elderly, Jane's night shifts, Cissia's couch duty at Random Play, Severian's endless overtime), canon relationships (Seth and Severian pretending not to know each other), and Severian's inspection on Tuesday.",
+  "In the Everyone story, Public Security shares Lumina Square with Krampus. Cissia is terrified of Promeia, and Krampus keeps a file on Severian."
  ],
  "file": "index.html",
- "sha256": "4105448a43fc3d54ba24e0e26c440dd0816519744e81c88bbe11d922b593529e",
+ "sha256": "45caa240b6c4cf4d0e57e43a1ab6534330861586e00b0644d4d33abaddbbcb69",
  "minShell": "0.5.0"
 }
