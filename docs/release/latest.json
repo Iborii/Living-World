@@ -1,17 +1,13 @@
 {
- "version": "0.40.0",
+ "version": "0.40.1",
  "date": "2026-11-19",
  "notes": [
-  "New \ud83d\uddfa World button: a live, animated map of the city. Everyone walks to wherever their schedule takes them, background people stroll the streets, cats, dogs and birds hop and fly around, Bangboo roll by, windows light up at night and rain falls on the map. Tap a place to see who is there, \ud83d\udc40 peek at what they are doing right now, or \ud83d\udeb6 go there.",
-  "Each district gets its own recurring locals and animals (a noodle seller, the cat that naps on the stage), and they show up in scenes.",
-  "Gossip and reputation: what you do gets around. People who see it tell their friends, the story changes as it travels, and everyone remembers their own version. See \"Word on the street\".",
-  "People come to you: characters reach out on their own with favors, problems, invitations or secrets, by text or by turning up. Deal with it in the story, or they handle it alone and remember that you didn't.",
-  "Director tools: set two people up (as friends, or as a possible match between adults), arrange a coincidence, plant an idea in someone's head, or start a rumor, and watch it play out off-screen.",
-  "Relationships between characters can no longer be edited by hand: closeness only changes through what happens in the story (or what you arrange as Director).",
-  "Comfort grows with closeness: close friends get more relaxed around each other over time (lounging in pajamas or lingerie, changing in the same room, crude jokes and silly physical goofing for the boldest best friends). Shy characters stay shyer, and anyone under 18 only gets age-appropriate comfort.",
-  "Birthdays and growing up: characters with a birth date age with the in-app clock. Sunna turns 18 on July 18, 2027 and Ju Fufu on January 6, 2029 (in-app); on that day the under-18 limits for them lift and everyone knows it is their birthday."
+  "The World map now shows the weather: drizzle, rain, downpours and thunderstorms (with lightning), falling snow that piles up on the districts and melts when it warms up, drifting fog, and a warm haze on hot days.",
+  "People react to it: in bad weather fewer people are out and the ones who are carry umbrellas, cats, dogs and birds take cover, and on hot days people head for the water. On New Year's Eve the streets fill up late.",
+  "Holidays are decorated on the map and behind the story: string lights from December 1 to the 26th, pumpkins and bats in the last week of October, floating hearts on Valentine's Day, fireworks on New Year's Eve night, and bunting and confetti for any other holiday (including ones you add yourself).",
+  "Snow piles up along the bottom of the story screen after a snowfall."
  ],
  "file": "index.html",
- "sha256": "ab65f3eca435c4b6009b1350dbf897d7fca97a1b8c0c5d9f1584070e1f914c5e",
+ "sha256": "423230a6a1b268d82c19685ff31e3592d4e7702f33d3a08e79d5d6cf275567a8",
  "minShell": "0.5.0"
 }
