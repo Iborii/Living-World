@@ -1421,9 +1421,9 @@ const BUILTIN_REL={krampus:{
  'aria|cecilia':[78,"Teacher and student. Cecilia was secretly Cersea, the voice that woke Aria and whose voice double Aria became; the truth came out during the Youkai incident and they reconciled. Aria is still a fangirl."],
  'cecilia|sunna':[66,"Cecilia reviews every one of Sunna's scores in technical detail and noticed her voice cracks when she overeats at lunch; Sunna is nervous and grateful around her."],
  'cecilia|nangong':[64,"Nangong respects Cecilia deeply; Cecilia trusts the captain to hold the group together."],
- 'belle|nangong':[45,"Belle wishes Wise had Nangong's effortless talent; they're friendly through Random Play."],
- 'belle|sunna':[45,"Belle once badgered Sunna for a whole week to go clothes shopping."],
- 'aria|belle':[45,"Aria has promoted Random Play's tapes and trusts the siblings."],
+ 'belle|nangong':[62,"Belle wishes Wise had Nangong's effortless talent; they're friendly through Random Play."],
+ 'belle|sunna':[62,"Belle once badgered Sunna for a whole week to go clothes shopping."],
+ 'aria|belle':[62,"Aria has promoted Random Play's tapes and trusts the siblings."],
  'aria|yixuan':[30,"Aria once had her fortune read at Suibian Temple."]},
  obol:{
  'orphie|soldier11':[74,"Training partners and noodle rivals; 11 deeply respects Captain Magus and trusts Orphie at her back."],
@@ -1486,8 +1486,13 @@ const BUILTIN_REL={krampus:{
  'roxy|velina':[40,"Polite and businesslike; Roxy collects, Velina negotiates."],
  'norma|velina':[78,"Velina is Norma's boss at the ESD. She scolds Norma, confiscates her prototypes, signs her damage reports and apologizes to clients for her; Norma whines but trusts her completely and calls her a 'highly efficient problem solver'. Real fondness on both sides."]}};
 const relKey=(a,b)=>[a,b].sort().join('|');
-function initRel(){ S.rel=S.rel||{}; const cs=W.characters; for(let i=0;i<cs.length;i++) for(let j=i+1;j<cs.length;j++){ const k=relKey(cs[i].id,cs[j].id); if(S.rel[k]) continue;
-  const seed=Object.assign({},...partsOf(W).map(id=>BUILTIN_REL[id]||{}))[k]; S.rel[k]=seed?{score:seed[0], note:seed[1], log:[]}:{score:10, note:'They barely know each other yet.', log:[]}; } }
+function initRel(){ S.rel=S.rel||{}; const cs=W.characters; for(let i=0;i<cs.length;i++) for(let j=i+1;j<cs.length;j++){ const k=relKey(cs[i].id,cs[j].id); const untouched=S.rel[k]&&S.rel[k].note==='They barely know each other yet.'&&!S.rel[k].log.length&&S.rel[k].score===10; if(S.rel[k]&&!untouched) continue;
+  const seed=Object.assign({},...partsOf(W).map(id=>BUILTIN_REL[id]||{}))[k]||phaethonRel(cs[i],cs[j]); if(untouched&&!seed) continue; S.rel[k]=seed?{score:seed[0], note:seed[1], log:[]}:{score:10, note:'They barely know each other yet.', log:[]}; } }
+// Belle and Wise (the Proxy "Phaethon") are friends with nearly every agent in New Eridu; almost everyone knows their secret except Seth
+function phaethonRel(a,b){ const sib=[a,b].find(c=>(c.id==='belle'||c.id==='wise')&&!c.custom); const o=[a,b].find(c=>c!==sib); if(!sib||!o||o.custom||o.id==='belle'||o.id==='wise') return null;
+  if(!isZZZ(WORLDS.find(w=>w.id===charWorld(o)))) return null; const nm=sib.id==='belle'?'Belle':'Wise';
+  if(o.id==='seth') return [55,`${o.name} knows ${nm} as one of the friendly owners of the Random Play video store on Sixth Street and likes ${nm==='Belle'?'her':'him'}. He has no idea the siblings are the legendary Proxy Phaethon; his brother Severian ordered it kept from him because he's too honest to keep an illegal Proxy's secret.`];
+  return [60,`Friends. ${nm} and ${nm==='Belle'?'her brother Wise':'his sister Belle'} run the Random Play video store on Sixth Street and are secretly the Proxy "Phaethon," who has guided ${o.name} and ${o.name==='Phoenix'?'her':'their'} people through Hollows and helped them through their troubles. ${o.name} knows the secret, trusts the siblings, drops by the video store, and is glad to see ${nm==='Belle'?'her':'him'}.`]; }
 function relLines(chars, onlyId){ const out=[]; for(let i=0;i<chars.length;i++) for(let j=i+1;j<chars.length;j++){ const a=chars[i], b=chars[j]; if(onlyId&&a.id!==onlyId&&b.id!==onlyId) continue; const r=S.rel?.[relKey(a.id,b.id)]; if(!r) continue;
   const lately=r.log.slice(-3).map(x=>`${mmdd(x.t)}: ${x.d>0?'+':''}${x.d} ${x.why}`).join('; ');
   out.push(`- ${a.name} & ${b.name} (closeness ${r.score}/100): ${r.note}${lately?` Lately: ${lately}.`:''}`); }
@@ -2524,8 +2529,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.39.0';
+const APP_VERSION = '0.39.1';
 const CHANGELOG = [
+ {v:'0.39.1', d:'2026-11-19', notes:['Belle and Wise are now friends with every Zenless Zone Zero character in the combined Everyone world, instead of strangers to anyone without a hand-written pair. Everyone knows the siblings are secretly the Proxy Phaethon, except Seth, who only knows them as the nice video store owners (Severian keeps it from him on purpose).']},
  {v:'0.39.0', d:'2026-11-19', notes:['"Busy" now means a real commitment. Someone scrolling, gaming, eating, having tea, walking around or winding down shows as Available on your phone, answers texts quickly and picks up calls; only shifts, classes, missions, rehearsals, recording, live shows, commissions and the like count as Busy. The story is told the same thing: casual activities are free time, and people can drop them to talk or hang out.','The schedule maker for your own characters now leaves real free time instead of booking every hour.','Angels of Delusion: much more free time, like in the game (lazy mornings, free afternoons and evenings around Sixth Street), and Nangong\'s money is written the way the game shows it: she funds the group from her own trading and hides it, while whether her family is rich is left a mystery.']},
  {v:'0.38.2', d:'2026-11-19', notes:['Angels of Delusion: they\'re so close they often spend whole nights together, in Sunna\'s room (Friday, and after Saturday shows) or at their canon secret base in the Ballet Twins Hollow (Wednesday nights), the low-Ether hideout Nangong and Aria found so Sunna could practice where nobody could see or hear her.']},
  {v:'0.38.1', d:'2026-11-19', notes:['Angels of Delusion: Friday and Saturday night sleepovers in Sunna\'s room (three-player games, Nangong trading stocks in Sunna\'s bed, Aria in sleep mode plugged into the wall), plus the canon wake-up scene: Aria clinging to Nangong\'s leg in her sleep until her foot goes numb, and Nangong waking Sunna by squishing her face.']},

@@ -1,12 +1,10 @@
 {
- "version": "0.39.0",
+ "version": "0.39.1",
  "date": "2026-11-19",
  "notes": [
-  "\"Busy\" now means a real commitment. Someone scrolling, gaming, eating, having tea, walking around or winding down shows as Available on your phone, answers texts quickly and picks up calls; only shifts, classes, missions, rehearsals, recording, live shows, commissions and the like count as Busy. The story is told the same thing: casual activities are free time, and people can drop them to talk or hang out.",
-  "The schedule maker for your own characters now leaves real free time instead of booking every hour.",
-  "Angels of Delusion: much more free time, like in the game (lazy mornings, free afternoons and evenings around Sixth Street), and Nangong's money is written the way the game shows it: she funds the group from her own trading and hides it, while whether her family is rich is left a mystery."
+  "Belle and Wise are now friends with every Zenless Zone Zero character in the combined Everyone world, instead of strangers to anyone without a hand-written pair. Everyone knows the siblings are secretly the Proxy Phaethon, except Seth, who only knows them as the nice video store owners (Severian keeps it from him on purpose)."
  ],
  "file": "index.html",
- "sha256": "efe336d6f46df1b4783667c23d1ef28b3c25962e2083491438cffcc7b23d79a2",
+ "sha256": "b3fb216d104843b1b988a3e40e818f87a75542e626f69eb997326a908bd30e05",
  "minShell": "0.5.0"
 }
