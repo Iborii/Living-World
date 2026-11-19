@@ -1,10 +1,11 @@
 {
- "version": "0.32.1",
+ "version": "0.33.0",
  "date": "2026-11-19",
  "notes": [
-  "Public Security: added the canon \"Quiz Prize\" story. Qingyi's one-question \"guessing game\" wins you Officer Zhu Yuan (\"You may take her home now\"), which really means supervising the captain's forced vacation. Also added Zhu Yuan's 79 saved-up leave days, her first-train commute and her habit of sizing up every building tactically on her days off. Qingyi may pull it again."
+  "Story events: worlds can now have scripted events on a set date and time. When one starts, the characters involved come find you wherever you are and the story plays it out with you in it.",
+  "Public Security: \"Quiz Prize\" happens on Friday, November 20, around lunchtime. Qingyi and Zhu Yuan find you, Qingyi runs her one-question guessing game, and your prize is supervising Zhu Yuan's forced vacation for the rest of the day. Zhu Yuan is on leave that afternoon (and will try to sneak in some work)."
  ],
  "file": "index.html",
- "sha256": "650066e06cedbb3b71831d92cf39dfaddea0101ff99176e48d04b5177f99ca0f",
+ "sha256": "e61184e8a1f9e30db760423b7327b4957525e2d4dadf9b9203051f1a46a32295",
  "minShell": "0.5.0"
 }
