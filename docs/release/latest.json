@@ -1,10 +1,10 @@
 {
- "version": "0.26.3",
+ "version": "0.26.4",
  "date": "2026-11-18",
  "notes": [
-  "Phone statuses really follow the story now. After every reply the app reads the scene and notes what everyone in it is doing (asleep, showering, eating\u2026), so it no longer depends on the AI remembering to say so. Opening the phone also catches up on the last scene."
+  "Phone statuses come from the story first and the schedule second. Anyone the latest scene mentions gets checked (not only people the app already thought were with you), and if the story puts them in the room with you, the app moves them there too. The schedule only takes over again when their next scheduled activity starts."
  ],
  "file": "index.html",
- "sha256": "dfdbd7984b5d7971a329e0253df193d2f83aa735a573b02252559a9e710ff2e3",
+ "sha256": "ffed9a816af3fbe2d87a4d1d279b69ccdea410264974e5a7fbfa0befa7f6e70e",
  "minShell": "0.5.0"
 }

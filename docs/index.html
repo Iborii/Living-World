@@ -1451,7 +1451,7 @@ function applyLifeTag(C, arg, only){ // shared by the story and off-screen scene
   return false; }
 
 function slotKey(c){ const sl=slotFor(c,S.clock); return isoDate(S.clock)+'|'+(sl?(sl.start||'e'+sl.end)+'|'+sl.act:'none'); }
-function setDoing(c, act){ const st=S.chars[c.id]; if(!st||st.dead) return; act=String(act||'').trim().slice(0,160); if(!act) return; st.ovr={act, slot:slotKey(c), t:S.clock}; st.act=act; st.changed=true; }
+function setDoing(c, act){ const st=S.chars[c.id]; if(!st||st.dead) return; act=String(act||'').trim().slice(0,160); if(!act) return; st.ovr={act, slot:slotKey(c), t:S.clock, loc:(st.ovr&&st.ovr.slot===slotKey(c)&&st.ovr.loc)||undefined}; st.act=act; st.changed=true; }
 function updateSchedules(){
   if(S.branch){ const st=S.chars[S.branch.charId]; st.loc=S.user.loc; if(st.ovr&&S.clock-(st.ovr.t||0)>4*HOUR) delete st.ovr; st.act=st.ovr?st.ovr.act+' (with you)':'with you'; return; }
   for(const c of W.characters){
@@ -1459,7 +1459,7 @@ function updateSchedules(){
     if(st.dead){ st.loc='—'; st.act='passed away'; continue; }
     if(st.ovr&&(st.ovr.slot!==slotKey(c)||S.clock-(st.ovr.t||0)>8*HOUR)) delete st.ovr; // their schedule moved on
     if(S.user.companions.includes(c.id)){ st.loc=S.user.loc; st.act=st.ovr?st.ovr.act+' (with you)':'with you'; continue; }
-    if(st.ovr){ st.act=st.ovr.act; continue; }
+    if(st.ovr){ st.act=st.ovr.act; if(st.ovr.loc) st.loc=st.ovr.loc; continue; }
     const sl=slotFor(c,S.clock);
     if(sl && (st.loc!==sl.loc || st.act!==sl.act)){ st.loc=sl.loc; st.act=sl.act; st.changed=true; }
   }
@@ -1602,13 +1602,18 @@ function realismBlock(forBeats){
 }
 function recentContext(n=4){ return S.chat.filter(m=>m.text&&!m.streaming).slice(-n).map(m=>m.text).join('\n')+'\n'+(S.user.loc||''); }
 // after every reply, read the scene and note what each character in it is actually doing, so phone statuses follow the story (not just the schedule)
-async function checkDoing(replyText, force){ const pres=present().filter(c=>!isDead(c)); if(!pres.length||!CFG.key||!replyText) return;
+async function checkDoing(replyText, force){ if(!CFG.key||!replyText||!S) return;
+  const named=W.characters.filter(c=>!isDead(c)&&new RegExp('\\b'+c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(replyText));
+  const pres=present().filter(c=>!isDead(c)); const cands=[...new Set([...pres,...named])]; if(!cands.length) return;
   const idx=S.chat.length; if(!force&&S.doingChecked===idx) return; S.doingChecked=idx;
-  try{ const out=await callAI({system:`You track what characters in a roleplay are doing. Read the end of the latest scene. For each listed character, say in 3 to 10 words what they are doing at the very end of it (e.g. "asleep in bed", "showering", "eating dinner with Rin", "scrolling her phone in bed"). If the scene doesn't show them doing anything different from their listed activity, answer "same". Return ONLY JSON: {"Name":"activity or same"}.`,
-      messages:[{role:'user',content:`Characters and their listed activity:\n${pres.map(c=>`- ${c.name}: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')}`).join('\n')}\n\nEnd of the scene:\n${replyText.slice(-3500)}`}], model:CFG.bg||CFG.main, maxTokens:200});
+  try{ const out=await callAI({system:`You track the main characters of a roleplay. Read the end of the latest scene. For each listed character say (1) in 3 to 10 words what they are doing at the very end of it, e.g. "asleep in bed", "showering", "eating dinner", "scrolling her phone in bed", or "same" if the scene doesn't show it; and (2) whether they are physically in the same place as ${uN()} at the end (true/false, null if unclear). Return ONLY JSON: {"Name":{"doing":"...","withUser":true}}`,
+      messages:[{role:'user',content:`${uN()} is at: ${S.user.loc}\nCharacters (where the app last had them):\n${cands.map(c=>`- ${c.name}: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')} at ${S.chars[c.id].loc}`).join('\n')}\n\nEnd of the scene:\n${replyText.slice(-3500)}`}], model:CFG.bg||CFG.main, maxTokens:300});
     const j=JSON.parse((out.match(/\{[\s\S]*\}/)||['{}'])[0]); let changed=false;
-    for(const [name,act] of Object.entries(j)){ const c=charByName(name); if(!c||!pres.includes(c)) continue; const a=String(act||'').trim(); if(!a||/^same\.?$/i.test(a)) continue;
-      const cur=String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,''); if(cur.toLowerCase()===a.toLowerCase()) continue; setDoing(c,a); changed=true; }
+    for(const [name,v] of Object.entries(j)){ const c=charByName(name); if(!c||!cands.includes(c)) continue; const st=S.chars[c.id];
+      const d=typeof v==='string'?{doing:v}:(v||{}); const a=String(d.doing||'').trim();
+      if(d.withUser===true&&!S.user.companions.includes(c.id)&&!sameLoc(st.loc,S.user.loc)){ st.loc=S.user.loc; changed=true; }
+      if(a&&!/^same\.?$/i.test(a)){ const cur=String(st.act||'').replace(/\s*\(with you\)$/,''); if(cur.toLowerCase()!==a.toLowerCase()){ setDoing(c,a); changed=true; } }
+      if(changed&&st.ovr&&d.withUser===true) st.ovr.loc=S.user.loc; }
     if(changed){ updateSchedules(); save(); if(SCREEN==='world') renderCards(); if($('#phoneModal').classList.contains('on')) renderPhone(); }
   }catch(e){ /* best effort */ } }
 async function extractMemories(userText, replyText){
@@ -2243,8 +2248,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.26.3';
+const APP_VERSION = '0.26.4';
 const CHANGELOG = [
+ {v:'0.26.4', d:'2026-11-18', notes:['Phone statuses come from the story first and the schedule second. Anyone the latest scene mentions gets checked (not only people the app already thought were with you), and if the story puts them in the room with you, the app moves them there too. The schedule only takes over again when their next scheduled activity starts.']},
  {v:'0.26.3', d:'2026-11-18', notes:['Phone statuses really follow the story now. After every reply the app reads the scene and notes what everyone in it is doing (asleep, showering, eating…), so it no longer depends on the AI remembering to say so. Opening the phone also catches up on the last scene.']},
  {v:'0.26.2', d:'2026-11-18', notes:['Phone statuses follow the story now. If someone falls asleep, wakes up, hops in the shower or is crying in bed in the story, their status changes to match until their schedule moves on, instead of still showing what their schedule says.','Places match more loosely, so walking into "Dialyn\'s room" counts as being where she is even if the story writes the place a little differently.','Someone asleep right next to you shows as Asleep, not just With you.']},
  {v:'0.26.1', d:'2026-11-18', notes:['The story now always knows who is with you. Every reply ends with exactly who\'s still there, so when you go off on a date with one person, the others stay behind and go back to their own day.','Side panel: anyone with you has a Leave them button (and people nearby have Bring along) so you can fix it yourself.','Plans you make by invite are private: other characters don\'t know about your date unless someone tells them.','Trust starts at a neutral 25 (stranger) instead of 0, shows a word like acquaintance or friendly next to the number, and moves more often when what you do matters to someone. Old stories stuck at 0 across the board are moved to 25.']},
@@ -2527,7 +2533,7 @@ $('#homeLore').onclick=openLore; $('#loreBtn').onclick=openLore;
 let phoneOpenId=null, phView='home';
 const ST_COL={with:'#d9a441',free:'#5fcf8a',busy:'#e0566b',asleep:'#8b7bd8'};
 function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); if(!b) return; if(n>(+b.textContent||0)){ b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } b.textContent=n; b.style.display=n?'inline-block':'none'; }
-function openPhone(view, id){ if(!S) return; { const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked===undefined) checkDoing(la.text,true); } phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
+function openPhone(view, id){ if(!S) return; { const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked!==S.chat.length) checkDoing(la.text,true); } phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
 function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
 function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
