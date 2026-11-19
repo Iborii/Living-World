@@ -1009,6 +1009,7 @@ button:hover{background:#262b36}
     <button class="ghost" id="closeSettings" style="margin-left:auto">Close</button>
   </div>
   <input type="file" id="importFile" accept=".json" style="display:none">
+  <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px"><label>📓 Obsidian vault</label><div class="small" style="margin:4px 0 8px">Keep a permanent record of your stories as Markdown notes: one note per character with their memories and relationships, a journal note for every in-app day, and the story so far, all linked so Obsidian's graph shows your cast. It's a record only: the app never reads it back, so editing the notes doesn't change what happened.</div><div class="small" id="vaultState" style="margin-bottom:8px"></div><div class="rowbtns" style="margin-top:0"><button id="vaultConnect">Connect vault folder</button><button id="vaultNow">Write now</button><button class="ghost" id="vaultOff">Disconnect</button></div></div>
   <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="small" id="verLine"></span><button id="checkUpd" style="margin-left:auto">Check for updates</button></div>
   <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px">
     <div style="font-weight:650;margin-bottom:4px">Data &amp; privacy</div>
@@ -1263,7 +1264,7 @@ function load(){
   if(!S.personaId || !PS.list.find(p=>p.id===S.personaId)) S.personaId = PS.defaultId;
 }
 let saveTimer=null;
-function save(){ if(!W||!S) return; S.lastPlayed=Date.now(); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
+function save(){ if(!W||!S) return; S.lastPlayed=Date.now(); if(VAULT_ON()) vaultSoon(); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
 function saveCfg(){ try{ LS.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 
 // ======================= schedule engine =======================
@@ -1837,12 +1838,17 @@ function addMemory({who,text,t,src,imp,keys}){
   text=String(text||'').trim(); if(!text||/^none\.?$/i.test(text)) return null;
   const m={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), who:[...new Set(who)], text, t:t||S.clock, src:src||'scene', imp:Math.max(1,Math.min(3,imp||2)), keys:(keys&&keys.length?keys:keywordsOf(text)).map(k=>String(k).toLowerCase()), pinned:false};
   const dup=S.memories.find(x=>x.text.toLowerCase()===text.toLowerCase()&&m.who.every(w=>x.who.includes(w))); if(dup) return dup;
-  S.memories.push(m); if(S.memories.length>1500) S.memories.splice(0,S.memories.length-1500); return m;
+  S.memories.push(m); if(S.memories.length>1500){ const old=S.memories.splice(0,S.memories.length-1500); try{ const a=memArchive(); a.push(...old); LS.setItem(memArcKey(), JSON.stringify(a)); }catch(e){} } return m;
 }
+// memories that fell out of the everyday pool are kept in an archive; they come back when something in the scene calls them up
+const VAULT_ON=()=>typeof VAULT!=='undefined'&&VAULT.state==='on';
+const memArcKey=()=>SAVE_KEY.replace('_save_','_memarc_'); let MEMARC={k:'',a:[]};
+function memArchive(){ const k=memArcKey(); if(MEMARC.k!==k){ let a=[]; try{ a=JSON.parse(LS.getItem(k)||'[]'); }catch(e){} MEMARC={k,a}; } return MEMARC.a; }
 function memoriesFor(id, context, n){
   const ctx=String(context||'').toLowerCase(); const now=S.clock;
   const mine=S.memories.filter(m=>m.who.includes(id));
   const scored=mine.map(m=>{ let s=m.imp*2; for(const k of m.keys) if(k&&ctx.includes(k)) s+=4; const ageH=(now-m.t)/3600000; s+=Math.max(0,3-ageH/24); if(m.pinned) s+=100; return {m,s}; });
+  if(ctx) for(const m of memArchive()) if(m.who.includes(id)){ let hits=0; for(const k of m.keys) if(k&&k.length>3&&ctx.includes(k)) hits++; if(hits>=2||(hits&&m.imp>=3)) scored.push({m,s:m.imp*2+hits*4}); }
   return scored.sort((a,b)=>b.s-a.s).slice(0,n).map(x=>x.m).sort((a,b)=>a.t-b.t);
 }
 function memLines(id, context, n){ return memoriesFor(id,context,n).map(m=>`- [${wdName(m.t).slice(0,3)} ${mmdd(m.t)} ${hhmm(m.t)}] ${m.text}${m.who.length>1?` (also there: ${m.who.filter(x=>x!==id).map(x=>charById(x)?.name).filter(Boolean).join(', ')})`:''}`).join('\n'); }
@@ -2539,6 +2545,101 @@ function renderDirector(body){ const cs=W.characters.filter(c=>!isDead(c)); cons
   $('#diGo').onclick=()=>{ const t=$('#diText').value.trim(); if(!t) return; dirCreate({type:'idea',a:$('#diA').value,text:t}); notice('🎬 Idea planted.'); renderDirector(body); };
   $('#drGo').onclick=()=>{ const t=$('#drText').value.trim(); if(!t) return; dirCreate({type:'rumor',a:$('#drA').value,text:t}); notice('🎬 Rumor whispered.'); renderDirector(body); }; }
 
+// ======================= Obsidian vault: a read-only record of every story =======================
+// The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
+// the vault is a record, and what happened stays what happened.
+const VAULT={h:null, state:'off', cache:new Map(), timer:0, busy:false, fullDone:new Set(), lastClock:{}, err:''};
+const vaultSupported=()=>typeof window.showDirectoryPicker==='function';
+function vIDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open('lw-vault',1); r.onupgradeneeded=()=>r.result.createObjectStore('h'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function vGet(){ try{ const db=await vIDB(); return await new Promise(res=>{ const q=db.transaction('h').objectStore('h').get('root'); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+async function vPut(h){ try{ const db=await vIDB(); await new Promise(res=>{ const tx=db.transaction('h','readwrite'); if(h) tx.objectStore('h').put(h,'root'); else tx.objectStore('h').delete('root'); tx.oncomplete=res; tx.onerror=res; }); }catch(e){} }
+async function vaultInit(){ if(!vaultSupported()) { VAULT.state='unsupported'; return; } const h=await vGet(); if(!h){ VAULT.state='off'; return; } VAULT.h=h;
+  let p='prompt'; try{ p=await h.queryPermission({mode:'readwrite'}); }catch(e){}
+  if(p==='granted'){ VAULT.state='on'; vaultSoon(3000); }
+  else { VAULT.state='paused'; // the browser wants a click before it lets us write again
+    const once=async()=>{ document.removeEventListener('pointerdown',once,true); try{ if(await h.requestPermission({mode:'readwrite'})==='granted'){ VAULT.state='on'; vaultSoon(1000); vaultUI(); } }catch(e){} };
+    document.addEventListener('pointerdown',once,true); }
+  vaultUI(); }
+async function vaultConnect(){ try{ const h=await window.showDirectoryPicker({id:'lw-vault', mode:'readwrite'}); VAULT.h=h; await vPut(h); VAULT.state='on'; VAULT.cache.clear(); VAULT.fullDone.clear(); vaultUI(); await vaultSync(true); notice(`📓 Connected to "${h.name}". Your stories are written to the "Living World" folder there.`); }
+  catch(e){ if(e&&e.name!=='AbortError') notice('Could not connect the vault: '+e.message,true); } }
+async function vaultDisconnect(){ VAULT.h=null; VAULT.state='off'; VAULT.cache.clear(); await vPut(null); vaultUI(); notice('📓 Vault disconnected. Notes already written stay where they are.'); }
+function vaultUI(){ const st=$('#vaultState'), b1=$('#vaultConnect'), b2=$('#vaultOff'), b3=$('#vaultNow'); if(!st) return;
+  const nm=VAULT.h?`"${esc(VAULT.h.name)}"`:'';
+  st.innerHTML={unsupported:'Needs the desktop app, or Chrome or Edge on a computer. Phones and Safari can\'t write to a folder.', off:'Not connected.', on:`Connected to ${nm}.${VAULT.err?` <span style="color:var(--danger)">Last write failed: ${esc(VAULT.err)}</span>`:VAULT.last?` Last written ${new Date(VAULT.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}.`:''}`, paused:`Connected to ${nm}, waiting for permission: click anywhere (or Reconnect) to let the app write again.`}[VAULT.state]||'';
+  b1.style.display=VAULT.state==='unsupported'?'none':''; b1.textContent=VAULT.state==='paused'?'Reconnect':VAULT.state==='on'?'Change folder':'Connect vault folder'; b2.style.display=VAULT.h?'':'none'; b3.style.display=VAULT.state==='on'&&W?'':'none'; }
+function vaultSoon(ms){ if(VAULT.state!=='on') return; clearTimeout(VAULT.timer); VAULT.timer=setTimeout(()=>vaultSync(false), ms==null?45000:ms); }
+
+// ---------- writing ----------
+const vSafe=s=>String(s||'').replace(/[\\/:*?"<>|#^\[\]]/g,'').replace(/\s+/g,' ').trim().slice(0,90)||'Untitled';
+async function vDir(parent, parts){ let d=parent; for(const p of parts) d=await d.getDirectoryHandle(vSafe(p),{create:true}); return d; }
+async function vWrite(dirParts, name, text){ const key=dirParts.join('/')+'/'+name; if(VAULT.cache.get(key)===text) return 0;
+  const d=await vDir(VAULT.h, dirParts); const fh=await d.getFileHandle(vSafe(name)+'.md',{create:true}); const w=await fh.createWritable(); await w.write(text); await w.close(); VAULT.cache.set(key,text); return 1; }
+function vLinker(){ // turn names into [[links]] without touching the middle of other words
+  const names=[...W.characters.map(c=>[c.name,vSafe(c.name)]), [uN(),vSafe(uN())]].filter(x=>x[0]&&x[0].length>1).sort((a,b)=>b[0].length-a[0].length);
+  const rx=names.length?new RegExp('(?<![\\w\\[])('+names.map(n=>n[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![\\w\\]])','g'):null; const map=Object.fromEntries(names);
+  return t=>{ t=String(t).replace(/\{\{user\}\}/g,uN()); if(!rx) return t; const seen=new Set(); return t.replace(rx,m=>{ if(seen.has(m)) return m; seen.add(m); const f=map[m]; return f===m?`[[${m}]]`:`[[${f}|${m}]]`; }); }; }
+const vStampRx=/^\s*\|[^\n]*\|\s*$/m;
+const vDay=ms=>isoDate(ms);
+const vDayTitle=ms=>`${isoDate(ms)} (${wdName(ms)})`;
+function vArchive(){ return memArchive(); }
+function vMemAll(){ return [...vArchive(), ...S.memories].sort((a,b)=>a.t-b.t); }
+function vFront(o){ return '---\n'+Object.entries(o).map(([k,v])=>`${k}: ${Array.isArray(v)?'['+v.map(x=>JSON.stringify(String(x))).join(', ')+']':JSON.stringify(String(v))}`).join('\n')+'\n---\n'; }
+const V_NOTE='> [!info] Written by Living World\n> This is a record of what happened. The app rewrites this note and never reads it back, so changes made here don\'t change the story.\n\n';
+
+function vCharNote(c, L, mems){ const st=S.chars[c.id]; const out=[]; const nm=uN();
+  out.push(vFront({character:c.full||c.name, world:W.title, age:c.age!=null?c.age:'', tags:['living-world','character'], updated_in_app:`${isoDate(S.clock)} ${hhmm(S.clock)}`}));
+  out.push(V_NOTE+`# ${c.full||c.name}\n`);
+  if(c.tagline) out.push(`*${c.tagline}*\n`);
+  out.push(`**Right now:** ${isDead(c)?'died':esc0(st.act)} · ${esc0(st.loc)}  \n**How they feel about ${L(nm)}:** ${st.trust}/100\n`);
+  const rels=W.characters.filter(o=>o.id!==c.id).map(o=>({o,r:S.rel?.[relKey(c.id,o.id)]})).filter(x=>x.r).sort((a,b)=>b.r.score-a.r.score);
+  if(rels.length){ out.push('\n## Relationships\n'); for(const {o,r} of rels){ const lately=r.log.slice(-3).map(x=>`${mmdd(x.t)} ${x.d>0?'+':''}${x.d} ${x.why}`).join('; '); out.push(`- [[${vSafe(o.name)}${vSafe(o.name)!==o.name?'|'+o.name:''}]] **${r.score}/100**: ${r.note}${lately?` *Lately: ${lately}*`:''}\n`); } }
+  const mine=mems.filter(m=>m.who.includes(c.id));
+  out.push(`\n## Memories (${mine.length})\n`); let day='';
+  for(const m of mine){ const d=vDayTitle(m.t); if(d!==day){ day=d; out.push(`\n### [[${vDayTitle(m.t)}|${wdName(m.t)} ${mmdd(m.t)}]]\n`); }
+    const others=m.who.filter(x=>x!==c.id).map(x=>charById(x)).filter(Boolean); out.push(`- ${hhmm(m.t)} ${m.imp>=3?'⭐ ':''}${m.pinned?'📌 ':''}${L(m.text)}${others.length?` *(with ${others.map(o=>'[['+vSafe(o.name)+']]').join(', ')})*`:''}\n`); }
+  const log=st.log.slice(-15); if(log.length){ out.push('\n## Latest moments\n'); for(const e of log) out.push(`\n**${wdName(e.t)} ${mmdd(e.t)} ${hhmm(e.t)}** · ${e.loc||''}\n\n${L(e.text)}\n`); }
+  return out.join(''); }
+const esc0=s=>String(s||'').replace(/\n+/g,' ');
+
+function vDayNote(dayStart, L){ const end=dayStart+DAYMS; const out=[]; const nm=uN();
+  out.push(vFront({date:isoDate(dayStart), weekday:wdName(dayStart), world:W.title, tags:['living-world','journal']}));
+  out.push(V_NOTE+`# ${wdName(dayStart)}, ${isoDate(dayStart)}\n\n`);
+  try{ const w=weather(dayStart+13*HOUR); out.push(`*${w.desc}, around ${w.temp}°F, ${w.season}.*\n`); }catch(e){}
+  const md=isoDate(dayStart).slice(5); const hol=holidaysOf().filter(h=>h[0]===md); if(hol.length) out.push(`\n🎉 **${hol.map(h=>h[1]).join(', ')}**\n`);
+  for(const c of W.characters) if(c.born&&String(c.born).slice(5)===md) out.push(`\n🎂 **${L(c.name)}'s birthday** (${ageOf(c,dayStart+12*HOUR)})\n`);
+  // on screen
+  let lastT=0; const scene=[]; for(const m of S.chat){ if(m.t) lastT=m.t; const t=m.t||lastT; if(m.hidden||t<dayStart||t>=end) continue;
+    if(m.role==='user') scene.push(`> **${nm}:** ${String(m.text).replace(/\n+/g,'\n> ')}\n`);
+    else if(m.role==='assistant') scene.push(L(String(m.text).replace(vStampRx,'').trim())+'\n');
+    else if(m.role==='text') scene.push(`📱 **${m.from}** texted: ${m.text}\n`); }
+  if(scene.length) out.push(`\n## With ${L(nm)}\n\n`+scene.join('\n'));
+  // off screen
+  const seen=new Set(), off=[]; for(const c of W.characters) for(const e of S.chars[c.id].log){ if(e.t<dayStart||e.t>=end) continue; const k=e.t+'|'+e.text.slice(0,40); if(seen.has(k)) continue; seen.add(k); off.push(e); }
+  off.sort((a,b)=>a.t-b.t);
+  if(off.length){ out.push('\n## Elsewhere\n'); for(const e of off){ const who=(e.with||[]).map(charById).filter(Boolean).map(c=>'[['+vSafe(c.name)+']]').join(', '); out.push(`\n### ${hhmm(e.t)} · ${e.loc||''}${who?' · '+who:''}\n\n${L(e.text)}\n`); } }
+  const g=(S.gossip||[]).filter(r=>r.t>=dayStart&&r.t<end); if(g.length){ out.push('\n## Word going around\n'); for(const r of g) out.push(`- "${r.text}" (${r.tone}): heard by ${Object.keys(r.known).map(charById).filter(Boolean).map(c=>'[['+vSafe(c.name)+']]').join(', ')}\n`); }
+  const th=(S.threads||[]).filter(t=>t.t>=dayStart&&t.t<end); if(th.length){ out.push('\n## Came to you\n'); for(const t of th) out.push(`- ${L(charById(t.who)?.name||'?')}: **${t.title}** (${t.status}${t.result?': '+t.result:''})\n`); }
+  return out.join(''); }
+
+async function vaultSync(force){ if(VAULT.state!=='on'||!VAULT.h||!W||!S||VAULT.busy) return; VAULT.busy=true; let n=0;
+  try{ const L=vLinker(); const base=['Living World', W.title.split(':')[0].trim()+(S.branch?` (1-on-1 · ${S.branch.title||charById(S.branch.charId)?.name||S.branch.id})`:'')]; const sk=SAVE_KEY;
+    const mems=vMemAll();
+    for(const c of W.characters) n+=await vWrite([...base,'Characters'], vSafe(c.name), vCharNote(c,L,mems));
+    // you
+    { const nm=uN(); const lines=[vFront({persona:nm, world:W.title, tags:['living-world','you']}), V_NOTE, `# ${nm} (you)\n\n**Where:** ${S.user.loc}\n\n## How everyone feels about you\n`];
+      for(const c of W.characters.slice().sort((a,b)=>S.chars[b.id].trust-S.chars[a.id].trust)) lines.push(`- [[${vSafe(c.name)}]] ${S.chars[c.id].trust}/100\n`);
+      const rep=repSummary(); lines.push(`\n## Reputation\n${rep.label}: ${rep.people} people have heard something (${rep.good} good, ${rep.bad} bad, ${rep.juicy} juicy).\n`);
+      n+=await vWrite([...base,'Characters'], vSafe(nm), lines.join('')); }
+    // journal: everything once per session, then the recent days
+    const first=Math.min(...[S.clock, ...S.chat.filter(m=>m.t).map(m=>m.t), ...mems.map(m=>m.t)]); const d0=Math.floor(first/DAYMS)*DAYMS, dN=Math.floor(S.clock/DAYMS)*DAYMS;
+    const from=(force||!VAULT.fullDone.has(sk))?d0:Math.max(d0, Math.floor(Math.min(VAULT.lastClock[sk]||S.clock, S.clock)/DAYMS)*DAYMS-DAYMS);
+    for(let d=from; d<=dN; d+=DAYMS) n+=await vWrite([...base,'Journal'], vDayTitle(d), vDayNote(d,L));
+    VAULT.fullDone.add(sk); VAULT.lastClock[sk]=S.clock;
+    n+=await vWrite(base, 'Story so far', vFront({world:W.title, tags:['living-world']})+V_NOTE+`# Story so far\n\n${S.summary?L(S.summary):'*Nothing summarized yet. The summary starts once the story gets long.*'}\n\n## Cast\n${W.characters.map(c=>`- [[${vSafe(c.name)}]]`).join('\n')}\n\n## Latest days\n${Array.from({length:7},(_,i)=>dN-i*DAYMS).filter(d=>d>=d0).map(d=>`- [[${vDayTitle(d)}]]`).join('\n')}\n`);
+    VAULT.err=''; VAULT.last=Date.now(); }
+  catch(e){ VAULT.err=e.message||String(e); if(e&&e.name==='NotAllowedError'){ VAULT.state='paused'; vaultInit(); } }
+  finally{ VAULT.busy=false; vaultUI(); } return n; }
+
 setInterval(tick,1000);
 setInterval(()=>{ if(W&&SCREEN==='world'){ scheduleBeats(); save(); } }, 5000);
 
@@ -2705,7 +2806,7 @@ $('#wipeNow').onclick=async()=>{
 function openSettings(){
   const sa=$('#setAcct'); if(sa) sa.textContent=AUTH?`${AUTH.user.email} · ${syncLine()}`:'Not signed in: sign in to save your keys and stories to your account'; const sb_=$('#setAcctBtn'); if(sb_) sb_.textContent=AUTH?'Account':'Sign in';
   $('#sWorldPhone').style.display=W?'':'none'; if(W){ $('#sPhone').value=phoneCfg().style; $('#sPhone').onchange=e=>{ const pc=phoneCfg(); pc.style=e.target.value; savePhoneCfg(pc); }; }
-  refreshWipeToggle();
+  refreshWipeToggle(); vaultUI();
   $('#verLine').textContent=`Version ${APP_VERSION}`+(window.lwUpdate?'':WEBAPP?' (phone/web app)':' (browser version)');
   $('#resetBtn').style.display=W?'':'none'; $('#exportBtn').style.display=W?'':'none'; $('#importBtn').style.display=W?'':'none';
   $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sAnim').value=CFG.anim||'full'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
@@ -2898,8 +2999,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.40.1';
+const APP_VERSION = '0.41.0';
 const CHANGELOG = [
+ {v:'0.41.0', d:'2026-11-19', notes:['Obsidian vault (Settings → 📓 Obsidian vault): pick your vault folder and the app keeps a permanent record of every story there as Markdown. Each character gets a note with all their memories (by day), their relationships and how they feel about you. Every in-app day gets a journal note with your scenes, what happened elsewhere, gossip and who came to you, plus a Story so far note. Names are linked, so Obsidian\'s graph view shows your whole cast.', 'The vault is a record only: the app never reads it back, so editing a note doesn\'t change what happened. Works in the desktop app and in Chrome or Edge on a computer.', 'Old memories are no longer lost: once a story passes 1,500 memories, the oldest move to an archive, and characters still recall them when something in the scene brings them up.']},
  {v:'0.40.1', d:'2026-11-19', notes:['The World map now shows the weather: drizzle, rain, downpours and thunderstorms (with lightning), falling snow that piles up on the districts and melts when it warms up, drifting fog, and a warm haze on hot days.', 'People react to it: in bad weather fewer people are out and the ones who are carry umbrellas, cats, dogs and birds take cover, and on hot days people head for the water. On New Year\'s Eve the streets fill up late.', 'Holidays are decorated on the map and behind the story: string lights from December 1 to the 26th, pumpkins and bats in the last week of October, floating hearts on Valentine\'s Day, fireworks on New Year\'s Eve night, and bunting and confetti for any other holiday (including ones you add yourself).', 'Snow piles up along the bottom of the story screen after a snowfall.']},
  {v:'0.40.0', d:'2026-11-19', notes:['New 🗺 World button: a live, animated map of the city. Everyone walks to wherever their schedule takes them, background people stroll the streets, cats, dogs and birds hop and fly around, Bangboo roll by, windows light up at night and rain falls on the map. Tap a place to see who is there, 👀 peek at what they are doing right now, or 🚶 go there.', 'Each district gets its own recurring locals and animals (a noodle seller, the cat that naps on the stage), and they show up in scenes.', 'Gossip and reputation: what you do gets around. People who see it tell their friends, the story changes as it travels, and everyone remembers their own version. See "Word on the street".', 'People come to you: characters reach out on their own with favors, problems, invitations or secrets, by text or by turning up. Deal with it in the story, or they handle it alone and remember that you didn\'t.', 'Director tools: set two people up (as friends, or as a possible match between adults), arrange a coincidence, plant an idea in someone\'s head, or start a rumor, and watch it play out off-screen.', 'Relationships between characters can no longer be edited by hand: closeness only changes through what happens in the story (or what you arrange as Director).', 'Comfort grows with closeness: close friends get more relaxed around each other over time (lounging in pajamas or lingerie, changing in the same room, crude jokes and silly physical goofing for the boldest best friends). Shy characters stay shyer, and anyone under 18 only gets age-appropriate comfort.', 'Birthdays and growing up: characters with a birth date age with the in-app clock. Sunna turns 18 on July 18, 2027 and Ju Fufu on January 6, 2029 (in-app); on that day the under-18 limits for them lift and everyone knows it is their birthday.']},
  {v:'0.39.3', d:'2026-11-19', notes:['Ye Shunguang now has her canon crush on Wise: Robin the Bangboo diagnosed her racing heart as love, she has told him he is someone very, very special, and his name fills her diary. She is shy about it and hasn\'t confessed outright.']},
@@ -3358,6 +3460,11 @@ function closeSide(){ const a=document.querySelector('aside'); if(a) a.classList
 $('#sideBtn').onclick=()=>{ document.querySelector('aside').classList.add('open'); $('#sideShade').classList.add('on'); }; $('#sideShade').onclick=closeSide; document.querySelector('aside').addEventListener('click',e=>{ if(e.target.closest('.card')) setTimeout(closeSide,60); });
 $('#phoneBtn').onclick=()=>{ if(phonesOn()) openPhone('home'); };
 $('#worldBtn').onclick=()=>openHub();
+$('#vaultConnect').onclick=()=>{ if(VAULT.state==='paused'&&VAULT.h){ VAULT.h.requestPermission({mode:'readwrite'}).then(p=>{ if(p==='granted'){ VAULT.state='on'; vaultUI(); vaultSync(false); } }).catch(()=>{}); } else vaultConnect(); };
+$('#vaultOff').onclick=()=>vaultDisconnect();
+$('#vaultNow').onclick=async()=>{ const n=await vaultSync(true); notice(`📓 Vault up to date${n?` (${n} note${n===1?'':'s'} written)`:''}.`); };
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&VAULT_ON()) vaultSync(false); });
+vaultInit();
 $('#hubClose').onclick=()=>closeHub();
 $('#hubModal').addEventListener('click',e=>{ if(e.target.id==='hubModal') closeHub(); });
 

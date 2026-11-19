@@ -1,13 +1,12 @@
 {
- "version": "0.40.1",
+ "version": "0.41.0",
  "date": "2026-11-19",
  "notes": [
-  "The World map now shows the weather: drizzle, rain, downpours and thunderstorms (with lightning), falling snow that piles up on the districts and melts when it warms up, drifting fog, and a warm haze on hot days.",
-  "People react to it: in bad weather fewer people are out and the ones who are carry umbrellas, cats, dogs and birds take cover, and on hot days people head for the water. On New Year's Eve the streets fill up late.",
-  "Holidays are decorated on the map and behind the story: string lights from December 1 to the 26th, pumpkins and bats in the last week of October, floating hearts on Valentine's Day, fireworks on New Year's Eve night, and bunting and confetti for any other holiday (including ones you add yourself).",
-  "Snow piles up along the bottom of the story screen after a snowfall."
+  "Obsidian vault (Settings \u2192 \ud83d\udcd3 Obsidian vault): pick your vault folder and the app keeps a permanent record of every story there as Markdown. Each character gets a note with all their memories (by day), their relationships and how they feel about you. Every in-app day gets a journal note with your scenes, what happened elsewhere, gossip and who came to you, plus a Story so far note. Names are linked, so Obsidian's graph view shows your whole cast.",
+  "The vault is a record only: the app never reads it back, so editing a note doesn't change what happened. Works in the desktop app and in Chrome or Edge on a computer.",
+  "Old memories are no longer lost: once a story passes 1,500 memories, the oldest move to an archive, and characters still recall them when something in the scene brings them up."
  ],
  "file": "index.html",
- "sha256": "423230a6a1b268d82c19685ff31e3592d4e7702f33d3a08e79d5d6cf275567a8",
+ "sha256": "4ba5d8888a8d054e895782e01e693c9d0bdf48d254c68d02f0ac93e440904852",
  "minShell": "0.5.0"
 }
