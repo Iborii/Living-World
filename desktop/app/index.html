@@ -1970,7 +1970,7 @@ function renderFeed(){
       h+=`<div class="beat"><div class="meta">${names} · ${wdName(e.t).slice(0,3)} ${mmdd(e.t)} ${hhmm(e.t)} · ${esc(e.loc||'')}</div>${fmt(e.text)}</div>`; }
     if(!items.length) h=`<div class="notice"><div class="in">Nothing yet. Off-screen moments appear here as the world's clock runs (every ${CFG.beat} game minutes per character).${CFG.bgOn==='0'?' Background lives are turned off in Settings.':''}</div></div>`;
   }
-  f.innerHTML=h; if(atBottom||S.view!=='me'||busyMain) f.scrollTop=f.scrollHeight;
+  f.innerHTML=h; if(atBottom||S.view!=='me') f.scrollTop=f.scrollHeight;
   { const els=f.querySelectorAll('.msg,.beat,.notice'); const keys=[...els].map(el=>el.dataset.i!==undefined?'m'+el.dataset.i:el.textContent.slice(0,60));
     if(seenFeed.view===S.view&&seenFeed.world===(W&&W.id)) els.forEach((el,k)=>{ if(!seenFeed.keys.has(keys[k])&&el.id!=='streaming') el.classList.add('enter'); });
     seenFeed={view:S.view, world:W&&W.id, keys:new Set(keys)}; }
@@ -2017,7 +2017,9 @@ function forkTimeline(i){ if(busyMain) return; const name=prompt('Name this new 
   setBranches(list); LS.setItem(branchSaveKey(W.id,id), JSON.stringify(forked));
   notice(`Made the timeline "${name.trim()||'New timeline'}". Opening it now; your original story is untouched.`);
   setTimeout(()=>enterWorld(W.id,{branchId:id}),600); }
-function renderStreaming(m){ const el=$('#streaming'); if(el){ el.classList.toggle('waiting',!m.text); el.innerHTML=fmt(m.text); const f=$('#feed'); f.scrollTop=f.scrollHeight; } }
+// While a reply is being written, the view stays where you put it: it shows the start of the new reply once, then never chases the text.
+function renderStreaming(m){ const el=$('#streaming'); if(!el) return; el.classList.toggle('waiting',!m.text); el.innerHTML=fmt(m.text);
+  if(!m._shown){ m._shown=1; const f=$('#feed'); const top=el.offsetTop-f.offsetTop; if(top>f.scrollTop+f.clientHeight-60||top<f.scrollTop) f.scrollTop=Math.max(0,top-80); } }
 function renderClock(){ const w=weather(S.clock); $('#clock').textContent=`${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)} ${hhmm(S.clock)}`; $('#weather').textContent=`${w.desc}, ${w.temp}°F`; $('#pauseBtn').textContent=S.paused?'Resume':'Pause'; }
 const lastCardLoc={};
 function renderCards(){
@@ -2276,8 +2278,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.29.2';
+const APP_VERSION = '0.29.3';
 const CHANGELOG = [
+ {v:'0.29.3', d:'2026-11-19', notes:['The chat no longer drags you down while a reply is being written. It shows the start of the new reply, then lets you read at your own pace.']},
  {v:'0.29.2', d:'2026-11-19', notes:['Krampus cast deep-searched with Google\'s AI on top of the wiki: dozens of new quirks and little facts. Phoenix\'s mummy-bandage promo and hot pot hospital trip, Dialyn\'s rotary phone for the dead and "Mini Zhao" the bunny, Zhao\'s secret kids\' loungewear and claw-trim membership, Banyue sinking to the bottom of the bay and getting banned from the cable car, Promeia smelling flowers outside Dew Gardening and hiding her wounds.']},
  {v:'0.29.1', d:'2026-11-19', notes:['Krampus cast double-checked against their canon profiles, dialogue and DMs (and your measurements sheet): all heights, birthdays and sizes match. Phoenix, Dialyn, Zhao, Banyue and Promeia each get a canon voice section: their official lines, how they text on Knock Knock, and missing details (Phoenix sneaking out of confinement and her "Boo-Boo Away" spell, Dialyn\'s hotline menu and Banyue\'s hair transplant, Zhao\'s secret love of vegetables and her social battery, Banyue\'s righteous dessert-shop fury, Promeia\'s "Copy that. Give me the coordinates.").']},
  {v:'0.29.0', d:'2026-11-19', notes:['Characters sound like themselves again. Each world\'s voice examples (the scenes that showed Phoenix, Dialyn and the rest exactly how they talk, from your Clank World bots) were never being loaded. Now the story reads them every turn, so voices stop drifting flat and stoic.','Yunkui Summit cast deep-searched one by one: Yixuan, Ju Fufu, Ye Shunguang, Pan Yinhu, Belle and Wise each get a canon voice section with their real lines, sayings, texting style and new details (Yinhu\'s puppies and char siu pride, Shunguang\'s "second senior sister", Fufu\'s trainee reviews, Shifu\'s weather-app talismans).','Roscaelifer gets its own voice examples for Velina and Norma.','Fixes: Wise isn\'t vegetarian (he wants MORE meat), and Shunguang\'s Thiren type is left unstated, like in canon.']},

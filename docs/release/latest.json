@@ -1,10 +1,10 @@
 {
- "version": "0.29.2",
+ "version": "0.29.3",
  "date": "2026-11-19",
  "notes": [
-  "Krampus cast deep-searched with Google's AI on top of the wiki: dozens of new quirks and little facts. Phoenix's mummy-bandage promo and hot pot hospital trip, Dialyn's rotary phone for the dead and \"Mini Zhao\" the bunny, Zhao's secret kids' loungewear and claw-trim membership, Banyue sinking to the bottom of the bay and getting banned from the cable car, Promeia smelling flowers outside Dew Gardening and hiding her wounds."
+  "The chat no longer drags you down while a reply is being written. It shows the start of the new reply, then lets you read at your own pace."
  ],
  "file": "index.html",
- "sha256": "2f6fd6f10c80bbe9cc773369aa682af66ce962eaf15ead2f22c59924028639b1",
+ "sha256": "439a9e789c608e1a7568983a0fc056a1df3bd2701363e91bb6ca7591b7077d0a",
  "minShell": "0.5.0"
 }
