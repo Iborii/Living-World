@@ -1,13 +1,13 @@
 {
- "version": "0.34.0",
+ "version": "0.35.0",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: a new Zenless Zone Zero world, the Cunning Hares. It's your first day as the newest hire at Gentle House on Sixth Street, with a debt collector already at the door.",
-  "Nicole, Anby, Billy and Nekomata, each researched one by one through the wiki (profiles, lore, texts), Google AI Mode and your measurements sheet. That includes Nicole's beauty mark near her cleavage, Anby's Soldier 0 past, Billy's Calydon days and Nekomata's Red Fang Gang history.",
-  "Real schedules (Hollow commissions on Tuesdays and Thursdays, Nicole's orphanage visits, Anby's tape runs, Billy at the arcade, Nekomata's sunny catnaps) and canon relationships.",
-  "Public Security: Quiz Prize now only happens once both Qingyi and Zhu Yuan are at least Friendly with you."
+  "Owner build only: a new Zenless Zone Zero world, Obol Squad. You're the squad's new support specialist, reporting to their Defense Force dormitory on your first morning.",
+  "Seed (and Seed Sr.), Soldier 11, Trigger, and Orphie with Captain Magus as one character, each researched one by one through the wiki, Google AI Mode and your measurements sheet.",
+  "Military schedules (drills, briefings, Hollow Zero operations on Tuesdays and Thursdays) plus their off-duty lives: Waterfall Soup noodles, Trigger's harmonica at Port Elpis, Seed's cockpit movie nights, Orphie's stray cats.",
+  "Cunning Hares: Anby is now her S-rank self, Soldier 0, and Billy is Starlight Billy. Anby and Soldier 11 are in a careful reconciliation."
  ],
  "file": "index.html",
- "sha256": "0e9e6f685c489d4d1eaa311d3b46ca4fc5d09e8753907c1dc67c4cc8ffc4ae72",
+ "sha256": "fab4bd8e277d1b7fea1f9390786d8f9bba1f36601e8f632b1452e1583093a9d9",
  "minShell": "0.5.0"
 }
