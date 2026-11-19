@@ -1,10 +1,10 @@
 {
- "version": "0.37.2",
+ "version": "0.37.3",
  "date": "2026-11-19",
  "notes": [
-  "Angels of Delusion heights, corrected again: all three wear platform shoes. Barefoot, Sunna is about 4'9\", Aria about 4'7\" and Nangong about 4'5\". Nangong's and Aria's special stage boots (and Nangong's halo) are what make them look taller."
+  "Angels of Delusion: deeper research into how the three act together, from their trust commissions and events: the Captain's Day Off intervention, Nangong's secret beach practice and hidden fears, \"taro-flavored\" maintenance oil for Aria, Sunna's taro teamilk and sound recorder, the shaky-hands signing, the poaching \"fan\", the studio lock-in, and more. Their schedules now include Nangong's Thursday night beach practice, Aria singing by the river on sleepless Wednesdays, and Sunna's Saturday celebration teamilk."
  ],
  "file": "index.html",
- "sha256": "a473ccc5448af613b8df440bb8193beb1d3dd8b3dddb652d6e0fdb51ed0ab875",
+ "sha256": "f5313be4a49258f4030c37f3f941bf37b54f5a9301638f68fbdc9ca447c4bcea",
  "minShell": "0.5.0"
 }
