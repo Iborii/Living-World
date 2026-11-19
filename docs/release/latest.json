@@ -1,12 +1,10 @@
 {
- "version": "0.37.4",
+ "version": "0.37.5",
  "date": "2026-11-19",
  "notes": [
-  "Angels of Delusion: a full quirks-and-relationships pass. Sunna and Nangong elbow each other all the time, and Sunna wins every tussle (and gets her sheet music back) by tickling Nangong's stomach.",
-  "Dozens of canon quirks for each girl: Sunna's \"I'm an apple\" stage trick, her cafe uniform and embarrassing coffee spells, her airheaded mom; Nangong's calorie counting, \"Tear Gland Insurance\" and the secret pink helicopter; Aria's dead battery at a Bangboo charging station, cyber sheep and her three secret listeners (Lucy's boars).",
-  "Their ties to people outside the group: Tin Master, Astra Yao, Vesper, Lucy, Old Duyi, Enzo, Sunna's parents and more."
+  "Aria: her famous accidentally aggressive \"Huh?\" (it comes out as \"HAUH?\"), walking into poles whenever she's flustered (the \"Unintelligent Construct\"), and thinking \"miasma\" means asthma."
  ],
  "file": "index.html",
- "sha256": "821851b7cb34cff0bf0336a81d78bb673b08dda753b92b9ed2a4040179996973",
+ "sha256": "715fb83b0c85e31bd136d318b826d41d3a724821826acef9416360ea11eb6604",
  "minShell": "0.5.0"
 }
