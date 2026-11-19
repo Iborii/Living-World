@@ -1,14 +1,13 @@
 {
- "version": "0.30.0",
+ "version": "0.30.1",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: the three Sunbringers join Roscaelifer as full characters, remade from scratch with new research (the wiki, the story transcripts and Google AI Mode).",
-  "Eldreda, Director of the Administrative Affairs Department, is regal in public and painfully awkward in private. She rehearses her speeches with marked pauses, carries everything alone, and secretly sings and plays guitar.",
-  "Lindverne, Director of the Airspace Patrol, is a bubbly prankster who hates being called Lady Lindverne. She loves Starlight Knight, wages war on broccoli, and is frustrated by her older sister's secrets.",
-  "Dracaene, Director of the Central Computing Department, is an earnest, absent-minded genius who sees Bangboo as her little siblings. She looks and acts like a child, so she is fully protected: no romance or sexual content.",
-  "Each sister has her own schedule, her relationships with each other, Velina and Norma, and their secret (they are Enchainers). They also share a Sunday dinner together."
+  "Owner build only: Claret Flint and Roxy Ifrita Pryce of Flint Workshop join Roscaelifer, researched through the wiki (profiles, lore, dialogue, DMs), Google AI Mode and your measurements sheet.",
+  "Claret is the proud, tsundere head of the Flint family and Roscaelifer's biggest creditor. She is a dessert snob with a blown budget, a terrible morning person, and is chasing a way to forge Porcelloy without Flint blood.",
+  "Roxy is her deadpan, insomniac right hand: she tracks Milady's every expense, works until 3 AM (Vyrium's \"late-night stalker\" legend) and carries a coffin. Her Porcelloy heart runs on Claret's blood.",
+  "Both live on Vyrium island with their own schedules: forge hours, Wednesday budget fights, Roxy's Thursday debt collecting at CCD Square, Saturday pancakes. They cross paths with Lindverne, Velina and the others."
  ],
  "file": "index.html",
- "sha256": "fd42a2efa0e2dc27e8cb0d9c1e87e3d37e2c58bd4a28b9d627d1bad2b099b22b",
+ "sha256": "72abd6030a9eba96d789c2d2a631c3a794d9a6e7b8e241f6cde1ffefeb123c9f",
  "minShell": "0.5.0"
 }
