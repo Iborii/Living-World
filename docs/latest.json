@@ -1,13 +1,10 @@
 {
- "version": "0.27.0",
- "date": "2026-11-18",
+ "version": "0.28.0",
+ "date": "2026-11-19",
  "notes": [
-  "Rebuilt how the app keeps track of the story. After every reply it now checks the scene itself (instead of hoping the story AI adds hidden tags): who is actually with you, what everyone is doing, and how much each person's trust in you changed. Phoenix stops tagging along the moment the story leaves her behind, and phone statuses follow the story.",
-  "Existing stories get their relationships rated once from what has happened so far, so someone you're dating isn't stuck at 25.",
-  "Big fix: the default background model for DeepSeek was named wrong (deepseek-flash instead of deepseek-v4-flash), so everything that runs in the background (off-screen scenes, memories, text replies, these checks) was quietly failing. It's corrected automatically.",
-  "If that check can't run (for example a wrong background model in Settings), the app now tells you instead of failing silently."
+  "Owner build only: Roscaelifer joins the Zenless Zone Zero universe. Velina Airgid and Norma Hollowell of the External Strategy Department, with your first day at the ESD as the opening scene, Knock Knock and the Inter-Knot, and their own weekly schedules. They're part of the Everyone story too."
  ],
  "file": "index.html",
- "sha256": "398ba4b57bb0f46f9fa00330ae9ceaa5acda7a528932782801dcd7556469a77b",
+ "sha256": "3ec5b8f22ea75794e9335019c7243a25cff24facfb005b1871beda5eed034ed9",
  "minShell": "0.5.0"
 }
