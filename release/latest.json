@@ -1,10 +1,17 @@
 {
- "version": "0.39.3",
+ "version": "0.40.0",
  "date": "2026-11-19",
  "notes": [
-  "Ye Shunguang now has her canon crush on Wise: Robin the Bangboo diagnosed her racing heart as love, she has told him he is someone very, very special, and his name fills her diary. She is shy about it and hasn't confessed outright."
+  "New \ud83d\uddfa World button: a live, animated map of the city. Everyone walks to wherever their schedule takes them, background people stroll the streets, cats, dogs and birds hop and fly around, Bangboo roll by, windows light up at night and rain falls on the map. Tap a place to see who is there, \ud83d\udc40 peek at what they are doing right now, or \ud83d\udeb6 go there.",
+  "Each district gets its own recurring locals and animals (a noodle seller, the cat that naps on the stage), and they show up in scenes.",
+  "Gossip and reputation: what you do gets around. People who see it tell their friends, the story changes as it travels, and everyone remembers their own version. See \"Word on the street\".",
+  "People come to you: characters reach out on their own with favors, problems, invitations or secrets, by text or by turning up. Deal with it in the story, or they handle it alone and remember that you didn't.",
+  "Director tools: set two people up (as friends, or as a possible match between adults), arrange a coincidence, plant an idea in someone's head, or start a rumor, and watch it play out off-screen.",
+  "Relationships between characters can no longer be edited by hand: closeness only changes through what happens in the story (or what you arrange as Director).",
+  "Comfort grows with closeness: close friends get more relaxed around each other over time (lounging in pajamas or lingerie, changing in the same room, crude jokes and silly physical goofing for the boldest best friends). Shy characters stay shyer, and anyone under 18 only gets age-appropriate comfort.",
+  "Birthdays and growing up: characters with a birth date age with the in-app clock. Sunna turns 18 on July 18, 2027 and Ju Fufu on January 6, 2029 (in-app); on that day the under-18 limits for them lift and everyone knows it is their birthday."
  ],
  "file": "index.html",
- "sha256": "0851a03b804ff03b2fb0f826eba8519933ab8d8c16ae27244256ee63fec29d2a",
+ "sha256": "ab65f3eca435c4b6009b1350dbf897d7fca97a1b8c0c5d9f1584070e1f914c5e",
  "minShell": "0.5.0"
 }
