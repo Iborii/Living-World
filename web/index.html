@@ -821,6 +821,7 @@ body.calm *,body.calm *::before,body.calm *::after{animation:none!important;tran
         </div>
         <div class="row" style="margin-top:6px;justify-content:space-between">
           <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="ghost" id="contBtn" title="Not sure what to say? Let the scene keep going without you">▶ Continue</button>
             <button class="ghost" id="regenBtn" title="Rewrite the last reply">↻ Regenerate</button>
             <button class="ghost" id="undoBtn" title="Remove the last exchange">⌫ Undo last</button>
             <button class="ghost" id="moveBtn" title="Go somewhere else">⇢ Go somewhere</button>
@@ -1850,6 +1851,12 @@ async function send(text){
   S.chat.push({role:'user',text,t:S.clock,pid:S.personaId,pname:persona().name}); S.view='me'; bumpStats(present().map(c=>c.id)); render(); save();
   await generateReply();
 }
+async function continueScene(){
+  if(busyMain||!S.chat.length) return;
+  if(overBudget()&&!confirm(`You've reached today's spending limit ($${(+CFG.dailyLimit).toFixed(2)}). Continue anyway?`)) return;
+  S.chat.push({role:'user',hidden:true,cont:true,t:S.clock,text:`(Continue: {{user}} doesn't say or do anything new this turn; they just stay where they are and take it in. Keep the scene moving on its own. The characters keep talking, acting and following their own plans and schedules, a little time passes naturally, and the world goes on around them (people passing, sounds, weather). Someone may speak to {{user}} or wait for an answer, but do not write {{user}}'s words, actions, thoughts or feelings and do not decide anything for them. Start with a new time stamp line and end where {{user}} can respond.)`.replace(/\{\{user\}\}/g,persona().name||'the user')});
+  S.view='me'; render(); save(); await generateReply();
+}
 async function generateReply(){
   let errMsg='';
   busyMain=true; setBusyUI();
@@ -2146,10 +2153,11 @@ function renderViewbar(){
 }
 function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return; sel.innerHTML=PS.list.map(p=>`<option value="${p.id}">Playing as ${esc(p.name||'(unnamed)')}</option>`).join('')+'<option value="__manage">Manage personas…</option>'; sel.value=S.personaId||''; }
 function render(){ renderPersonaSel(); $('#worldTitle').textContent=S.branch?`${charById(S.branch.charId).full} · 1-on-1`:W.title; renderClock(); renderCards(); renderViewbar(); renderFeed(); renderStatus(); }
-function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; $('#sendBtn').classList.toggle('stopping',busyMain); }
+function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; if($('#contBtn')) $('#contBtn').disabled=busyMain; $('#sendBtn').classList.toggle('stopping',busyMain); }
 function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>{ d.classList.add('leave'); setTimeout(()=>d.remove(),360); }, err?15000:6000); }
 
 // ======================= UI wiring =======================
+$('#contBtn').onclick=()=>continueScene();
 $('#sendBtn').onclick=()=>{ if(busyMain){ mainAbort&&mainAbort.abort(); return; } const t=$('#input').value; $('#input').value=''; send(t); };
 $('#input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); $('#sendBtn').click(); } });
 $('#myStoryCard').onclick=()=>{ S.view='me'; render(); };
@@ -2164,6 +2172,7 @@ async function regenAt(idx){ if(busyMain) return; const roles=S.chat.map(m=>m.ro
   if(nm&&nm.role==='assistant'&&nm!==old){ nm.versions=[...versions, nm.text]; nm.vi=nm.versions.length-1; } else if(!S.chat.includes(old)){ S.chat.push(old); }
   render(); save(); }
 $('#undoBtn').onclick=()=>{ if(busyMain) return; let i=S.chat.map(m=>m.role).lastIndexOf('user'); if(i<0) return; const t=S.chat[i].text;
+  if(S.chat[i].cont){ if(!confirm("Remove the last continued reply? It can't be brought back.")) return; S.chat.splice(i); render(); save(); return; }
   const n=S.chat.length-i; if(!confirm(`Are you sure? This permanently deletes your last message${n>1?` and the ${n-1} message${n>2?'s':''} after it`:''} from the story. It can't be brought back.\n\nYour message: "${String(t).slice(0,140)}${String(t).length>140?'…':''}"`)) return; S.chat.splice(i); $('#input').value=t; render(); save(); };
 $('#moveBtn').onclick=()=>{ $('#moveSel').innerHTML='<option value="">— choose —</option>'+W.locations.map(l=>`<option>${esc(l)}</option>`).join(''); $('#moveFree').value=''; $('#moveModal').classList.add('on'); };
 $('#moveClose').onclick=()=>$('#moveModal').classList.remove('on');
@@ -2372,8 +2381,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.35.0';
+const APP_VERSION = '0.35.1';
 const CHANGELOG = [
+ {v:'0.35.1', d:'2026-11-19', notes:['New ▶ Continue button under the message box. If you don\'t know what to say, press it and the scene keeps going on its own: the characters keep talking and following their plans, and the world moves around you, without the story deciding anything for you. Regenerate and Undo work on continued replies too.']},
  {v:'0.35.0', d:'2026-11-19', notes:['Owner build only: a new Zenless Zone Zero world, Obol Squad. You\'re the squad\'s new support specialist, reporting to their Defense Force dormitory on your first morning.','Seed (and Seed Sr.), Soldier 11, Trigger, and Orphie with Captain Magus as one character, each researched one by one through the wiki, Google AI Mode and your measurements sheet.','Military schedules (drills, briefings, Hollow Zero operations on Tuesdays and Thursdays) plus their off-duty lives: Waterfall Soup noodles, Trigger\'s harmonica at Port Elpis, Seed\'s cockpit movie nights, Orphie\'s stray cats.','Cunning Hares: Anby is now her S-rank self, Soldier 0, and Billy is Starlight Billy. Anby and Soldier 11 are in a careful reconciliation.']},
  {v:'0.34.0', d:'2026-11-19', notes:['Owner build only: a new Zenless Zone Zero world, the Cunning Hares. It\'s your first day as the newest hire at Gentle House on Sixth Street, with a debt collector already at the door.','Nicole, Anby, Billy and Nekomata, each researched one by one through the wiki (profiles, lore, texts), Google AI Mode and your measurements sheet. That includes Nicole\'s beauty mark near her cleavage, Anby\'s Soldier 0 past, Billy\'s Calydon days and Nekomata\'s Red Fang Gang history.','Real schedules (Hollow commissions on Tuesdays and Thursdays, Nicole\'s orphanage visits, Anby\'s tape runs, Billy at the arcade, Nekomata\'s sunny catnaps) and canon relationships.','Public Security: Quiz Prize now only happens once both Qingyi and Zhu Yuan are at least Friendly with you.']},
  {v:'0.33.0', d:'2026-11-19', notes:['Story events: worlds can now have scripted events on a set date and time. When one starts, the characters involved come find you wherever you are and the story plays it out with you in it.','Public Security: "Quiz Prize" happens on Friday, November 20, around lunchtime. Qingyi and Zhu Yuan find you, Qingyi runs her one-question guessing game, and your prize is supervising Zhu Yuan\'s forced vacation for the rest of the day. Zhu Yuan is on leave that afternoon (and will try to sneak in some work).']},

@@ -1,13 +1,10 @@
 {
- "version": "0.35.0",
+ "version": "0.35.1",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: a new Zenless Zone Zero world, Obol Squad. You're the squad's new support specialist, reporting to their Defense Force dormitory on your first morning.",
-  "Seed (and Seed Sr.), Soldier 11, Trigger, and Orphie with Captain Magus as one character, each researched one by one through the wiki, Google AI Mode and your measurements sheet.",
-  "Military schedules (drills, briefings, Hollow Zero operations on Tuesdays and Thursdays) plus their off-duty lives: Waterfall Soup noodles, Trigger's harmonica at Port Elpis, Seed's cockpit movie nights, Orphie's stray cats.",
-  "Cunning Hares: Anby is now her S-rank self, Soldier 0, and Billy is Starlight Billy. Anby and Soldier 11 are in a careful reconciliation."
+  "New \u25b6 Continue button under the message box. If you don't know what to say, press it and the scene keeps going on its own: the characters keep talking and following their plans, and the world moves around you, without the story deciding anything for you. Regenerate and Undo work on continued replies too."
  ],
  "file": "index.html",
- "sha256": "fab4bd8e277d1b7fea1f9390786d8f9bba1f36601e8f632b1452e1583093a9d9",
+ "sha256": "2d73c40572b6bdc1706b03904480a2985c70eb62431b1efdedad05def8c8ac2d",
  "minShell": "0.5.0"
 }
