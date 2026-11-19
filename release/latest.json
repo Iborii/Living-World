@@ -1,13 +1,13 @@
 {
- "version": "0.30.1",
+ "version": "0.31.0",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: Claret Flint and Roxy Ifrita Pryce of Flint Workshop join Roscaelifer, researched through the wiki (profiles, lore, dialogue, DMs), Google AI Mode and your measurements sheet.",
-  "Claret is the proud, tsundere head of the Flint family and Roscaelifer's biggest creditor. She is a dessert snob with a blown budget, a terrible morning person, and is chasing a way to forge Porcelloy without Flint blood.",
-  "Roxy is her deadpan, insomniac right hand: she tracks Milady's every expense, works until 3 AM (Vyrium's \"late-night stalker\" legend) and carries a coffin. Her Porcelloy heart runs on Claret's blood.",
-  "Both live on Vyrium island with their own schedules: forge hours, Wednesday budget fights, Roxy's Thursday debt collecting at CCD Square, Saturday pancakes. They cross paths with Lindverne, Velina and the others."
+  "Off-screen lives now carry into the story. When you run into someone, the AI gets what really happened to them during the last day (who they were with, what went on, how it left them) and has to let it show and come up naturally. Off-screen moments also count more in their memories.",
+  "Nobody who is with you gets an off-screen life: they're in your scene, so the story itself is their life. An old activity is also cleared when someone joins you, so their status no longer says they're doing something else.",
+  "Texting someone who is right next to you now happens in the story: their phone buzzes and you see them read it and react, out loud or by texting back (their texts land in your phone).",
+  "Texts from people elsewhere fit what they're doing. Busy people answer late or briefly, and texting you becomes part of their day, so their off-screen story knows they did it."
  ],
  "file": "index.html",
- "sha256": "72abd6030a9eba96d789c2d2a631c3a794d9a6e7b8e241f6cde1ffefeb123c9f",
+ "sha256": "4105448a43fc3d54ba24e0e26c440dd0816519744e81c88bbe11d922b593529e",
  "minShell": "0.5.0"
 }

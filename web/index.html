@@ -1173,6 +1173,7 @@ let phoneBusy=new Set();
 function processPhone(){ const P=phone();
   for(const id in P.pending){ const at=P.pending[id]; const c=charById(id); if(!c){ delete P.pending[id]; continue; }
     if(S.clock<at||phoneBusy.has(id)) continue; if(SLEEPY.test(S.chars[id].act)) continue; // they'll see it when they wake up
+    if(!S.branch&&present().some(x=>x.id===id)&&!P.extra[id]){ delete P.pending[id]; S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${c.name} hasn't answered ${uN()}'s last ${phoneApp()} text yet, and now they're together in person. ${c.name} can bring it up or answer it face to face.)`}); save(); continue; }
     delete P.pending[id]; phoneBusy.add(id); delete P.err[id]; if(phoneOn()) renderPhone();
     const extra=P.extra[id]; delete P.extra[id];
     textReply(c, extra).then(d=>resolveInvite(c,d)).catch(e=>{ P.err[id]=e.message; notice('Text reply failed: '+e.message,true); }).finally(()=>{ phoneBusy.delete(id); if(phoneOn()) renderPhone(); }); }
@@ -1204,7 +1205,7 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. If they are busy they may answer briefly or say they'll text later. They can bring up what they're doing. Never speak for ${pn}.${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}.${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
   const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
@@ -1212,6 +1213,7 @@ Write ${c.name}'s reply as real phone texts: their own texting style (slang, pun
   for(const l of lines) addText(c.id,false,l);
   const lastMe=[...th].reverse().find(m=>m.me);
   addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
+  if(lines.length){ const st=S.chars[c.id]; st.log.push({t:S.clock, text:`*${c.name} pauses ${String(st.act||'what they were doing').replace(/\s*\(with you\)$/,'')} to pull out their phone and text ${pn} back.* "${lines.join(' / ').slice(0,300)}"`, with:[c.id], loc:st.loc}); st.changed=true; }
   if(!phoneOn()||phoneOpenId!==c.id) notice(`📱 New text from ${c.name}`);
   return decision?decision.toUpperCase():null;
 }
@@ -1719,6 +1721,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
 `}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  whenever the user's words or actions this turn matter to a character: kindness, help, keeping or breaking a promise, rudeness, lying, flirting they did or didn't want. Usually 1 to 3, up to 8 for something big. Most replies with a real interaction should have at least one
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
    [[NUMBER: Name]]  when a character and the user swap phone numbers
+   [[TEXT: Name: message]]  when a character in the scene actually sends the user a phone text (one tag per text). Show them typing it in the story first
    [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
    [[MOOD: Name: feeling: why]]  when something clearly changes how a character feels (angry, hurt, giddy, sulking…)
    [[DOING: Name: what they're doing now]]  when a main character in the scene is doing something different from their "doing" line (fell asleep, woke up, went to shower, started cooking, on a call, crying in bed…); it shows on their phone status
@@ -1762,7 +1765,7 @@ ${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in 
   if((S.user.bag||[]).length) s+=`THE USER IS CARRYING: ${S.user.bag.join(', ')}\n`;
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
-  for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':`What ${c.name} was just doing off-screen:\n${recentLog(c.id,2)||'(nothing)'}\n`}\n`; }
+  for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':(()=>{ const L=S.chars[c.id].log.filter(e=>S.clock-e.t<=24*60*MIN).slice(-4); return L.length?`WHAT REALLY HAPPENED TO ${c.name.toUpperCase()} WHILE ${uN().toUpperCase()} WASN'T AROUND (true events, oldest first; ${c.name} lived through them, remembers them and still feels their effects: mood, tiredness, hunger, injuries, things they're carrying or wearing. Let them show and come up naturally, especially when ${c.name} first runs into ${uN()} or is asked what they've been up to. Never contradict them):\n${L.map(e=>`[${hhmm(e.t)}${e.with&&e.with.length>1?', with '+e.with.filter(x=>x!==c.id).map(x=>charById(x)?.name).filter(Boolean).join(', '):''}] ${e.text.replace(/\n+/g,' ').slice(0,600)}`).join('\n')}\n`:''; })()}\n`; }
   const lore=matchLore(ctx+'\n'+pres.map(c=>c.full).join(' '));
   if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
   s+=raceLoreBlock([...pres, persona()], ctx);
@@ -1834,7 +1837,7 @@ function applyControls(text){
     if(!m){ keep.push(l); continue; }
     const [_,cmd,arg]=m; const C=cmd.toUpperCase();
     if(C==='MOVE'){ S.user.loc=arg.trim(); }
-    else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)) S.user.companions.push(c.id); }
+    else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)){ freshJoin(c.id); S.user.companions.push(c.id); } }
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
     else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
@@ -1842,6 +1845,7 @@ function applyControls(text){
     else if(C==='BOND'){ applyBond(arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
+    else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
@@ -1850,7 +1854,8 @@ function applyControls(text){
   return keep.join('\n').trim();
 }
 // who is physically with the user; anyone dropped goes back to their own schedule (not left standing next to you)
-function setCompanions(ids){ const dropped=S.user.companions.filter(id=>!ids.includes(id)); S.user.companions=[...new Set(ids)];
+function freshJoin(id){ const st=S.chars[id]; if(st&&st.ovr&&S.clock-st.ovr.t>15*MIN) delete st.ovr; }
+function setCompanions(ids){ const dropped=S.user.companions.filter(id=>!ids.includes(id)); ids.filter(id=>!S.user.companions.includes(id)).forEach(freshJoin); S.user.companions=[...new Set(ids)];
   for(const id of dropped){ const c=charById(id), st=S.chars[id]; if(!c||!st||st.dead) continue; const sl=slotFor(c,S.clock);
     st.loc=sl?sl.loc:(c.loc&&!sameLoc(c.loc,S.user.loc)?c.loc:(S.user.loc.split(' (')[0].trim()+' (off on their own)')); st.act=sl?sl.act:'off on their own'; st.lastBeat=S.clock; st.changed=true; } }
 function syncClockFromStamp(text){
@@ -1877,7 +1882,7 @@ const queue=[]; let bgRunning=0; const BG_MAX=2; const busyChars=new Set();
 function scheduleBeats(){
   if(CFG.bgOn==='0' || S.paused || S.branch || overBudget()) return;
   const pres=present().map(c=>c.id);
-  const due=W.characters.filter(c=>!isDead(c) && !pres.includes(c.id) && !busyChars.has(c.id) && !queue.some(g=>g.includes(c.id)) &&
+  const due=W.characters.filter(c=>!isDead(c) && !pres.includes(c.id) && !S.user.companions.includes(c.id) && !busyChars.has(c.id) && !queue.some(g=>g.includes(c.id)) &&
     (S.clock-S.chars[c.id].lastBeat>=(+CFG.beat||30)*MIN || (S.chars[c.id].changed && S.clock-S.chars[c.id].lastBeat>=10*MIN)));
   // group by exact location so people in the same place share a moment
   const groups={};
@@ -1924,7 +1929,7 @@ Rarely (about one moment in six), if a character would post about this moment on
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
-  if(memory) addMemory({who:ids, text:memory, t:now, src:'offscreen', imp:1});
+  if(memory&&!/^none\.?$/i.test(memory.trim())) addMemory({who:ids, text:memory, t:now, src:'offscreen', imp:2});
   if(textTo){ const c=charByName(textTo.from); if(c&&ids.includes(c.id)&&hasPhone(c)&&isContact(c.id)){ S.chat.push({role:'text',from:c.name,text:textTo.text,t:now}); addText(c.id,false,textTo.text); notice(`📱 New text from ${c.name}`); } }
   render(); save();
 }
@@ -2319,8 +2324,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.30.1';
+const APP_VERSION = '0.31.0';
 const CHANGELOG = [
+ {v:'0.31.0', d:'2026-11-19', notes:['Off-screen lives now carry into the story. When you run into someone, the AI gets what really happened to them during the last day (who they were with, what went on, how it left them) and has to let it show and come up naturally. Off-screen moments also count more in their memories.','Nobody who is with you gets an off-screen life: they\'re in your scene, so the story itself is their life. An old activity is also cleared when someone joins you, so their status no longer says they\'re doing something else.','Texting someone who is right next to you now happens in the story: their phone buzzes and you see them read it and react, out loud or by texting back (their texts land in your phone).','Texts from people elsewhere fit what they\'re doing. Busy people answer late or briefly, and texting you becomes part of their day, so their off-screen story knows they did it.']},
  {v:'0.30.1', d:'2026-11-19', notes:['Owner build only: Claret Flint and Roxy Ifrita Pryce of Flint Workshop join Roscaelifer, researched through the wiki (profiles, lore, dialogue, DMs), Google AI Mode and your measurements sheet.','Claret is the proud, tsundere head of the Flint family and Roscaelifer\'s biggest creditor. She is a dessert snob with a blown budget, a terrible morning person, and is chasing a way to forge Porcelloy without Flint blood.','Roxy is her deadpan, insomniac right hand: she tracks Milady\'s every expense, works until 3 AM (Vyrium\'s "late-night stalker" legend) and carries a coffin. Her Porcelloy heart runs on Claret\'s blood.','Both live on Vyrium island with their own schedules: forge hours, Wednesday budget fights, Roxy\'s Thursday debt collecting at CCD Square, Saturday pancakes. They cross paths with Lindverne, Velina and the others.']},
  {v:'0.30.0', d:'2026-11-19', notes:['Owner build only: the three Sunbringers join Roscaelifer as full characters, remade from scratch with new research (the wiki, the story transcripts and Google AI Mode).','Eldreda, Director of the Administrative Affairs Department, is regal in public and painfully awkward in private. She rehearses her speeches with marked pauses, carries everything alone, and secretly sings and plays guitar.','Lindverne, Director of the Airspace Patrol, is a bubbly prankster who hates being called Lady Lindverne. She loves Starlight Knight, wages war on broccoli, and is frustrated by her older sister\'s secrets.','Dracaene, Director of the Central Computing Department, is an earnest, absent-minded genius who sees Bangboo as her little siblings. She looks and acts like a child, so she is fully protected: no romance or sexual content.','Each sister has her own schedule, her relationships with each other, Velina and Norma, and their secret (they are Enchainers). They also share a Sunday dinner together.']},
  {v:'0.29.8', d:'2026-11-19', notes:['Stronger fix for flat dialogue: every reply now gets a reminder right next to your message to give characters emotional, expressive speech, so they break out of a flat style even in older stories.']},
@@ -2742,6 +2748,9 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
 function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather'})[k]; }
 function lightColor(hex){ const m=String(hex).match(/^#?([0-9a-f]{6})$/i); if(!m) return false; const n=parseInt(m[1],16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>150; }
 function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v);
+  if(!S.branch&&present().some(x=>x.id===c.id)){ // they're right here: their phone buzzes in the scene
+    S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${uN()} texts ${c.name} on ${phoneApp()} even though ${c.name} is right here: "${v}". Show it in the scene: ${c.name}'s phone buzzes, they notice (or don't, if they're busy), read it and react the way they would, out loud, with a look, or by texting back. For every text they send back, show them typing it and add [[TEXT: ${c.name}: message]]. Don't skip what ${c.name} is in the middle of.)`});
+    S.view='me'; save(); renderPhone(); notice(`${c.name} is right next to you. Watch the story for their reaction.`); if(!busyMain) generateReply(); return; }
   const P=phone(); if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; renderPhone(); }
 $('#phSend').onclick=sendText; $('#phInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } };
 $('#phBack').onclick=()=>openPhone(phView==='chat'?'msgs':'home');
