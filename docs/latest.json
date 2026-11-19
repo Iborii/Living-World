@@ -1,10 +1,10 @@
 {
- "version": "0.29.1",
+ "version": "0.29.2",
  "date": "2026-11-19",
  "notes": [
-  "Krampus cast double-checked against their canon profiles, dialogue and DMs (and your measurements sheet): all heights, birthdays and sizes match. Phoenix, Dialyn, Zhao, Banyue and Promeia each get a canon voice section: their official lines, how they text on Knock Knock, and missing details (Phoenix sneaking out of confinement and her \"Boo-Boo Away\" spell, Dialyn's hotline menu and Banyue's hair transplant, Zhao's secret love of vegetables and her social battery, Banyue's righteous dessert-shop fury, Promeia's \"Copy that. Give me the coordinates.\")."
+  "Krampus cast deep-searched with Google's AI on top of the wiki: dozens of new quirks and little facts. Phoenix's mummy-bandage promo and hot pot hospital trip, Dialyn's rotary phone for the dead and \"Mini Zhao\" the bunny, Zhao's secret kids' loungewear and claw-trim membership, Banyue sinking to the bottom of the bay and getting banned from the cable car, Promeia smelling flowers outside Dew Gardening and hiding her wounds."
  ],
  "file": "index.html",
- "sha256": "927bf09e0a9a0d88c8f79b20332dacc09f1ee11d238dcbb20daa7c551d50fa54",
+ "sha256": "2f6fd6f10c80bbe9cc773369aa682af66ce962eaf15ead2f22c59924028639b1",
  "minShell": "0.5.0"
 }
