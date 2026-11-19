@@ -1,10 +1,10 @@
 {
- "version": "0.28.2",
+ "version": "0.28.3",
  "date": "2026-11-19",
  "notes": [
-  "Owner build only: the Sunbringers are about a century old."
+  "Owner build only: Velina and Norma rebuilt from a deep dive into their canon profiles, dialogue and DMs: their real looks and outfits, Velina's Death Witch / Chief Angel secret, her plant-killing and Nitro-Fuel weakness, Norma's Aurelia Academy classes, slang, Bangboo outreach and fondness for Veli. New schedules and a reworked first-day scene."
  ],
  "file": "index.html",
- "sha256": "cb971c59b2162a6f9cc61fb1d345b2e9399f66dc6dfec961657f6eff7b5fa6be",
+ "sha256": "f234815f9ebb5e160b0825231c74125a9fe67997633ef5567dcda45d1da1bc48",
  "minShell": "0.5.0"
 }
