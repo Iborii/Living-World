@@ -745,6 +745,10 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .ph-photo .cap{padding:8px 10px;font-size:12.5px;line-height:1.4;color:#d9d6ce}
 .ph-gal{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
 .ph-gal .ph-photo{width:auto;cursor:pointer}.ph-gal .ph-photo .pic{height:110px;font-size:30px}.ph-gal .who{font-size:11px;color:var(--muted);padding:0 10px 8px}
+.bub{position:relative}.bub .rx{position:absolute;bottom:-11px;right:6px;background:#22242d;border:1px solid #33364a;border-radius:10px;font-size:12px;padding:0 4px;line-height:18px}
+.bub.me .rx{right:auto;left:6px}.bub.has-rx{margin-bottom:14px}.bub.them{cursor:pointer}
+.react-bar{display:flex;gap:2px;background:#22242d;border:1px solid #33364a;border-radius:20px;padding:3px 6px;width:max-content;margin:-2px 0 8px;animation:enterUp .2s ease}
+.react-bar button{background:none;border:0;font-size:19px;padding:2px 4px;cursor:pointer;border-radius:50%}.react-bar button.on,.react-bar button:hover{background:#3a3d50}
 /* <<< phone2 */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
@@ -1455,7 +1459,7 @@ ${relLines([c].concat(W.characters.filter(x=>x.id!==c.id)), c.id)}
 Trust toward ${pn}: ${st.trust}/100 (${trustLabel(st.trust)}).
 ${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}${(()=>{ const p=plansBlock(c.id); return p?`Your plans with ${pn}:\n${p}\n`:''; })()}
 Right now (${timeLine(S.clock)}) ${c.name} is at ${st.loc}, ${st.act}.`; }
-function threadMsgs(th){ const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text}));
+function threadMsgs(th){ const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text+(m.react?(m.me?` (you reacted ${m.react} to this)`:` (${uN()} reacted ${m.react} to this)`):'')}));
   while(msgs.length&&msgs[0].role==='assistant') msgs.shift();
   const merged=[]; for(const m of msgs){ const L=merged[merged.length-1]; if(L&&L.role===m.role) L.content+='\n'+m.content; else merged.push({...m}); } return merged; }
 const cleanLines=(out,c)=>out.replace(/^\s*\|.*\|\s*$/mg,'').split('\n').map(l=>l.replace(/^\s*(\*|-)\s*/,'').replace(new RegExp('^'+c.name+':\\s*','i'),'').replace(/^"|"$/g,'').trim()).filter(l=>l&&!/^(ACCEPT|DECLINE)$/i.test(l));
@@ -1464,9 +1468,9 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}${(phone().passed||{})[c.id]&&!thread(c.id).some(m=>!m.me&&m.kind!=='call')?`\n\nYou never gave ${pn} your number: ${charById(phone().passed[c.id])?.name||'someone'} passed it along. This is a number you don't have saved, so at first you don't know who's texting; react like you would to that.`:''}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. A photo counts as a message: when it truly fits (showing where they are, something funny or pretty they saw, food, a new outfit, a selfie; not in every conversation), they can send one as its own line written exactly as [photo: one sentence describing what the picture shows]. When ${pn} sends a [photo: …], react to what's in it. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. A photo counts as a message: when it truly fits (showing where they are, something funny or pretty they saw, food, a new outfit, a selfie; not in every conversation), they can send one as its own line written exactly as [photo: one sentence describing what the picture shows]. When ${pn} sends a [photo: …], react to what's in it. To put an emoji reaction on ${pn}'s last text (a ❤️, 😂, 😮, 😢, 😡 or 👍 on it, like real phones), add a line [react: 😂]; sometimes a reaction is the whole reply. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
-  const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
+  let out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320}); try{ out=textReactHook(c,out); }catch(e){}
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
   const comeM=out.match(/^\s*COMING:\s*(\d+)/mi);
   const leftRead=/^\s*\[READ\]\s*$/m.test(out)&&!out.replace(/^\s*\[READ\]\s*$/gm,'').replace(/^\s*(ACCEPT|DECLINE)\s*$/gmi,'').trim();
@@ -3585,7 +3589,7 @@ function photoEmoji(d){ const s=d.toLowerCase(); const map=[[/selfie|face|smil|p
   for(const [r,e] of map) if(r.test(s)) return e; return '📷'; }
 function photoColors(d){ let h=0; for(const ch of d) h=(h*31+ch.charCodeAt(0))>>>0; const a=h%360, b=(a+70+(h>>8)%80)%360; return [`hsl(${a} 45% 32%)`,`hsl(${b} 50% 24%)`]; }
 function photoCard(desc){ const [p1,p2]=photoColors(desc); return `<div class="ph-photo"><div class="pic" style="--p1:${p1};--p2:${p2}">${photoEmoji(desc)}</div><div class="cap">${esc(subUser(desc))}</div></div>`; }
-function bubHTML(m){ return isPhotoText(m.text)?photoCard(photoDesc(m.text)):esc(subUser(m.text)); }
+function bubHTML(m){ return (isPhotoText(m.text)?photoCard(photoDesc(m.text)):esc(subUser(m.text)))+(m.react?`<span class="rx">${esc(m.react)}</span>`:''); }
 function allPhotos(){ const P=phone(); const out=[]; for(const id in P.threads){ const c=charById(id); for(const m of P.threads[id]) if(isPhotoText(m.text)) out.push({id, c, me:m.me, t:m.t, d:photoDesc(m.text)}); } return out.sort((a,b)=>b.t-a.t); }
 PHONE_VIEWS.gallery=(B,P)=>{ phHeader('Photos','',true); const ph=allPhotos();
   B.innerHTML=ph.length?`<div class="ph-gal">${ph.map(x=>`<div class="ph-photo" data-gc="${x.id}">${photoCard(x.d).replace(/^<div class="ph-photo">|<\/div>$/g,'')}<div class="who">${x.me?'You → '+esc(x.c?contactName(x.c):'?'):esc(x.c?contactName(x.c):'?')} · ${wdName(x.t).slice(0,3)} ${mmdd(x.t)} ${hhmm(x.t)}</div></div>`).join('')}</div>`
@@ -3594,6 +3598,17 @@ PHONE_VIEWS.gallery=(B,P)=>{ phHeader('Photos','',true); const ph=allPhotos();
 if(!PHONE_APPS.some(a=>a[0]==='gallery')) PHONE_APPS.splice(PHONE_APPS.findIndex(a=>a[0]==='wx'),0,['gallery','🖼️']);
 function sendPhoto(){ if(!phoneOpenId) return; const d=prompt('Describe the photo you send (what it shows):',''); if(!d||!d.trim()) return; const inp=$('#phInput'); const keep=inp.value; inp.value=`[photo: ${d.trim().replace(/[\[\]]/g,'')}]`; sendText(); inp.value=keep; }
 (()=>{ const b=$('#phCam'); if(b) b.onclick=sendPhoto; })();
+
+// ---------- text reactions ----------
+const REACTS=['❤️','😂','😮','😢','😡','👍'];
+function textReactHook(c,out){ const m=String(out).match(/^\s*\[react(?:ion)?\s*:\s*([^\]]{1,8})\]\s*$/mi); if(!m) return out; const e=m[1].trim();
+  const last=[...thread(c.id)].reverse().find(x=>x.me&&x.kind!=='call'); if(last){ last.react=e; } return String(out).replace(/^\s*\[react(?:ion)?\s*:[^\]]*\]\s*$/gmi,'').trim()||'[READ]'; }
+// tap a bubble to react
+let reactPick=null;
+document.addEventListener('click',e=>{ const bar=e.target.closest('.react-bar'); if(bar) return; const old=document.querySelector('.react-bar'); if(old&&!e.target.closest('.react-bar')) old.remove();
+  const b=e.target.closest('#phBody .bub.them'); if(!b||!phoneOpenId) return; const all=[...document.querySelectorAll('#phBody .bub')]; const th=thread(phoneOpenId).filter(m=>true); const idx=all.indexOf(b); const m=th[idx]; if(!m||m.me) return;
+  const r=document.createElement('div'); r.className='react-bar'; r.innerHTML=REACTS.map(x=>`<button data-rx="${x}" class="${m.react===x?'on':''}">${x}</button>`).join(''); b.after(r);
+  r.querySelectorAll('[data-rx]').forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); m.react=m.react===x.dataset.rx?'':x.dataset.rx; if(!m.react) delete m.react; save(); renderPhone(); }); });
 // <<< phone2
 // >>> album
 // ======================= memories album: firsts and milestones with each character =======================
@@ -4216,8 +4231,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.66.0';
+const APP_VERSION = '0.67.0';
 const CHANGELOG = [
+ {v:'0.67.0', d:'2026-11-20', notes:['Text reactions. Tap someone\'s text to react with ❤️ 😂 😮 😢 😡 or 👍, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone.']},
  {v:'0.66.0', d:'2026-11-20', notes:['Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). 🧰 Tools → 😂 Jokes lists them, and you can add or remove your own.']},
  {v:'0.65.0', d:'2026-11-20', notes:['🧰 Tools → 📔 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked 🔒 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself.']},
  {v:'0.64.0', d:'2026-11-20', notes:['Dreams. Characters dream when they sleep, shaped by what happened to them lately (or by worries and bad moods, which make for restless nights), and some mornings they wake up remembering one. They might bring it up ("I had the weirdest dream…") or keep it to themselves. Their dreams show up in their off-screen story too.']},
@@ -4632,7 +4648,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     const av=$('#phAv'); const pic=contactPic(c); av.style.display='flex'; av.style.background=avatarBg(c.color,pic); av.textContent=pic?'':c.name[0]; av.title='Tap to set a contact photo'; av.style.cursor='pointer';
     av.onclick=()=>{ const f=$('#phPhotoFile'); f.onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return; P.photos[c.id]=await shrinkImage(file,256); save(); renderPhone(); }; f.click(); };
     let lastDay='', html='';
-    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}${isPhotoText(m.text)?' photo':''}" title="${hhmm(m.t)}">${bubHTML(m)}</div>`; }
+    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}${isPhotoText(m.text)?' photo':''}${m.react?' has-rx':''}" title="${hhmm(m.t)}">${bubHTML(m)}</div>`; }
     const s=contactStatus(c); let waiting='';
     if(phoneBusy.has(c.id)) waiting=`<div class="ph-typing">${esc(c.name)} is typing…</div>`;
     else if(P.pending[c.id]) waiting=`<div class="ph-typing">${!reachable(c.id)||!reachable('user')?esc(receiptFor(c)):'Delivered'}${S.paused?' · the story is paused, so time isn\'t passing':s.k==='asleep'?` · ${esc(c.name)} is asleep and will see it when they wake up`:s.k==='busy'?` · ${esc(c.name)} is busy (${esc(S.chars[c.id].act)}), so it may take a few minutes`:''}</div>`;

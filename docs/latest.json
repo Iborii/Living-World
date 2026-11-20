@@ -1,10 +1,10 @@
 {
- "version": "0.66.0",
+ "version": "0.67.0",
  "date": "2026-11-20",
  "notes": [
-  "Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). \ud83e\uddf0 Tools \u2192 \ud83d\ude02 Jokes lists them, and you can add or remove your own."
+  "Text reactions. Tap someone's text to react with \u2764\ufe0f \ud83d\ude02 \ud83d\ude2e \ud83d\ude22 \ud83d\ude21 or \ud83d\udc4d, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone."
  ],
  "file": "index.html",
- "sha256": "9bfcf116bee184248dc8bbdc3b0aa343dcdccd801b259e0736e8321459e2bc25",
+ "sha256": "0e36aac5724af748913005178abc59804dd25bcab5f4c648c9c460a6d27b9949",
  "minShell": "0.5.0"
 }
