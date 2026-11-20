@@ -1,10 +1,11 @@
 {
- "version": "0.52.1",
+ "version": "0.53.0",
  "date": "2026-11-20",
  "notes": [
-  "Cissia's Amber Hall status is accurate now: Norma filed it, and she is officially registered in Aurelia Academy's records as an emotional support pet, which gets her free meals, housing and her own private room. Velina says it's just text in a file, so nobody makes her act like a pet. Billy embraced being a \"domestic support unit\" and vowed to be the most badass guardian Amber Hall's ever seen."
+  "Every character has an ID you can copy from their page (like CISSIA-4F2).",
+  "Group chats: on the home screen, start a New group chat, paste character IDs (several at once) or tap people you've already talked to, search anyone by name, set where you are and what's going on, and chat with up to 8 characters at once, even from different worlds. They keep their own personalities and histories and only know each other if their stories say so. Each group chat has its own save."
  ],
  "file": "index.html",
- "sha256": "9b1234e6319e06717cc034a2b859d6e4b8566293653e151c0ad6a6500a8973e8",
+ "sha256": "584b2e1eec95e7e8c33a32163bdf01e642ad00d820ef7ee2693ca4c2d845f2d2",
  "minShell": "0.5.0"
 }

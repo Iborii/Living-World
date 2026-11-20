@@ -716,6 +716,11 @@ button:hover{background:#262b36}
 .nb-ic{font-size:22px;line-height:1;margin-top:2px}.nb-tx{min-width:0;flex:1}.nb-top{display:flex;justify-content:space-between;font-size:11px;opacity:.65}.nb-top b{font-weight:600}.nb-ti{font-weight:600;font-size:14px;margin-top:1px}.nb-bd{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ph-notifs{margin:10px 14px 12px;display:flex;flex-direction:column;gap:6px}.ph-nt{display:flex;gap:9px;padding:8px 10px;border-radius:12px;background:rgba(20,22,28,.72);backdrop-filter:blur(8px);cursor:pointer}.ph-nt>span{font-size:18px}
 @media (prefers-reduced-motion: reduce){ #notifBanner{transition:none} }
+/* ---- group chats ---- */
+.gc-stack{display:flex;align-items:center;justify-content:center;position:relative}.gc-stack span{width:22px;height:22px;border-radius:50%;margin-left:-8px;border:2px solid var(--bg,#14151b);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff}.gc-stack span:first-child{margin-left:0}
+.gc-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px}.gc-dot{width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover}
+.gc-pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border:1px solid;border-radius:999px}
+.cm-id{display:inline-flex;align-items:center;gap:6px;font-size:12px;opacity:.85;margin-top:4px}.cm-id code{background:rgba(255,255,255,.06);padding:2px 7px;border-radius:6px;letter-spacing:.04em}
 /* ---- living world hub ---- */
 #hubModal .box.hub-box{width:min(1180px,97vw);height:min(820px,94vh);max-height:94vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
 .hub-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -769,6 +774,7 @@ button:hover{background:#262b36}
     <div id="homeSecs">
       <div class="sec" id="studioSec" style="display:none"><h3>Popular in the Studio <button class="ghost" id="homeStudioMore" style="font-size:12px;padding:3px 10px">See all</button></h3><div class="sub">Races, characters and worlds shared by other people.</div><div class="cgrid" id="homeStudioGrid"></div></div>
       <div class="sec"><h3>Universes</h3><div class="sub">Enter a universe to see its worlds. Open a world to chat with everyone, start a 1-on-1, or pick up a timeline.</div><div id="worldGrid"></div></div>
+      <div class="sec" id="gcSec" style="display:none"><h3>Group chats</h3><div class="sub">Pick characters from any world, by their ID or from people you've talked to, and chat with all of them at once.</div><div class="bgrid" id="gcGrid"></div></div>
       <div class="sec" id="branchSec" style="display:none"><h3>Your 1-on-1 chats &amp; timelines</h3><div class="sub">Private stories with one character, and alternate timelines you branched off a story.</div><div class="bgrid" id="branchGrid"></div></div>
       <div class="sec"><h3>Top characters</h3><div class="sub">The most loved characters, boosted by who you spend time with.</div><div class="cgrid" id="topGrid"></div></div>
       <div class="sec"><h3>Recommended for you</h3><div class="sub" id="recSub"></div><div class="cgrid" id="recGrid"></div></div>
@@ -845,6 +851,18 @@ button:hover{background:#262b36}
 </div></div>
 
 <div id="notifBanner" role="status" aria-live="polite"></div>
+<div class="modal" id="gcModal"><div class="box" style="max-width:620px">
+  <h3 style="margin-top:0">New group chat</h3>
+  <label>Character IDs</label><div style="display:flex;gap:6px"><input id="gcIds" placeholder="Paste IDs, e.g. CISSIA-4F2 VIVIAN-K9Q"><button id="gcIdAdd">Add</button></div>
+  <div class="small" style="margin:4px 0 10px">Every character's ID is on their page (tap a character, then Copy ID).</div>
+  <label>In this chat</label><div id="gcPicked" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 4px"></div><div class="small" id="gcWarn" style="color:var(--accent)"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><b class="small" id="gcSugHead" style="flex:1"></b><input id="gcSearch" placeholder="Search everyone" style="max-width:200px"></div>
+  <div id="gcSug" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px"></div>
+  <label>Name (optional)</label><input id="gcName" placeholder="e.g. Snack Run Squad">
+  <label>Where are you?</label><input id="gcLoc" placeholder="e.g. Roscaelifer, Booastrum District (Amber Hall, dining lounge)">
+  <label>What's going on? (optional)</label><textarea id="gcScene" rows="3" placeholder="e.g. Everyone got stuck at the dorm during a storm and the power is out."></textarea>
+  <div class="rowbtns"><button class="primary" id="gcGo">Start group chat</button><button class="ghost" id="gcCancel">Cancel</button></div>
+</div></div>
 <div class="modal" id="hubModal"><div class="box hub-box"><div class="hub-head"><div id="hubTabs" class="hub-tabs"></div><button class="ghost" id="hubClose" title="Close">✕</button></div><div id="hubBody" class="hub-body"></div></div></div>
 <div class="modal" id="phoneModal"><div class="box">
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
@@ -1172,6 +1190,7 @@ function buildCombined(){ COMBINED.length=0; const g={}; for(const w of WORLDS) 
   for(const [u,ws] of Object.entries(g)){ if(ws.length<2) continue; makeCombined(ws,{u}); }
   // stories the user grouped together themselves
   for(const gr of getGroups()){ const ws=gr.parts.map(id=>WORLDS.find(w=>w.id===id)).filter(Boolean); if(ws.length<2) continue; makeCombined(ws,{u:universeOf(ws[0]), id:gr.id, title:gr.title, group:true}); }
+  try{ for(const gc of getGChats()){ const w=makeGroupChat(gc); if(w) COMBINED.push(w); } }catch(e){ console.warn('group chats',e); }
   if(typeof ageAllWorlds==='function') ageAllWorlds(); }
 function makeCombined(ws, meta){ const u=meta.u; { const first=ws[0]; const seen=new Set(); const chars=[];
     for(const w of ws) for(const c of w.characters){ if(seen.has(c.id)) continue; seen.add(c.id); chars.push({...JSON.parse(JSON.stringify(c)), home:w.id}); }
@@ -3294,6 +3313,49 @@ function detectNumbers(text, pres){ if(!phonesOn()) return; const t=String(text|
   if(!NUM_RX.test(t)) return;
   for(const c of pres){ if(isContact(c.id)||!hasPhone(c)) continue; const re=new RegExp(`${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^.!?\\n]{0,120}(?:${NUM_RX.source})|(?:${NUM_RX.source})[^.!?\\n]{0,80}${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'i'); if(re.test(t)){ const nick=(t.match(new RegExp(`(?:saved|save[sd]?|named|label(?:l)?ed|under)\\s+(?:herself|himself|themself|themselves|it|her number|his number)?\\s*(?:as|under)\\s+["“']([^"”'\\n]{1,40})["”']`,'i'))||[])[1]; addContact(c.id,'gave',nick); } } }
 
+// ======================= character IDs and group chats =======================
+// Every character has a short ID you can copy (CISSIA-4F2). Paste IDs to start a group chat with characters from any world,
+// or quick-add the people you've already talked to.
+function charCode(c, w){ const base=String(c.name||c.id).normalize('NFD').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,8)||'CHAR'; return `${base}-${(hashStr((w&&w.id||c.world&&c.world.id||'')+':'+c.id)%46656).toString(36).toUpperCase().padStart(3,'0')}`; }
+function charByCode(code){ const q=String(code||'').trim().replace(/^#/,'').toUpperCase(); if(!q) return null; return allChars().find(c=>charCode(c,c.world)===q)||null; }
+function getGChats(){ try{ return JSON.parse(LS.getItem('livingworld_gchats')||'[]'); }catch(e){ return []; } }
+function setGChats(g){ LS.setItem('livingworld_gchats', JSON.stringify(g)); buildCombined(); }
+// characters you've actually talked to, across every story you have (most recent first)
+function talkedTo(){ const seen=new Map(); const add=(id,t)=>{ const c=allChars().find(x=>x.id===id); if(!c) return; const k=c.key; if(!seen.has(k)||seen.get(k)<t) seen.set(k,t); };
+  const keys=(LS.keys?LS.keys():Object.keys(localStorage)).filter(k=>k&&k.startsWith('livingworld_save_'));
+  for(const k of keys){ let s=null; try{ s=JSON.parse(LS.getItem(k)||'null'); }catch(e){} if(!s||!s.chars) continue; const t=s.lastPlayed||0;
+    for(const [id,st] of Object.entries(s.chars)){ const talked=(st.trust||0)>TRUST_START+1||(s.phone&&s.phone.threads&&(s.phone.threads[id]||[]).some(m=>m.me))||(s.user&&(s.user.companions||[]).includes(id)&&s.chat&&s.chat.length>2)||(s.branch&&s.branch.charId===id); if(talked) add(id,t); } }
+  return [...seen.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>allChars().find(c=>c.key===k)).filter(Boolean); }
+// a group chat is a small story with just those characters, wherever they come from
+function makeGroupChat(gc){ const mem=gc.members.map(k=>allChars().find(c=>c.key===k)).filter(Boolean); if(!mem.length) return null; const ws=[...new Set(mem.map(c=>c.world))];
+  const first=ws[0]; let rules=first.rules; for(const w of ws.slice(1)){ const k=commonPrefix(first.rules,w.rules); const extra=w.rules.slice(k).trim(); if(extra&&!rules.includes(extra)) rules+='\n\n'+extra; }
+  const loc=gc.loc||(mem[0].schedule&&mem[0].schedule[0]&&mem[0].schedule[0].loc)||first.setting||'';
+  const chars=mem.map(c=>{ const x=JSON.parse(JSON.stringify({...c, world:undefined, key:undefined})); delete x.world; delete x.key; x.home=c.world.id; x.loc=loc; x.act='with you'; return x; });
+  const names=mem.map(c=>c.full); const worlds=[...new Set(mem.map(c=>c.world.title.split(':')[0]))];
+  return {id:gc.id, combined:true, chat:true, parts:ws.map(w=>w.id), universe:universeOf(first), title:gc.title||names.join(', '), setting:loc.split(',')[0], blurb:`A group chat with ${names.join(', ')}.`,
+    tags:['Group chat'], start:{date:gc.date||first.start.date, time:gc.time||'18:00'}, rules, realismCore:first.realismCore, climate:first.climate, phone:ws.some(w=>w.phone!==false)?(first.phone||true):false,
+    scenario:`GROUP CHAT\n${names.join(', ')} ${names.length>2?'are all':'are both'} here together with {{user}}${worlds.length>1?` (they come from different places: ${worlds.join(', ')}; they only know each other if their own sheets say so, otherwise they're meeting now)`:''}.\n${gc.scene||'An unplanned get-together. Nobody has a set agenda.'}\nEveryone keeps their own personality, history, voice and relationships; let all of them take part, not just one.`,
+    characters:chars, events:[], locations:[...new Set([loc,...chars.flatMap(c=>(c.schedule||[]).map(s=>s.loc))])].sort(),
+    opening:{userLoc:loc, companions:chars.map(c=>c.id), contacts:[], trust:{}, text:'', washed:{}}}; }
+function renderGChats(){ const sec=$('#gcSec'); if(!sec) return; const list=getGChats(); sec.style.display='';
+  $('#gcGrid').innerHTML=`<div class="bcard gc-new" id="gcNew"><div class="bav" style="background:var(--line)">＋</div><div><div class="bt">New group chat</div><div class="bm">Add characters by ID or from people you've talked to</div></div></div>`+
+    list.map(g=>{ const mem=g.members.map(k=>allChars().find(c=>c.key===k)).filter(Boolean); let s=null; try{ s=JSON.parse(LS.getItem('livingworld_save_'+g.id)||'null'); }catch(e){}
+      return `<div class="bcard" data-gc="${g.id}"><div class="bav gc-stack">${mem.slice(0,3).map(c=>`<span style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div><div style="min-width:0;flex:1"><div class="bt">${esc(g.title)}</div><div class="bm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(mem.map(c=>c.name).join(', '))}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}</div></div><button class="ghost" data-gcdel="${g.id}" title="Delete">✕</button></div>`; }).join('');
+  $('#gcNew').onclick=()=>openGCModal();
+  $('#gcGrid').querySelectorAll('[data-gc]').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-gcdel]')) return; enterWorld(el.dataset.gc,{scene:{mode:'default'}}); });
+  $('#gcGrid').querySelectorAll('[data-gcdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group chat and its save?')) return; LS.removeItem('livingworld_save_'+x.dataset.gcdel); setGChats(getGChats().filter(g=>g.id!==x.dataset.gcdel)); renderGChats(); }); }
+let GCP=[];
+function openGCModal(){ GCP=[]; $('#gcName').value=''; $('#gcScene').value=''; $('#gcLoc').value=''; $('#gcIds').value=''; renderGCPicked(); renderGCSuggest(); $('#gcModal').classList.add('on'); setTimeout(()=>$('#gcIds').focus(),50); }
+function renderGCPicked(){ $('#gcPicked').innerHTML=GCP.length?GCP.map(k=>{ const c=allChars().find(x=>x.key===k); return c?`<span class="pill gc-pill" style="border-color:${c.color};font-size:14px"><b>${esc(c.name)}</b> <span style="font-size:11px;opacity:.6">${esc(charCode(c,c.world))}</span> <a href="#" data-gcrm="${esc(k)}">✕</a></span>`:''; }).join(''):'<span class="small">Nobody yet. Paste IDs above or tap people below.</span>';
+  $('#gcPicked').querySelectorAll('[data-gcrm]').forEach(a=>a.onclick=e=>{ e.preventDefault(); GCP=GCP.filter(k=>k!==a.dataset.gcrm); renderGCPicked(); renderGCSuggest(); });
+  const minorAdult=GCP.map(k=>allChars().find(c=>c.key===k)).filter(Boolean); $('#gcWarn').textContent=minorAdult.some(c=>c.minor)?'Someone here is under 18 or protected: this chat stays age-appropriate.':''; }
+function renderGCSuggest(){ const q=$('#gcSearch').value.trim().toLowerCase(); const talked=talkedTo(); const pool=q?allChars().filter(c=>(c.full+' '+c.world.title+' '+charCode(c,c.world)).toLowerCase().includes(q)):talked;
+  $('#gcSugHead').textContent=q?'Matching characters':talked.length?'People you\'ve talked to':'Search for characters by name';
+  $('#gcSug').innerHTML=pool.filter(c=>!GCP.includes(c.key)).slice(0,24).map(c=>`<button class="ghost gc-chip" data-gcadd="${esc(c.key)}"><span class="gc-dot" style="background:${avatarBg(c.color,c.img)}"></span>${esc(c.name)} <span class="small">${esc(c.world.title.split(':')[0])}</span></button>`).join('')||'<span class="small">No one to suggest yet.</span>';
+  $('#gcSug').querySelectorAll('[data-gcadd]').forEach(b=>b.onclick=()=>{ if(GCP.length>=8){ notice('Up to 8 characters per group chat.',true); return; } GCP.push(b.dataset.gcadd); renderGCPicked(); renderGCSuggest(); }); }
+function gcAddIds(){ const raw=$('#gcIds').value; const codes=raw.split(/[\s,;]+/).filter(Boolean); const bad=[]; for(const code of codes){ const c=charByCode(code); if(c){ if(!GCP.includes(c.key)&&GCP.length<8) GCP.push(c.key); } else bad.push(code); }
+  $('#gcIds').value=bad.join(' '); if(bad.length) notice(`No character with the ID ${bad.join(', ')}.`,true); renderGCPicked(); renderGCSuggest(); }
+
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3613,7 +3675,7 @@ function bindCards(root){ root.querySelectorAll('.ccard').forEach(el=>el.onclick
 function worldProgress(w){ try{ const s=JSON.parse(LS.getItem('livingworld_save_'+w.id)||'null'); return s; }catch(e){ return null; } }
 function renderHome(){
   renderHomeStudio(); $('#homeAcct').textContent=AUTH?'👤 Account':'Sign in';
-  const st=getStats(); renderBranchSection();
+  const st=getStats(); renderBranchSection(); try{ renderGChats(); }catch(e){ console.warn(e); }
   const lo=st.lastOpen; if(lo&&lo.branchId){ const b=getBranches().find(x=>x.id===lo.branchId); let s=null; try{ s=JSON.parse(LS.getItem(branchSaveKey(lo.world,lo.branchId))||'null'); }catch(e){}
     if(b&&s&&s.chat.some(m=>m.role==='assistant')){ const w=WORLDS.find(x=>x.id===lo.world); const c=w&&w.characters.find(x=>x.id===b.charId); if(c){ const lastA=[...s.chat].reverse().find(m=>m.role==='assistant');
       const snip=(lastA?.text||'').replace(/^\|.*\|\s*/,'').replace(/[*"]/g,'').replace(/\s+/g,' ').slice(0,220).replace(/[\s.,;:!?…]+$/,'');
@@ -3739,6 +3801,7 @@ function openChar(key){
   $('#cmEdit').style.display=canEdit(c)?'':'none'; $('#cmCopy').style.display=canEdit(c)?'none':''; $('#cmExport').style.display=c.custom&&canEdit(c)?'':'none';
   document.querySelector('#charModal .cm-top').style.setProperty('--cbg',`linear-gradient(120deg,${c.color}44,transparent 70%)`);
   $('#cmWorld').textContent=c.world.title.split(':')[0]; $('#cmName').textContent=c.full; $('#cmTag').textContent=c.tagline;
+  { const code=charCode(c,c.world); let el=$('#cmId'); if(!el){ el=document.createElement('div'); el.id='cmId'; el.className='cm-id'; $('#cmTag').after(el); } el.innerHTML=`ID <code>${esc(code)}</code> <button class="ghost" style="padding:2px 8px;font-size:12px" id="cmIdCopy">Copy ID</button>`; $('#cmIdCopy').onclick=e=>{ e.stopPropagation(); (navigator.clipboard?navigator.clipboard.writeText(code):Promise.reject()).then(()=>notice(`Copied ${code}.`)).catch(()=>{ prompt('Copy this ID:',code); }); }; }
   $('#cmChips').innerHTML=c.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
   const trust=s?.chars?.[c.id]?.trust; const where=s?.chars?.[c.id];
   $('#cmStats').innerHTML=`<span><b>${myMsgs(c,st)}</b> messages together</span>${trust!=null?`<span>Trust <b>${trust}</b>/100</span>`:''}${where?`<span>Last seen: ${esc(where.loc)} (${esc(where.act)})</span>`:''}`;
@@ -3760,8 +3823,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.52.1';
+const APP_VERSION = '0.53.0';
 const CHANGELOG = [
+ {v:'0.53.0', d:'2026-11-20', notes:['Every character has an ID you can copy from their page (like CISSIA-4F2).', 'Group chats: on the home screen, start a New group chat, paste character IDs (several at once) or tap people you\'ve already talked to, search anyone by name, set where you are and what\'s going on, and chat with up to 8 characters at once, even from different worlds. They keep their own personalities and histories and only know each other if their stories say so. Each group chat has its own save.']},
  {v:'0.52.1', d:'2026-11-20', notes:['Cissia\'s Amber Hall status is accurate now: Norma filed it, and she is officially registered in Aurelia Academy\'s records as an emotional support pet, which gets her free meals, housing and her own private room. Velina says it\'s just text in a file, so nobody makes her act like a pet. Billy embraced being a "domestic support unit" and vowed to be the most badass guardian Amber Hall\'s ever seen.']},
  {v:'0.52.0', d:'2026-11-20', notes:['Group stories: on a universe page, use "+ Group worlds together" to pick any worlds (for example Yunkui Summit + Roscaelifer + the Angels of Delusion), name it, and play them as one story where everyone lives side by side. Each group story has its own save.', 'Season 3 living arrangements: whenever Roscaelifer is part of the story (the Everyone in Zenless story or a group story), Belle, Wise, Cissia and Billy live at Amber Hall on Beckford Street, the Aurelia Academy dorm across from Roarin\' Brekkies. Belle and Wise are cover "transfer students" (no classes) getting Etheric treatment at the CCD and running the Random Play branch; Cissia is registered as Phaethon\'s "emotional support pet" and Billy as a "domestic support unit", and the two bicker nonstop. Housekeeper Bonnie, shy Shirley upstairs and Boodiac\'s basement Divination Parlor are part of the building.']},
  {v:'0.51.3', d:'2026-11-20', notes:['Reactions are in proportion now. Everyday remarks get everyday responses (a small smile, a dry "huh", a plain answer); small things no longer make everyone burst out laughing, shout, or get too flustered to speak. Calm characters stay calm, not everyone cracks jokes, and big emotions are saved for moments that earn them.', 'Lindverne now scoops Dracaene up like in the new Sunbringer promo: onto her hip, onto her shoulders in a crowd, or out of her office chair when she works too late. Partly teasing, partly a protective big sister keeping her littlest sister close; Dracaene protests that she\'s the Director of the CCD and secretly doesn\'t mind.']},
@@ -4240,6 +4304,12 @@ function closeSide(){ const a=document.querySelector('aside'); if(a) a.classList
 $('#sideBtn').onclick=()=>{ document.querySelector('aside').classList.add('open'); $('#sideShade').classList.add('on'); }; $('#sideShade').onclick=closeSide; document.querySelector('aside').addEventListener('click',e=>{ if(e.target.closest('.card')) setTimeout(closeSide,60); });
 $('#phoneBtn').onclick=()=>{ if(phonesOn()) openPhone('home'); };
 $('#worldBtn').onclick=()=>openHub();
+$('#gcCancel').onclick=()=>$('#gcModal').classList.remove('on');
+$('#gcIdAdd').onclick=gcAddIds; $('#gcIds').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); gcAddIds(); } });
+$('#gcSearch').addEventListener('input',renderGCSuggest);
+$('#gcGo').onclick=()=>{ if($('#gcIds').value.trim()) gcAddIds(); if(GCP.length<2){ notice('Add at least two characters.',true); return; } const mem=GCP.map(k=>allChars().find(c=>c.key===k)).filter(Boolean);
+  const g={id:'gc_'+Date.now().toString(36), title:$('#gcName').value.trim()||mem.map(c=>c.name).join(', '), members:[...GCP], loc:$('#gcLoc').value.trim(), scene:$('#gcScene').value.trim()};
+  const list=getGChats(); list.unshift(g); setGChats(list); $('#gcModal').classList.remove('on'); enterWorld(g.id,{scene:{mode:'default'}}); };
 $('#vaultConnect').onclick=()=>{ if(VAULT.state==='paused'&&VAULT.h){ VAULT.h.requestPermission({mode:'readwrite'}).then(p=>{ if(p==='granted'){ VAULT.state='on'; vaultUI(); vaultSync(false); } }).catch(()=>{}); } else vaultConnect(); };
 $('#vaultOff').onclick=()=>vaultDisconnect();
 $('#vaultNow').onclick=async()=>{ const n=await vaultSync(true); notice(`📓 Vault up to date${n?` (${n} note${n===1?'':'s'} written)`:''}.`); };
