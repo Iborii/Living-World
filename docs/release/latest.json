@@ -1,10 +1,10 @@
 {
- "version": "0.71.0",
+ "version": "0.72.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udd78\ufe0f Web: a live map of how everyone feels about each other (very close, friendly, neutral, tense, hostile), plus dashed lines for how much each person trusts you. Tap someone to highlight their connections and read each relationship. It changes as the story goes."
+  "Places you've been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the \ud83d\uddfa World map, districts you've been to are marked \ud83d\udccd and the rest stay dim until you explore them. \ud83e\uddf0 Tools \u2192 \ud83d\udcee Places shows your postcards (tap one to jump back to that moment) and the places you visit most."
  ],
  "file": "index.html",
- "sha256": "0b35c4f60ebc6af3231242db5b2b8efeb1929d1645d9753d2895e447ab7de3f3",
+ "sha256": "8713100d3429b27fa6e086fabf836c8648f8508a865f08ee3cef6f5de82146c5",
  "minShell": "0.5.0"
 }

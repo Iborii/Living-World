@@ -760,6 +760,15 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .ach-toast.on{transform:translate(-50%,0)}.ach-toast .ai{font-size:30px}
 @media (max-width:760px){ .ach-toast{bottom:calc(90px + env(safe-area-inset-bottom))} }
 /* <<< ach */
+/* >>> places */
+.pstc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.pstc{border-radius:12px;overflow:hidden;border:1px solid var(--line);cursor:pointer;background:#f3ecdf;color:#2a2622;transition:transform .2s}.pstc:hover{transform:rotate(-1deg) translateY(-2px)}
+.pc-front{position:relative;padding:14px 14px 12px;background:linear-gradient(135deg,var(--pa),var(--pb));color:#fff;min-height:96px}
+.pc-front::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.2),transparent 50%)}
+.pc-greet{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.85}.pc-place{font-family:var(--serif);font-size:22px;line-height:1.15;margin-top:2px}.pc-city{font-size:12px;opacity:.85;margin-top:2px}
+.pc-stamp{position:absolute;top:10px;right:10px;width:34px;height:40px;border:2px dashed rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;z-index:1}
+.pc-back{padding:10px 14px 12px;font-family:var(--serif);font-size:13.5px;line-height:1.5}.pc-back .small{color:#7a6f61;font-family:var(--font)}.pc-back p{margin:6px 0}
+/* <<< places */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -2636,7 +2645,7 @@ function mapLoop(ts){ if(!HUB.open||HUB.tab!=='map') return; HUB.raf=requestAnim
     if(!hol&&WX.theme==='christmas'){ const n=Math.max(12,Math.round(A.r/5)); for(let i=0;i<n;i++){ const a=i/n*6.28; const on=Math.sin(t*1.8+i*1.1)>-.2; g.fillStyle=on?BULB[i%5]:'rgba(80,80,80,.6)'; g.beginPath(); g.arc(X(A.x+A.r*Math.cos(a)),Y(A.y+A.r*Math.sin(a)),(on?2.4:1.6)*dpr,0,7); g.fill(); } }
     if(!hol&&WX.theme==='festive'){ const n=Math.max(8,Math.round(A.r/8)); g.strokeStyle='rgba(220,220,220,.25)'; g.lineWidth=1*dpr; for(let i=0;i<n;i++){ const a=i/n*6.28, a2=(i+.6)/n*6.28; const x1=X(A.x+A.r*.98*Math.cos(a)), y1=Y(A.y+A.r*.98*Math.sin(a)), x2=X(A.x+A.r*.98*Math.cos(a2)), y2=Y(A.y+A.r*.98*Math.sin(a2)); g.fillStyle=BULB[i%5]+'cc'; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.lineTo((x1+x2)/2+(X(A.x)-(x1+x2)/2)*.12,(y1+y2)/2+(Y(A.y)-(y1+y2)/2)*.12); g.fill(); } }
     if(night&&!hol){ const R=rnd(A.d+'w'); for(let i=0;i<10;i++){ const a=R()*6.28, rr=R()*A.r*.85; const on=Math.sin(t*.3+i*7+R()*9)>-.6; if(on){ g.fillStyle=`rgba(255,214,140,${.25+.35*R()})`; g.fillRect(X(A.x+rr*Math.cos(a)),Y(A.y+rr*Math.sin(a)),2.4*dpr,2.4*dpr); } } }
-    g.fillStyle=hol?'rgba(220,180,255,.85)':'rgba(235,232,226,.82)'; g.font=`600 ${Math.max(11,13*sc)*1}px system-ui,sans-serif`; g.textAlign='center'; g.fillText(A.d,X(A.x),Y(A.y-A.r-6)); }
+    const been=(()=>{ try{ return beenTo(A.d); }catch(e){ return true; } })(); g.fillStyle=hol?'rgba(220,180,255,.85)':been?'rgba(235,232,226,.86)':'rgba(235,232,226,.42)'; g.font=`600 ${Math.max(11,13*sc)*1}px system-ui,sans-serif`; g.textAlign='center'; g.fillText((been&&!hol?'📍 ':'')+A.d,X(A.x),Y(A.y-A.r-6)); }
   for(const [l,p] of Object.entries(L.spotPos)){ g.fillStyle='rgba(235,232,226,.45)'; g.beginPath(); g.arc(X(p.x),Y(p.y),2.6*dpr,0,7); g.fill(); if(WX.theme==='halloween'&&!/hollow/i.test(l)){ g.font=`${10*dpr}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; g.textAlign='center'; g.globalAlpha=night?1:.8; g.fillText('🎃',X(p.x)+8*dpr,Y(p.y)+4*dpr); g.globalAlpha=1; } }
   const dtm=Math.min(.05,(ts-(HUB.t0||ts))/1000); HUB.t0=ts; const sp=S.paused?.2:1;
   for(const w of HUB.walkers){ const A=w.home; const coast=/port|beach|resort|bay|pier|harbor|sea|coast|park/i.test(A.d); const f=WX.hot&&!night?(coast?1.3:.6):outF;
@@ -3944,6 +3953,28 @@ toolTab('web','🕸️ Web',body=>{ const cs=W.characters.filter(c=>!isDead(c));
   $('#webAll').onchange=e=>{ WEB_ALL=e.target.checked; renderTools(); };
   body.querySelectorAll('[data-wn]').forEach(g=>g.onclick=()=>{ WEB_SEL=WEB_SEL===g.dataset.wn?null:g.dataset.wn; renderTools(); }); });
 // <<< web
+// >>> places
+// ======================= places you've been: map marks and postcards =======================
+function baseLocOf(l){ return String(l||'').split('(')[0].trim(); }
+function beenTo(district){ const d=String(district).toLowerCase(); return Object.keys(S.visited||{}).some(k=>k.toLowerCase().startsWith(d)||k.toLowerCase().split(',')[0].trim()===d)||baseLocOf(S.user.loc).toLowerCase().startsWith(d); }
+function placeSnip(text){ const t=plainMsg({text}).replace(/\s+/g,' ').trim(); const sents=t.split(/(?<=[.!?])\s+/).filter(x=>!/^[A-Z][\w' .-]{0,24}:/.test(x)&&!/"/.test(x)); return sents.slice(0,2).join(' ').slice(0,260); }
+REPLY_HOOKS.push(msg=>{ if(S.branch&&S.branch.charId) {} const loc=baseLocOf(S.user.loc); if(!loc) return; S.visited=S.visited||{}; const v=S.visited[loc];
+  if(v){ v.n=(v.n||1)+(S._lastLoc!==loc?1:0); v.last=S.clock; S._lastLoc=loc; return; }
+  S.visited[loc]={t:S.clock, n:1, last:S.clock}; S._lastLoc=loc; const wx=weather(S.clock); S.postcards=S.postcards||[];
+  S.postcards.push({loc, t:S.clock, wx:`${wx.desc}, ${wx.temp}°F`, with:S.user.companions.slice(), snip:placeSnip(msg.text), ix:S.chat.indexOf(msg)});
+  if(Object.keys(S.visited).length>1) notice(`📮 New postcard: ${loc}`); });
+SCREEN_HOOKS.push(n=>{ if(n!=='world'||!S) return; setTimeout(()=>{ try{ S.visited=S.visited||{}; const loc=baseLocOf(S.user.loc); if(!loc||S.visited[loc]) return; S.visited[loc]={t:S.clock,n:1,last:S.clock}; S._lastLoc=loc;
+  const m=[...S.chat].reverse().find(x=>x.role==='assistant'&&x.text); const wx=weather(S.clock); (S.postcards=S.postcards||[]).push({loc, t:m?m.t:S.clock, wx:`${wx.desc}, ${wx.temp}°F`, with:S.user.companions.slice(), snip:m?placeSnip(m.text):'', ix:m?S.chat.indexOf(m):-1}); }catch(e){} },500); });
+function postcardHTML(p){ const h=hashStr(p.loc); const a=h%360; const parts=p.loc.split(','); const city=parts[0].trim(), spot=parts.slice(1).join(',').trim()||city;
+  return `<div class="pstc" ${p.ix>=0?`data-j="${p.ix}"`:''} style="--pa:hsl(${a} 45% 34%);--pb:hsl(${(a+50)%360} 50% 22%)"><div class="pc-front"><div class="pc-stamp">${esc(city.slice(0,2).toUpperCase())}</div><div class="pc-greet">Greetings from</div><div class="pc-place">${esc(spot)}</div><div class="pc-city">${esc(city)}</div></div>
+    <div class="pc-back"><div class="small">${wdName(p.t).slice(0,3)} ${mmdd(p.t)} ${hhmm(p.t)} · ${esc(p.wx)}</div>${p.snip?`<p>${esc(subUser(p.snip))}</p>`:''}${p.with&&p.with.length?`<div class="small">With ${p.with.map(id=>esc((charById(id)||{}).name||'')).filter(Boolean).join(', ')}</div>`:'<div class="small">On your own</div>'}</div></div>`; }
+toolTab('places','📮 Places',body=>{ const V=S.visited||{}; const P=(S.postcards||[]).slice().reverse(); let total=0; try{ total=(HUB.lay&&HUB.lay.nodes||[]).length; }catch(e){}
+  const dists=[...new Set(Object.keys(V).map(k=>k.split(',')[0].trim()))];
+  body.innerHTML=`<p class="small" style="margin-top:0">${Object.keys(V).length} place${Object.keys(V).length===1?'':'s'} visited${dists.length?` across ${dists.length} part${dists.length===1?'':'s'} of the world`:''}. Every new place gets a postcard; places you've been are marked 📍 on the 🗺 World map. Tap a postcard to jump to that moment.</p>
+  <div class="pstc-grid">${P.map(postcardHTML).join('')||'<div class="small">No postcards yet. Go somewhere new.</div>'}</div>
+  ${Object.keys(V).length?`<h3 style="margin:16px 0 8px">Most visited</h3>${Object.entries(V).sort((a,b)=>(b[1].n||1)-(a[1].n||1)).slice(0,8).map(([k,v])=>`<div class="small" style="padding:3px 0">${esc(k)} · ${v.n||1} visit${(v.n||1)>1?'s':''}</div>`).join('')}`:''}`;
+  body.querySelectorAll('[data-j]').forEach(r=>r.onclick=()=>jumpToMsg(+r.dataset.j)); });
+// <<< places
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4413,8 +4444,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.71.0';
+const APP_VERSION = '0.72.0';
 const CHANGELOG = [
+ {v:'0.72.0', d:'2026-11-20', notes:['Places you\'ve been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the 🗺 World map, districts you\'ve been to are marked 📍 and the rest stay dim until you explore them. 🧰 Tools → 📮 Places shows your postcards (tap one to jump back to that moment) and the places you visit most.']},
  {v:'0.71.0', d:'2026-11-20', notes:['🧰 Tools → 🕸️ Web: a live map of how everyone feels about each other (very close, friendly, neutral, tense, hostile), plus dashed lines for how much each person trusts you. Tap someone to highlight their connections and read each relationship. It changes as the story goes.']},
  {v:'0.70.0', d:'2026-11-20', notes:['Secrets. When someone confides a real secret (or you do), the story remembers who knows it. People keep secrets or let them slip according to who they are, so a secret can spread off-screen to their friends, and the person it belongs to may find out who talked and feel betrayed. 🧰 Tools → 🤫 Secrets shows your secrets and who knows them, plus the ones you\'ve learned.']},
  {v:'0.69.0', d:'2026-11-20', notes:['🏆 Achievements: 29 badges for things that happen across all your stories, from becoming close with someone, keeping a promise, being there on someone\'s birthday and getting soaked in the rain, to 1,000 messages in one story. A little banner pops up when you unlock one; see them all in 🧰 Tools → 🏆 Achievements. The Tools tabs now wrap onto two rows on a computer so you can see them all.']},
