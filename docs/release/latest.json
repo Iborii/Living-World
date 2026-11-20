@@ -1,10 +1,10 @@
 {
- "version": "0.69.0",
+ "version": "0.70.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83c\udfc6 Achievements: 29 badges for things that happen across all your stories, from becoming close with someone, keeping a promise, being there on someone's birthday and getting soaked in the rain, to 1,000 messages in one story. A little banner pops up when you unlock one; see them all in \ud83e\uddf0 Tools \u2192 \ud83c\udfc6 Achievements. The Tools tabs now wrap onto two rows on a computer so you can see them all."
+  "Secrets. When someone confides a real secret (or you do), the story remembers who knows it. People keep secrets or let them slip according to who they are, so a secret can spread off-screen to their friends, and the person it belongs to may find out who talked and feel betrayed. \ud83e\uddf0 Tools \u2192 \ud83e\udd2b Secrets shows your secrets and who knows them, plus the ones you've learned."
  ],
  "file": "index.html",
- "sha256": "403d309f78e43837382648d813a4f2435b26f7fb0a7983b363d0538a2a7da196",
+ "sha256": "a02f73d9d9859c021418a74addb3a1eb562de646de330aad77453ec540cd8419",
  "minShell": "0.5.0"
 }

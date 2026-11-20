@@ -3884,6 +3884,41 @@ REPLY_HOOKS.push(()=>{ try{ achCheck(); }catch(e){} }); setInterval(()=>{ try{ i
 toolTab('ach','🏆 Achievements',body=>{ const A=achGet(); const got=ACH.filter(a=>A[a[0]]).length;
   body.innerHTML=`<p class="small" style="margin-top:0">${got} of ${ACH.length} unlocked, across all your stories.</p><div class="ach-grid">${ACH.map(a=>{ const x=A[a[0]]; return `<div class="ach ${x?'got':''}"><span class="ai">${x?a[1]:'🔒'}</span><b>${esc(a[2])}</b><div class="small">${esc(a[3])}</div>${x?`<div class="small" style="margin-top:4px;color:var(--accent)">${new Date(x.t).toLocaleDateString()}${x.w?' · '+esc(x.w):''}</div>`:''}</div>`; }).join('')}</div>`; });
 // <<< ach
+// >>> secrets
+// ======================= secrets: kept, told, leaked =======================
+function whoAny(x){ x=String(x||'').trim(); if(/^(user|you|me)$/i.test(x)||x.toLowerCase()===(persona().name||'').toLowerCase()) return 'user'; const c=charByName(x); return c?c.id:null; }
+function nmAny(w){ return w==='user'?uN():(charById(w)||{}).name||'someone'; }
+function secretAdd(arg){ const i=arg.indexOf(':'); if(i<1) return; const owner=whoAny(arg.slice(0,i)); let text=arg.slice(i+1).trim(); let only=null; const tm=text.match(/^(.*?)\s*:\s*told (?:only )?to\s+(.+)$/i); if(tm){ text=tm[1].trim(); only=tm[2].split(/,|&|\band\b/).map(whoAny).filter(Boolean); } if(!owner||!text) return; S.secrets=S.secrets||[];
+  if(S.secrets.some(s=>s.owner===owner&&s.text.toLowerCase()===text.toLowerCase())) return; const knownBy=(only||present().map(c=>c.id)).filter(id=>id!==owner); if(owner!=='user') knownBy.push('user');
+  S.secrets.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,4), owner, text:text.slice(0,240), knownBy:[...new Set(knownBy)], t:S.clock, leaks:[]});
+  notice(owner==='user'?`🤫 You told a secret to ${knownBy.map(nmAny).join(', ')||'nobody'}.`:`🤫 You learned ${nmAny(owner)}'s secret.`); }
+// [[SECRET_TOLD: Teller to Listener: which secret (a few words)]]
+function secretTold(arg){ const m=arg.match(/^\s*(.+?)\s+to\s+(.+?)\s*:\s*(.+)$/i); if(!m) return; const teller=whoAny(m[1]), lis=whoAny(m[2]); const q=m[3].toLowerCase(); if(!teller||!lis) return;
+  const s=(S.secrets||[]).find(x=>x.text.toLowerCase().includes(q)||q.split(/\s+/).filter(w=>w.length>3).every(w=>x.text.toLowerCase().includes(w))); if(!s||s.knownBy.includes(lis)) return;
+  s.knownBy.push(lis); s.leaks.push({by:teller, to:lis, t:S.clock}); if(teller!==s.owner&&s.owner!=='user'&&lis!=='user') addMemory({who:[lis], text:`${nmAny(teller)} told me ${nmAny(s.owner)}'s secret: ${s.text}`, imp:2, src:'secret'});
+  if(lis==='user'&&teller!==s.owner) notice(`🤫 ${nmAny(teller)} let ${nmAny(s.owner)}'s secret slip to you.`); }
+CONTROL_HOOKS.SECRET=secretAdd; CONTROL_HOOKS.SECRET_TOLD=secretTold;
+// off-screen: people who know a secret sometimes let it slip to a friend, depending on who they are
+function secretTick(){ if(!S||!W||SCREEN!=='world'||S.branch) return; const day=Math.floor(S.clock/DAYMS); if(S._secDay===day) return; S._secDay=day;
+  for(const s of (S.secrets||[])){ const holders=s.knownBy.filter(w=>w!=='user'&&w!==s.owner&&charById(w)&&!isDead(charById(w))); for(const h of holders){ const c=charById(h); const loose=/gossip|blab|chatty|can't keep|talkative|loud|nosy|bubbly|tease|prank/i.test(String(c.brief||'')+(c.sheet||'').slice(0,3000));
+      if(Math.random()>(loose?.12:.03)) continue; const pals=W.characters.filter(o=>o.id!==h&&o.id!==s.owner&&!s.knownBy.includes(o.id)&&!isDead(o)&&relScore(h,o.id)>=55); if(!pals.length) continue; const to=pals[Math.floor(Math.random()*pals.length)];
+      s.knownBy.push(to.id); s.leaks.push({by:h, to:to.id, t:S.clock}); addMemory({who:[h,to.id], text:`${c.name} let ${nmAny(s.owner)}'s secret slip to ${to.name}: ${s.text}`, imp:2, src:'secret'});
+      if(s.owner!=='user'&&Math.random()<.4){ const o=S.chars[s.owner]; if(o){ o.mood={word:'betrayed',why:`found out ${c.name} told ${to.name} their secret`,t:S.clock}; addMemory({who:[s.owner], text:`Found out ${c.name} told ${to.name} my secret (${s.text})`, imp:3, src:'secret'}); } }
+      break; } } }
+setInterval(()=>{ try{ secretTick(); }catch(e){} }, 30000);
+PROMPT_HOOKS.push(pres=>{ const ids=new Set(pres.map(c=>c.id)); const L=[];
+  for(const s of (S.secrets||[])){ const ownHere=ids.has(s.owner); const knowers=s.knownBy.filter(w=>ids.has(w));
+    if(ownHere) L.push(`${nmAny(s.owner)} has a secret: ${s.text}. Known by: ${s.knownBy.map(nmAny).join(', ')||'nobody'}. They guard it; if it gets out, they're hurt or furious with whoever spread it.`);
+    else if(knowers.length&&s.owner!=='user') L.push(`${knowers.map(nmAny).join(', ')} know${knowers.length===1?'s':''} ${nmAny(s.owner)}'s secret: ${s.text}. Each keeps it or lets it slip according to who they are.`);
+    if(s.owner==='user'&&s.knownBy.length) L.push(`${uN()}'s secret (${s.text}) is known by: ${s.knownBy.map(nmAny).join(', ')}${s.leaks.length?' (some heard it secondhand)':''}.`); }
+  let out=`\nSECRETS: when someone reveals or confides a real secret in the scene, add at the very end: [[SECRET: Owner: the secret]], or [[SECRET: Owner: the secret: told to Name]] if only some of the people there heard it (use "user" when ${uN()} confides one). When someone passes a known secret on, add [[SECRET_TOLD: Teller to Listener: a few words naming the secret]]. Only for real secrets, not every private detail.\n`;
+  if(L.length) out+=L.map(x=>'- '+x).join('\n')+'\n'; return out; });
+toolTab('secrets','🤫 Secrets',body=>{ const mine=(S.secrets||[]).filter(s=>s.owner==='user'); const known=(S.secrets||[]).filter(s=>s.owner!=='user'&&s.knownBy.includes('user'));
+  const row=s=>`<div class="sr-row" style="cursor:default"><div class="sr-m">${s.owner==='user'?'Your secret':`${esc(nmAny(s.owner))}'s secret`} · since ${mmdd(s.t)}</div>${esc(subUser(s.text))}<div class="small" style="margin-top:6px">Who knows: ${s.knownBy.filter(w=>w!=='user').map(w=>esc(nmAny(w))).join(', ')||'just you'}${s.leaks.filter(l=>l.by!==s.owner&&(s.knownBy.includes('user'))).length&&s.owner==='user'?' · ⚠️ it has spread':''}</div></div>`;
+  body.innerHTML=`<p class="small" style="margin-top:0">Secrets you've told and secrets you've learned. People who know a secret may keep it or let it slip, depending on who they are, so it can spread without you seeing it happen.</p>
+  <h3 style="margin:14px 0 8px">Yours</h3>${mine.length?mine.map(row).join(''):'<div class="small">You haven\'t told anyone a secret.</div>'}
+  <h3 style="margin:16px 0 8px">Ones you know</h3>${known.length?known.map(row).join(''):'<div class="small">Nobody has told you one yet.</div>'}`; });
+// <<< secrets
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4353,8 +4388,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.69.0';
+const APP_VERSION = '0.70.0';
 const CHANGELOG = [
+ {v:'0.70.0', d:'2026-11-20', notes:['Secrets. When someone confides a real secret (or you do), the story remembers who knows it. People keep secrets or let them slip according to who they are, so a secret can spread off-screen to their friends, and the person it belongs to may find out who talked and feel betrayed. 🧰 Tools → 🤫 Secrets shows your secrets and who knows them, plus the ones you\'ve learned.']},
  {v:'0.69.0', d:'2026-11-20', notes:['🏆 Achievements: 29 badges for things that happen across all your stories, from becoming close with someone, keeping a promise, being there on someone\'s birthday and getting soaked in the rain, to 1,000 messages in one story. A little banner pops up when you unlock one; see them all in 🧰 Tools → 🏆 Achievements. The Tools tabs now wrap onto two rows on a computer so you can see them all.']},
  {v:'0.68.0', d:'2026-11-20', notes:['Plans and promises. Plans you make out loud in the story ("tomorrow at six, the arcade") are now tracked just like phone invites: the other person puts it in their schedule and shows up, and if you don\'t, they notice and may text you about it. Promises are remembered too ("I\'ll pay you back by Friday"); overdue or broken ones get brought up. 🧰 Tools → 🤝 Plans shows what\'s coming up, how past plans went, and your promises, which you can mark as kept or broken.']},
  {v:'0.67.0', d:'2026-11-20', notes:['Text reactions. Tap someone\'s text to react with ❤️ 😂 😮 😢 😡 or 👍, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone.']},
