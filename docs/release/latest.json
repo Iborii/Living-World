@@ -1,10 +1,10 @@
 {
- "version": "0.55.1",
+ "version": "0.55.2",
  "date": "2026-11-20",
  "notes": [
-  "Norma now sits the way she does in her agent pose: either legs crossed, or knees together with one knee a little higher than the other, on chairs and on the floor alike."
+  "Dracaene is no longer timid. Like in the game, she is quietly confident and composed: she takes charge, talks to strangers easily and only gets flustered over specific things (praising herself by accident, being teased in public, Lindverne picking her up)."
  ],
  "file": "index.html",
- "sha256": "a6cf1a632bcecc834d438ee0d4a8cb1e07a5bf12d7d7f157d8642712bdd9e1b1",
+ "sha256": "25806bfb846ab47de8444d78851623730704b839523e92520a33fde892582aec",
  "minShell": "0.5.0"
 }
