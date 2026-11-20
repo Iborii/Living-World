@@ -1,10 +1,10 @@
 {
- "version": "0.59.0",
+ "version": "0.60.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \u23ea Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with \"Make a restore point now\"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost."
+  "\ud83e\uddf0 Tools \u2192 \ud83d\udcd5 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF."
  ],
  "file": "index.html",
- "sha256": "32f82fd407c25b42e059919cf459a186c1457e209e50572dd1438df8840ff2b0",
+ "sha256": "55d5583ad1185a9ca33b857b6b294849a7a742f7aa27886cb8baa227a002241c",
  "minShell": "0.5.0"
 }

@@ -3531,6 +3531,38 @@ toolTab('restore','⏪ Restore',body=>{ const list=bkList();
   $('#bkNow').onclick=()=>{ if(makeBackup('manual')) notice('⭐ Restore point saved.'); else notice('Nothing new to save since the last restore point.'); renderTools(); };
   body.querySelectorAll('[data-bkr]').forEach(b=>b.onclick=()=>restoreBackup(+b.dataset.bkr));
   body.querySelectorAll('[data-bkd]').forEach(b=>b.onclick=()=>{ if(!confirm('Delete this restore point? This can\'t be undone.')) return; const l=bkList(); l.splice(+b.dataset.bkd,1); bkSet(l); renderTools(); }); });
+
+// ---------- 5. export the story as a book ----------
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function bookHTML(opts){ const title=(W.title||'Living World').split(':')[0]; const sub=S.branch&&S.branch.title?S.branch.title:(W.title.split(':')[1]||'').trim();
+  const msgs=S.chat.filter(m=>!(m.role==='user'&&m.hidden)&&m.text&&!m.streaming); const cast=W.characters.filter(c=>!isDead(c)||true);
+  let body='', day='', n=0; const you=persona().name||'You';
+  for(const m of msgs){ const d=dt(m.t); const key=d.y+'-'+d.mo+'-'+d.d;
+    if(key!==day){ day=key; n++; body+=`<h2 class="ch"><span>Chapter ${n}</span>${WDAYS[d.wd]}, ${MONTHS[d.mo-1]} ${d.d}</h2>`; }
+    if(m.role==='user'){ if(opts.you) body+=`<div class="you"><div class="yn">${esc(m.pname||you)}</div>${fmt(m.text)}</div>`; }
+    else if(m.role==='text') body+=`<p class="txt">📱 ${esc(m.from)}: ${esc(m.text)}</p>`;
+    else body+=`<div class="sc">${fmt(m.text)}</div>`; }
+  const first=msgs[0], last=msgs[msgs.length-1]; const span=first?`${MONTHS[dt(first.t).mo-1]} ${dt(first.t).d} – ${MONTHS[dt(last.t).mo-1]} ${dt(last.t).d}, ${dt(last.t).y}`:'';
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>
+  :root{color-scheme:light}body{margin:0;background:#f6f1e7;color:#2a2622;font:18px/1.75 Georgia,"Times New Roman",serif}
+  .page{max-width:680px;margin:0 auto;padding:48px 24px 80px}.cover{text-align:center;padding:16vh 0 12vh;border-bottom:1px solid #d8cdb8;margin-bottom:40px}
+  .cover h1{font-size:46px;font-weight:400;margin:0 0 8px;letter-spacing:.5px}.cover .sub{font-style:italic;color:#6d6357}.cover .meta{margin-top:28px;font-size:15px;color:#7a6f61}
+  .cast{margin-top:22px;font-size:15px;color:#5b5247}h2.ch{font-weight:400;font-size:26px;margin:64px 0 24px;text-align:center;page-break-before:always}h2.ch span{display:block;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#9a8b74;margin-bottom:6px}
+  .stamp{font-size:13px;color:#8a7d6b;letter-spacing:.4px;margin:28px 0 10px;display:flex;flex-wrap:wrap;gap:4px 12px;border-top:1px solid #e3d9c6;padding-top:10px}.stamp span:empty{display:none}
+  p{margin:0 0 .8em}p.toneline{color:#6d6357;margin-top:-.5em}.spk{font-weight:bold}em{color:#4d463e}
+  .you{margin:22px 0;padding:10px 16px;border-left:3px solid #c9a35f;background:#efe7d6;border-radius:0 8px 8px 0}.yn{font-size:13px;color:#8a6d3b;font-weight:bold;margin-bottom:4px}
+  .txt{font-family:system-ui,sans-serif;font-size:15px;background:#e9e2d4;border-radius:12px;padding:8px 12px;display:inline-block}
+  .end{text-align:center;margin-top:60px;color:#9a8b74;letter-spacing:4px}@media print{body{background:#fff}.page{padding:0}}
+  </style></head><body><div class="page"><div class="cover"><h1>${esc(title)}</h1>${sub?`<div class="sub">${esc(sub)}</div>`:''}<div class="meta">${esc(span)} · ${msgs.length} passages · ${n} chapter${n===1?'':'s'}</div>
+  <div class="cast">With ${cast.map(c=>esc(c.full)).join(', ')}${opts.you?`, and ${esc(you)}`:''}</div></div>${body}<div class="end">✦ ✦ ✦</div></div></body></html>`; }
+function exportBook(opts){ const html=bookHTML(opts); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download=`${(W.title||'story').split(':')[0].replace(/[^\w -]+/g,'').trim()} - ${isoDate(S.clock)}.html`; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000); }
+toolTab('book','📕 Export',body=>{ const n=S.chat.filter(m=>!(m.role==='user'&&m.hidden)).length;
+  body.innerHTML=`<p class="small" style="margin-top:0">Download this story as a book: a cover, one chapter per day in the story, and every scene laid out for reading. It opens in any browser; to make a PDF, open it and choose Print → Save as PDF.</p>
+  <label style="display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" id="bkYou" checked> Include what you said and did</label>
+  <div class="rowbtns"><button class="primary" id="bkGo">📕 Download the book (${n} messages)</button></div>`;
+  $('#bkGo').onclick=()=>{ exportBook({you:$('#bkYou').checked}); notice('📕 Book downloaded.'); }; });
 // <<< tools
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -4001,8 +4033,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.59.0';
+const APP_VERSION = '0.60.0';
 const CHANGELOG = [
+ {v:'0.60.0', d:'2026-11-20', notes:['🧰 Tools → 📕 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF.']},
  {v:'0.59.0', d:'2026-11-20', notes:['🧰 Tools → ⏪ Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with "Make a restore point now"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost.']},
  {v:'0.58.0', d:'2026-11-20', notes:['🧰 Tools → 🔠 Reading: change the story\'s text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it.']},
  {v:'0.57.0', d:'2026-11-20', notes:['🧰 Tools → 📝 Notes: write your own rules and facts for a story (like "Aria doesn\'t know my name yet") and the AI follows them every reply. Also: the reminder about emotional dialogue now asks for emotion in proportion, so calm moments stay calm.']},
