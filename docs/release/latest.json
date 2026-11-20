@@ -1,12 +1,10 @@
 {
- "version": "0.51.0",
+ "version": "0.51.1",
  "date": "2026-11-19",
  "notes": [
-  "Body physics for adult women: busts bounce and settle when someone runs, jumps, laughs or flops onto the couch (more with a bigger bust or no bra, held still by a sports bra or tight top), hips and butts sway and jiggle on stairs, thighs shift when sitting. It shows up naturally alongside hair and cloth movement, and never for anyone under 18 or protected.",
-  "Phone notifications: a banner slides down like a real phone for new contacts, texts (with a preview), people arriving, paydays and bills. Tap it to jump to the chat; the latest ones also sit on your phone's home screen.",
-  "Characters can now give you their number in any way the story plays it: swapping numbers, writing it on your hand, or grabbing your phone and typing it in themselves. If they save themselves under a joke name (\"Your Favorite Angel \ud83d\udda4\"), that's the name in your contacts. If the story forgets to register it, the app catches it from the text."
+  "Periods are toned down to how they really go for most people: a small moment at most (slipping off to the restroom, a painkiller with lunch, a chocolate craving) and then she gets on with her day. How much it shows depends on her toughness and changes month to month: often she barely notices, sometimes it's a mild day, occasionally a rougher one, and even then it's never treated like an injury. Characters stop bringing it up over and over."
  ],
  "file": "index.html",
- "sha256": "20c0867d5b2dd73574a18b94b3c2b4daaacf3ae645d7eccbf0f2275f678496b3",
+ "sha256": "842bb7f63dd63ac0d250d9579d30c41fd6ee1f1d607663b5799d6d7f5f899f57",
  "minShell": "0.5.0"
 }
