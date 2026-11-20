@@ -2058,7 +2058,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
   s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock(); if(phonesOn()) s+=phoneLifeBlock(pres);
-  s+=sickBlock(pres); s+=outageLine(); s+=habitLines(pres);
+  s+=sickBlock(pres); s+=outageLine(); s+=habitLines(pres); s+=debtLines(pres); s+=tasteLines(pres); if(S.user.job&&S.user.job.name) s+=`${uN()}'S JOB: ${S.user.job.name}${S.user.job.wage?` (${money(S.user.job.wage*(+currency().scale||1))} an hour)`:''}. When they work a shift in the story, pay them at the end with [[EARN: amount: shift at ${S.user.job.name}]].\n`;
   { const ub=condBits('user'); if(ub.length) s+=`${uN().toUpperCase()}'S BODY AND CLOTHES RIGHT NOW: ${ub.join('; ')}. Describe how it looks and feels, but ${uN()}'s actions stay theirs.\n`; s+=homeLine(S.user.loc); }
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
@@ -2148,7 +2148,7 @@ function applyControls(text){
     else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ TRUST_TAGGED.add(c.id); const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
-    else if(['BUY_ITEM','USE','GIVE','PAY','GET','LOSE'].includes(C)){ applyItemTag(C,arg); }
+    else if(['BUY_ITEM','USE','GIVE','PAY','EARN','GET','LOSE'].includes(C)){ applyItemTag(C,arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
@@ -2321,7 +2321,7 @@ function tick(){
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
   try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
-  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); sickTick(dtReal*(+S.speed||1)/MIN); lifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
+  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); sickTick(dtReal*(+S.speed||1)/MIN); lifeTick(dtReal*(+S.speed||1)/MIN); econTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
   if(!S.paused&&phonesOn()) try{ phoneLifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('phone',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
@@ -2803,8 +2803,9 @@ function applyItemTag(C, arg, only){ const p=arg.split(':').map(x=>x.trim()); co
   if(C==='BUY_ITEM'||C==='BOUGHT'){ const w=whoId(p[0]); if(!ok(w)||!p[1]) return true; const r=buy(w,p[1],p[2]||1,p[3]); if(!r.ok&&w==='user'&&r.why) notice(`Couldn't buy ${p[1]}: ${r.why}.`); return true; }
   if(C==='USE'){ const w=whoId(p[0]); if(ok(w)&&p[1]) useItem(w,p.slice(1).join(':')); return true; }
   if(C==='GIVE'){ const a=whoId(p[0]), b=whoId(p[1]); if(!a||!b||!p[2]||(!ok(a)&&!ok(b))) return true; const it=findItem(p[2]); const bc=b==='user'?null:charById(b);
-    if(it&&it.adult&&bc&&(bc.minor||bc.protect)) return true; const got=takeItem(a,p[2],+p[3]||1); if(got||a==='user'){ addItem(b, got&&got.id!=='x'?ITEM_BY_ID[got.id]||got.name:p[2], got?got.n:1, got&&got.t); } return true; }
-  if(C==='PAY'||C==='SPENT'){ const a=whoId(p[0]); if(!ok(a)) return true; if(C==='SPENT'){ pay(a,'shop',parseFloat(p[1])||0,p.slice(2).join(':')||'spent'); return true; } const b=whoId(p[1]); pay(a,b||p[1],parseFloat(p[2])||0,p.slice(3).join(':')); return true; }
+    if(it&&it.adult&&bc&&(bc.minor||bc.protect)) return true; const got=takeItem(a,p[2],+p[3]||1); if(got||a==='user'){ addItem(b, got&&got.id!=='x'?ITEM_BY_ID[got.id]||got.name:p[2], got?got.n:1, got&&got.t); try{ onGift(a,b,got?got.name:p[2]); }catch(e){} } return true; }
+  if(C==='PAY'||C==='SPENT'){ const a=whoId(p[0]); if(!ok(a)) return true; if(C==='SPENT'){ pay(a,'shop',parseFloat(p[1])||0,p.slice(2).join(':')||'spent'); return true; } const b=whoId(p[1]); const amt=parseFloat(p[2])||0; pay(a,b||p[1],amt,p.slice(3).join(':')); if(b) noteDebt(a,b,amt,p.slice(3).join(':')); return true; }
+  if(C==='EARN'){ const amt=parseFloat(p[0])||0; if(amt>0){ walletOf('user').money+=Math.round(amt); (S.ledger=S.ledger||[]).push({t:S.clock, who:'user', what:p.slice(1).join(':')||'earned', amt:Math.round(amt)}); } return true; }
   if(C==='GET'){ if(arg.trim()) addItem('user', arg.trim()); return true; }
   if(C==='LOSE'){ takeItem('user', arg.trim(), 1); return true; }
   return false; }
@@ -2827,17 +2828,21 @@ function itemsBeatBlock(cs){ return `MONEY & THINGS: ${cs.map(c=>`${c.name} has 
 const ITEM_TAG_HELP=`   [[BUY_ITEM: Buyer: item: quantity]]  when the user or a character actually buys something (the price comes from the store list; for anything else add ": price"). Use "user" for ${'the user'}
    [[USE: Name: item]] or [[USE: user: item]]  when someone takes, eats, drinks, applies or uses something they carry (melatonin, a beer, a pad, painkillers). Its effect starts by itself at the right time
    [[GIVE: From: To: item]]  when something changes hands (a gift, a loan, handing over a drink)
-   [[PAY: From: To: amount: why]]  when money changes hands (splitting a bill, paying someone back, a taxi: To can be "taxi" or "shop")
+   [[PAY: From: To: amount: why]]  when money changes hands (splitting a bill, a taxi: To can be "taxi" or "shop"). For a loan write "loan" in why; for paying one back write "paying back"
+   [[EARN: amount: why]]  when the user gets paid for work they did in the story
    [[GET: item]] / [[LOSE: item]]  when the user picks up, finds, or loses something that wasn't bought`;
 
 // ---------- bag & shops UI ----------
 function renderBag(B){ const cur=currency(); const inv=invOf('user'); const w=walletOf('user');
   const cs=W.characters.filter(c=>!isDead(c));
   B.innerHTML=`<div class="ev-card"><h4>👛 Your money: ${esc(money(w.money))}</h4><div class="small">Money changes when you buy, pay, get paid or lend. Currency in this world: ${esc(cur.many)} <a href="#" id="curEdit">change</a></div></div>
-   <div class="ev-card"><h4>🎒 What you're carrying</h4>${inv.length?inv.map((e,i)=>`<div class="ev-row" style="grid-template-columns:1fr auto auto;align-items:center"><span>${esc(itemLabel(e))}</span><button class="ghost" data-iuse="${i}">Use</button><button class="ghost" data-idrop="${i}" title="Throw away">✕</button></div>`).join(''):'<div class="small">Nothing. Buy things in shops (🗺 World → Shops) or pick them up in the story.</div>'}</div>
+   <div class="ev-card"><h4>🎒 What you're carrying</h4>${inv.length?inv.map((e,i)=>`<div class="ev-row" style="grid-template-columns:1fr auto auto auto;align-items:center"><span>${esc(itemLabel(e))}</span><button class="ghost" data-iuse="${i}">Use</button><button class="ghost" data-igive="${i}">Give</button><button class="ghost" data-idrop="${i}" title="Throw away">✕</button></div>`).join(''):'<div class="small">Nothing. Buy things in shops (🗺 World → Shops) or pick them up in the story.</div>'}</div>
    <div class="ev-card"><h4>Everyone else</h4>${cs.map(c=>`<div class="ev-row" style="grid-template-columns:auto 1fr"><span><span class="ev-dot" style="background:${c.color}"></span> <b>${esc(c.name)}</b> ${esc(money(walletOf(c.id).money))}</span><span class="small">${esc(invLine(c.id))}${fxBits(S.chars[c.id],true).length?' · '+esc(fxBits(S.chars[c.id],true).join(', ')):''}</span></div>`).join('')}</div>
+   <div class="ev-card"><h4>💼 Work and bills</h4><div class="small" style="margin-bottom:6px">Characters get paid every Friday evening for the hours they work, pay rent on the 1st and their phone bill on the 15th, and ask friends for help when they come up short. Set yours here.</div><div class="dir-grid"><input id="jobName" placeholder="Your job (optional)" value="${esc(S.user.job?.name||'')}"><input id="jobWage" type="number" placeholder="Pay per hour" value="${S.user.job?.wage||''}"><input id="jobRent" type="number" placeholder="Your rent per month (0 = none)" value="${S.user.rent||''}"></div><div class="rowbtns"><button id="jobSave">Save</button></div>${S.user.overdue?`<div class="small" style="color:var(--danger)">You're ${esc(money(S.user.overdue))} behind on bills.</div>`:''}${(S.debts||[]).filter(d=>d.left>0).map(d=>`<div class="small">${esc(d.from==='user'?'You':charById(d.from)?.name||d.from)} owe${d.from==='user'?'':'s'} ${esc(d.to==='user'?'you':charById(d.to)?.name||d.to)} ${esc(money(d.left))}</div>`).join('')}</div>
    ${(S.ledger||[]).length?`<div class="ev-card"><h4>Recent spending</h4>${S.ledger.slice(-12).reverse().map(l=>`<div class="small">${wdName(l.t).slice(0,3)} ${hhmm(l.t)} · ${esc(l.who==='user'?'You':charById(l.who)?.name||l.who)}: ${esc(l.what)} ${esc(money(-l.amt))}${l.where?' at '+esc(l.where):''}</div>`).join('')}</div>`:''}`;
   B.querySelectorAll('[data-iuse]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.iuse]; if(!e) return; const ta=$('#input'); if(ta){ ta.value=(ta.value?ta.value+' ':'')+`*uses the ${e.name.toLowerCase()}*`; ta.focus(); } $('#evModal').classList.remove('on'); });
+  B.querySelectorAll('[data-igive]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.igive]; if(!e) return; const ta=$('#input'); if(ta){ ta.value=(ta.value?ta.value+' ':'')+`*holds out the ${e.name.toLowerCase()}* "This is for you."`; ta.focus(); } $('#evModal').classList.remove('on'); });
+  { const js=$('#jobSave'); if(js) js.onclick=()=>{ const n=$('#jobName').value.trim(), w=+$('#jobWage').value||0; S.user.job=n?{name:n,wage:w}:null; S.user.rent=+$('#jobRent').value||0; save(); notice('Saved.'); renderBag(B); }; }
   B.querySelectorAll('[data-idrop]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.idrop]; if(!e||!confirm(`Throw away ${e.name}?`)) return; inv.splice(+b.dataset.idrop,1); save(); renderBag(B); });
   const ce=$('#curEdit'); if(ce) ce.onclick=ev=>{ ev.preventDefault(); const one=prompt('Currency name (one):',cur.one); if(!one) return; const many=prompt('Plural:',cur.many)||one+'s'; const sym=prompt('Symbol (leave empty to write the word):',cur.sym||'')||''; const sc=parseFloat(prompt('Price scale (1 = normal prices, 100 = everything costs 100×):',cur.scale||1))||1;
     const old=+cur.scale||1; S.currency={one,many,sym,scale:sc}; if(sc!==old){ const r=sc/old; S.user.money=Math.round((S.user.money||0)*r); for(const id in S.chars) if(S.chars[id].money!=null) S.chars[id].money=Math.round(S.chars[id].money*r); } save(); renderBag(B); }; }
@@ -3158,6 +3163,82 @@ function sndUpdate(){ if(!SND.ctx) return; const on=sndCfgOn()&&!document.hidden
 function sndBuzz(){ if(!SND.ctx||!sndCfgOn()) return; const c=SND.ctx; for(let i=0;i<2;i++){ const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=170; const t=c.currentTime+i*.28; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.08*sndVol(),t+.02); g.gain.setValueAtTime(.08*sndVol(),t+.16); g.gain.linearRampToValueAtTime(0,t+.2); const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600; o.connect(f); f.connect(g); g.connect(c.destination); o.start(t); o.stop(t+.22); } }
 // browsers only allow sound after you click something
 document.addEventListener('pointerdown',()=>{ if(sndCfgOn()){ sndInit(); if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); } },{capture:true});
+
+// ======================= jobs, bills, debts and gift tastes =======================
+// Work pays (weekly, Friday evening), rent and phone bills come due, people who come up short ask to borrow,
+// debts are remembered, and every character has real likes and dislikes that decide how a gift lands.
+const WORK_ACT=/\b(work|shift|job|rehears|recording|record|livestream|stream|duty|patrol|case|office|counter|store|serving|waitress|cook(ing)? (lunch|dinner|breakfast)|teaching|lesson|briefing|meeting|inspection|investigat|tracking|stunt|part-time|running the video store|filing)\b/i;
+const WAGE={nangong:0,aria:6,sunna:6,cecilia:28,cissia:9,severian:60,jane:30,zhuyuan:34,qingyi:30,seth:24,yixuan:10,fufu:4,shunguang:12,belle:14,wise:14,yinhu:10,vivian:16,phoenix:12,dialyn:20,velina:55,claret:18,roxy:12};
+function wageOf(c){ if(c.minor) return Math.min(WAGE[c.id]!=null?WAGE[c.id]:8,8); return WAGE[c.id]!=null?WAGE[c.id]:15; }
+const RENT={nangong:0,sunna:0,fufu:0,yixuan:0,shunguang:0,yinhu:0,belle:900,wise:0,aria:0,cissia:250,vivian:420,severian:1600,jane:800,zhuyuan:900,qingyi:0,seth:700,cecilia:850,velina:1800};
+function rentOf(c){ if(c.minor) return 0; return RENT[c.id]!=null?RENT[c.id]:500; }
+function econTick(dMin){ if(!S||!W||dMin<=0) return; const h=dMin/60, sc=+currency().scale||1;
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead) continue; if(WORK_ACT.test(st.act||'')&&!SLEEPY.test(st.act||'')) st.earned=(st.earned||0)+wageOf(c)*sc*h; }
+  const d=dt(S.clock), day=isoDate(S.clock);
+  // payday: Friday evening
+  if(d.wd===5&&d.h>=18&&S._payday!==day){ S._payday=day; for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead||!(st.earned>0)) continue; const amt=Math.round(st.earned); walletOf(c.id).money+=amt; st.earned=0; st.log.push({t:S.clock, text:`*Payday: ${c.name} gets paid ${money(amt)}.*`, with:[c.id], loc:st.loc, life:true}); }
+    if(S.user.job&&S.user.job.wage){ const amt=Math.round((S.user.workedH||0)*S.user.job.wage*sc); if(amt>0){ walletOf('user').money+=amt; S.user.workedH=0; notice(`💵 Payday: ${money(amt)} from ${S.user.job.name}.`); } } }
+  // bills: rent on the 1st, phone on the 15th
+  if(S._billDay!==day){ S._billDay=day;
+    if(d.d===1){ for(const c of W.characters){ const r=Math.round(rentOf(c)*sc); if(r) chargeBill(c.id, r, 'rent'); } if(S.user.rent) chargeBill('user', Math.round(S.user.rent*sc), 'rent'); }
+    if(d.d===15){ for(const c of W.characters) if(c.phone!==false&&!c.minor) chargeBill(c.id, Math.round(40*sc), 'phone bill'); if(phonesOn()) chargeBill('user', Math.round((S.user.phoneBill!=null?S.user.phoneBill:40)*sc), 'phone bill'); } }
+  regiftTick(); }
+function chargeBill(who, amt, what){ const w=walletOf(who); if(!w) return; if(w.money>=amt){ w.money-=amt; (S.ledger=S.ledger||[]).push({t:S.clock, who, what, amt:-amt}); if(who==='user') notice(`🧾 ${what[0].toUpperCase()+what.slice(1)} paid: ${money(amt)}.`); return; }
+  const short=amt-w.money; w.money=0; (S.ledger=S.ledger||[]).push({t:S.clock, who, what:what+' (partly)', amt:-(amt-short)});
+  if(who==='user'){ S.user.overdue=(S.user.overdue||0)+short; notice(`🧾 Couldn't cover the ${what}: ${money(short)} overdue.`,true); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${uN()}'s ${what} came due and they're ${money(short)} short. It's a real worry now.)`}); return; }
+  const c=charById(who); const st=S.chars[who]; st.overdue=(st.overdue||0)+short; st.mood={word:'stressed about money',why:`${money(short)} short on ${what}`,t:S.clock};
+  addMemory({who:[who], text:`Came up ${money(short)} short on ${what}`, imp:2, src:'bills'});
+  // might ask you for help, if they trust you enough and have your number
+  if(hasPhone(c)&&isContact(who)&&(st.trust||0)>=45&&Math.random()<.6){ const P=phone(); P.extra[who]=`You're ${money(short)} short on your ${what} and stressed about it. You trust ${uN()} enough that you might (in your own way, proud or embarrassed or blunt) ask to borrow money, or just vent. Up to you.`; if(!P.pending[who]) P.pending[who]=S.clock+(20+Math.random()*120)*MIN; } }
+// debts: anything paid as a loan is remembered until it's paid back
+function noteDebt(from, to, amt, why){ if(!/loan|lend|borrow|owe|pay (you|me) back|spot/i.test(why||'')) return false; S.debts=S.debts||[];
+  const back=S.debts.find(x=>x.from===to&&x.to===from&&x.left>0); if(back&&/back|repay|return/i.test(why)){ back.left=Math.max(0,back.left-amt); return true; }
+  S.debts.push({from:to, to:from, amt, left:amt, t:S.clock, why}); return true; }  // "from" owes "to"
+function debtLines(pres){ const ids=new Set(['user',...pres.map(c=>c.id)]); const L=(S.debts||[]).filter(d=>d.left>0&&(ids.has(d.from)||ids.has(d.to)));
+  const nm=id=>id==='user'?uN():charById(id)?.name||id; const out=L.map(d=>`${nm(d.from)} owes ${nm(d.to)} ${money(d.left)} (since ${mmdd(d.t)}${d.why?`, ${d.why}`:''})`);
+  if(S.user.overdue) out.push(`${uN()} is ${money(S.user.overdue)} behind on bills`); for(const c of pres){ const o=S.chars[c.id].overdue; if(o) out.push(`${c.name} is ${money(o)} behind on bills`); }
+  return out.length?`MONEY BETWEEN PEOPLE (they remember): ${out.join('; ')}.\n`:''; }
+
+// ---------- gift tastes ----------
+const TASTES={
+ cissia:{loves:['egg','omelette','egg tart','egg roll','snack','food','warm','heat','blanket','hand warmer'],likes:['chips','chocolate','candy','free sample','videotape','movie','plushie','noodle'],dislikes:['ice cream','paperwork','notebook','pen','flash','camera','cold','perfume']},
+ vivian:{loves:['phaethon','flower','violet','dress','lingerie','perfume','parasol'],likes:['novel','book','tea','plushie','chocolate','notebook','sewing','makeup'],dislikes:['cheap','energy drink','cigarette','junk']},
+ sunna:{loves:['sweater','headphone','music','vinyl','hot pot','taro','milk tea','sheet music'],likes:['snack','chips','game','plushie','candy','hoodie'],dislikes:['makeup','perfume','dress','money','expensive']},
+ nangong:{loves:['game','console','stock','luxury','plushie','fried chicken','soda'],likes:['snack','energy drink','chips','candy','hoodie'],dislikes:['cheap perfume','vegetables','homework']},
+ aria:{loves:['flower','dress','tiara','perfume','cute','plushie','ribbon','sparkle'],likes:['candy','chocolate','milk tea','makeup','bouquet'],dislikes:['bug','energy drink','beer','cigarette']},
+ fufu:{loves:['meat','candy','snack','toy','ball of yarn','hero','comic'],likes:['chips','juice','plushie','ice cream'],dislikes:['broccoli','vegetables','cat toy','being called a cat']},
+ yinhu:{loves:['coupon','meat','vegetables','rice','cooking','recipe','ingredients'],likes:['tea','fruit','bread'],dislikes:['takeout','instant noodles','expensive','luxury','waste']},
+ shunguang:{loves:['milk tea','teamilk','sweet','osmanthus','diary','stargazing','movie ticket'],likes:['flower','plushie','candy','pastry','egg tart'],dislikes:['beer','cigarette','horror']},
+ yixuan:{loves:['herbal tea','tea','bird treat','video game','old movie'],likes:['tong sui','fruit','incense','candy'],dislikes:['coffee','energy drink','loud']},
+ belle:{loves:['movie','videotape','snack','cute','bangboo'],likes:['plushie','candy','milk tea','chips','hoodie'],dislikes:['vegetables','paperwork']},
+ wise:{loves:['documentary','videotape','sneaker','coffee'],likes:['tech','charger','power bank','snack'],dislikes:['plushie','perfume','loud']},
+ zhuyuan:{loves:['coffee','case file','training'],likes:['sandwich','energy drink','flower'],dislikes:['alcohol','beer','cigarette','candy']},
+ qingyi:{loves:['hot water','tea','tradition'],likes:['bento','fruit'],dislikes:['cold drink','ice cream','soda']},
+ jane:{loves:['cheese','rat','cute','perfume'],likes:['chocolate','plushie','lingerie','wine'],dislikes:['paperwork','cheap']},
+ seth:{loves:['hero','manual','training','sandwich'],likes:['energy drink','coffee','candy'],dislikes:['perfume','lingerie','alcohol']},
+ severian:{loves:['espresso','coffee','tomato','plant','gardening'],likes:['tea','book','wine'],dislikes:['candy','plushie','noise']},
+};
+function tastesOf(c){ if(TASTES[c.id]) return TASTES[c.id]; S.tastes=S.tastes||{}; if(S.tastes[c.id]) return S.tastes[c.id]; genTastes(c); return null; }
+const TASTE_BUSY=new Set();
+async function genTastes(c){ if(TASTE_BUSY.has(c.id)||!canAI()) return; TASTE_BUSY.add(c.id);
+  try{ const out=await aiQuick({system:'You read character sheets and list what a character would love, like and dislike as gifts. Ground it in the sheet (food, hobbies, style, pet peeves). Return ONLY JSON: {"loves":[6 short keywords],"likes":[6],"dislikes":[5]}', messages:[{role:'user',content:`${c.full}\n${(c.brief||'').slice(0,600)}\n${String(c.sheet||'').slice(0,2600)}`}], maxTokens:220});
+    const j=parseJSONish(out); if(j&&Array.isArray(j.loves)){ S.tastes=S.tastes||{}; S.tastes[c.id]={loves:j.loves.map(String).slice(0,8),likes:(j.likes||[]).map(String).slice(0,8),dislikes:(j.dislikes||[]).map(String).slice(0,6)}; save(); } }catch(e){} finally{ TASTE_BUSY.delete(c.id); } }
+function giftVerdict(c, itemName){ const t=tastesOf(c); const n=String(itemName||'').toLowerCase(); if(!t) return 'neutral'; const hit=a=>(a||[]).some(k=>k&&(n.includes(String(k).toLowerCase())||String(k).toLowerCase().includes(n)));
+  return hit(t.dislikes)?'dislike':hit(t.loves)?'love':hit(t.likes)?'like':'neutral'; }
+function onGift(fromId, toId, itemName){ if(fromId!=='user'||toId==='user') return; const c=charById(toId); if(!c) return; const v=giftVerdict(c,itemName); const st=S.chars[toId];
+  const d={love:5,like:2,neutral:1,dislike:-1}[v]; st.trust=Math.max(0,Math.min(100,(st.trust||0)+d));
+  // the same gift over and over wears off
+  S.gifts=S.gifts||[]; const same=S.gifts.filter(g=>g.to===toId&&g.item.toLowerCase()===itemName.toLowerCase()&&S.clock-g.t<14*DAYMS).length; S.gifts.push({to:toId,item:itemName,t:S.clock,v});
+  addMemory({who:[toId], text:`${uN()} gave me ${itemName}${v==='love'?' (I loved it)':v==='like'?' (nice)':v==='dislike'?' (not my thing at all)':''}${same>=2?' again, the same thing as before':''}`, imp:v==='love'?2:1, src:'gift'});
+  if(v==='dislike'){ (S.regift=S.regift||[]).push({id:toId, item:itemName, at:S.clock+(1+Math.random()*2)*DAYMS}); }
+  if((v==='love'||v==='dislike')&&typeof addRumor==='function'&&Math.random()<.5) addRumor({text:`${uN()} gave ${c.name} ${itemName}${v==='love'?' and she was over the moon':' and it did not go over well'}`.replace(' she ',` ${genderOf(c)==='Male'?'he':'she'} `), tone:v==='love'?'good':'juicy', origin:[toId], about:'user'}); }
+function regiftTick(){ if(!S.regift||!S.regift.length) return; const keep=[]; for(const r of S.regift){ if(S.clock<r.at){ keep.push(r); continue; } const c=charById(r.id); if(!c||isDead(c)) continue; const got=takeItem(r.id, r.item, 1); if(!got) continue;
+    const friends=W.characters.filter(o=>o.id!==r.id&&!isDead(o)&&(S.rel?.[relKey(o.id,r.id)]?.score||0)>=55); const it=findItem(r.item);
+    if(friends.length&&Math.random()<.55&&!(it&&it.adult&&friends.some(f=>f.minor))){ const f=friends[Math.floor(Math.random()*friends.length)]; addItem(f.id, it||got.name, 1); S.chars[r.id].log.push({t:S.clock, text:`*${c.name} quietly re-gifts the ${got.name.toLowerCase()} ${uN()} gave them to ${f.name}.*`, with:[r.id,f.id], loc:S.chars[r.id].loc, life:true}); addMemory({who:[r.id,f.id], text:`${c.name} re-gifted ${f.name} the ${got.name.toLowerCase()} that ${uN()} gave ${c.name}`, imp:1, src:'gift'}); }
+    else { S.chars[r.id].log.push({t:S.clock, text:it&&['food','snack','drink','grocery'].includes(it.cat)?`*${c.name} quietly throws out the ${got.name.toLowerCase()} ${uN()} gave them.*`:`*${c.name} shoves the ${got.name.toLowerCase()} from ${uN()} into the back of a drawer.*`, with:[r.id], loc:S.chars[r.id].loc, life:true}); } }
+  S.regift=keep; }
+function tasteLines(pres){ const L=pres.map(c=>{ const t=tastesOf(c); return t?`${c.name}: loves ${t.loves.slice(0,6).join(', ')}; likes ${t.likes.slice(0,5).join(', ')}; can't stand ${t.dislikes.slice(0,4).join(', ')}`:''; }).filter(Boolean);
+  return L.length?`GIFT TASTES (how a gift or treat lands; react honestly, and the same gift again and again gets less exciting): ${L.join(' | ')}.\n`:''; }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3613,8 +3694,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.49.0';
+const APP_VERSION = '0.50.0';
 const CHANGELOG = [
+ {v:'0.50.0', d:'2026-11-19', notes:['Jobs and bills. Characters earn for the hours they actually work and get paid every Friday evening; rent is due on the 1st and phone bills on the 15th. Whoever comes up short gets stressed about it, remembers it, and may text you (if they trust you) to vent or ask to borrow money. Set your own job, pay and rent in Bag & money, and the story can pay you for work you do.', 'Debts are remembered: lend someone money and they (and you) know who owes whom until it\'s paid back.', 'Gift tastes. Every character has real loves, likes and things they can\'t stand, from canon for the Zenless cast (Cissia and eggs, Yinhu and coupons, Fufu and broccoli…) and from their sheet for everyone else. A good gift raises trust and they remember it; a bad one gets an honest reaction and, a day or two later, quietly re-gifted to a friend or shoved in a drawer. The same gift over and over gets less exciting, and big reactions get gossiped about. Use the Give button in your bag.']},
  {v:'0.49.0', d:'2026-11-19', notes:['Ambient sound, made inside the app: rain that\'s muffled when you\'re indoors, wind and gusts (stronger in a storm or a Hollow), thunder, the low hum of the city, crowd murmur in cafés, arcades and stations, music thumping through the wall at the livehouse, the metro rumbling, and crickets on warm nights. Your phone buzzes when a text comes in. It starts after your first click. Turn it off or change the volume in Settings.']},
  {v:'0.48.0', d:'2026-11-19', notes:['Everyday life happens to everyone. Off-screen, characters lose their keys, spill drinks on themselves, run late when the bus doesn\'t come, find money, get fined, crack their phone screens, get packages, stub their toes, run into old friends, get followed by stray cats. It changes their mood, money and clothes, they remember it, and it carries into scenes. Small things happen around you too (a package, a noisy neighbor, a lost stranger asking directions); what you do about them is up to you.', 'Power outages hit whole districts for a few hours: lights off, fridges warming, phones can\'t charge.', 'Habits form around what you actually do. Spend time with someone at the same time and place on a few days and they start expecting it; skip a day and they notice and feel a little put out. Keep it up for weeks and it becomes comfortable but predictable.', 'Moods carry over: a big fight, a heartbreak or a great night still colors the next day before it fades. Everyone has off days and unusually good days too.']},
  {v:'0.47.0', d:'2026-11-19', notes:['People get sick. Colds, the flu and stomach bugs come on gradually (a scratchy throat a day before), get worse, peak and fade over several days, and they spread: spend time near someone contagious and you, or anyone else around, might catch it a day later. Winter and getting soaked in the cold raise the odds. Afterwards people are immune for a few weeks.', 'Eating food that has gone bad can give you food poisoning a few hours later.', 'Anyone badly sick (flu, stomach bug, food poisoning) stays home in bed instead of following their schedule. Cold medicine, cough syrup and painkillers from the pharmacy help, and hangovers already hit the morning after a heavy night. Injuries keep healing day by day as before.']},

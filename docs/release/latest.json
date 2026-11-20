@@ -1,10 +1,12 @@
 {
- "version": "0.49.0",
+ "version": "0.50.0",
  "date": "2026-11-19",
  "notes": [
-  "Ambient sound, made inside the app: rain that's muffled when you're indoors, wind and gusts (stronger in a storm or a Hollow), thunder, the low hum of the city, crowd murmur in caf\u00e9s, arcades and stations, music thumping through the wall at the livehouse, the metro rumbling, and crickets on warm nights. Your phone buzzes when a text comes in. It starts after your first click. Turn it off or change the volume in Settings."
+  "Jobs and bills. Characters earn for the hours they actually work and get paid every Friday evening; rent is due on the 1st and phone bills on the 15th. Whoever comes up short gets stressed about it, remembers it, and may text you (if they trust you) to vent or ask to borrow money. Set your own job, pay and rent in Bag & money, and the story can pay you for work you do.",
+  "Debts are remembered: lend someone money and they (and you) know who owes whom until it's paid back.",
+  "Gift tastes. Every character has real loves, likes and things they can't stand, from canon for the Zenless cast (Cissia and eggs, Yinhu and coupons, Fufu and broccoli\u2026) and from their sheet for everyone else. A good gift raises trust and they remember it; a bad one gets an honest reaction and, a day or two later, quietly re-gifted to a friend or shoved in a drawer. The same gift over and over gets less exciting, and big reactions get gossiped about. Use the Give button in your bag."
  ],
  "file": "index.html",
- "sha256": "98e868a0802f2524146ec10c9e5a005f854675a5cd63d9a49a097e09c0fca468",
+ "sha256": "0f9d5f7d3387e197d0901009bf3b3f1de2db39023dffc00297eb3a2682236035",
  "minShell": "0.5.0"
 }
