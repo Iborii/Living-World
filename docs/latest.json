@@ -1,10 +1,10 @@
 {
- "version": "0.72.0",
+ "version": "0.73.0",
  "date": "2026-11-20",
  "notes": [
-  "Places you've been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the \ud83d\uddfa World map, districts you've been to are marked \ud83d\udccd and the rest stay dim until you explore them. \ud83e\uddf0 Tools \u2192 \ud83d\udcee Places shows your postcards (tap one to jump back to that moment) and the places you visit most."
+  "Fair dice and games. New \ud83c\udfb2 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes."
  ],
  "file": "index.html",
- "sha256": "8713100d3429b27fa6e086fabf836c8648f8508a865f08ee3cef6f5de82146c5",
+ "sha256": "12eae6778348ce5294560ac5dfa649e7864fbc05dc0bbb601bd9179e7f0fa66b",
  "minShell": "0.5.0"
 }

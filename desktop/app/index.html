@@ -769,6 +769,10 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .pc-stamp{position:absolute;top:10px;right:10px;width:34px;height:40px;border:2px dashed rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;z-index:1}
 .pc-back{padding:10px 14px 12px;font-family:var(--serif);font-size:13.5px;line-height:1.5}.pc-back .small{color:#7a6f61;font-family:var(--font)}.pc-back p{margin:6px 0}
 /* <<< places */
+/* >>> dice */
+.dice-menu{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;min-width:220px;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.dice-menu button{text-align:left;padding:7px 10px}
+/* <<< dice */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -2239,7 +2243,7 @@ let busyMain=false, mainAbort=null;
 async function send(text){
   if(busyMain) return;
   if(overBudget()&&!confirm(`You've reached today's spending limit ($${(+CFG.dailyLimit).toFixed(2)}). Off-screen lives are paused. Send this message anyway?`)) return;
-  text=(text||'').trim(); if(!text) return;
+  text=(text||'').trim(); if(!text) return; try{ if(window.SEND_FILTER) text=SEND_FILTER(text); }catch(e){ console.warn('send filter',e); }
   if(PS.list.length && !persona().gender){ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; return; }
   S.chat.push({role:'user',text,t:S.clock,pid:S.personaId,pname:persona().name}); S.view='me'; bumpStats(present().map(c=>c.id)); render(); save();
   await generateReply();
@@ -3975,6 +3979,32 @@ toolTab('places','📮 Places',body=>{ const V=S.visited||{}; const P=(S.postcar
   ${Object.keys(V).length?`<h3 style="margin:16px 0 8px">Most visited</h3>${Object.entries(V).sort((a,b)=>(b[1].n||1)-(a[1].n||1)).slice(0,8).map(([k,v])=>`<div class="small" style="padding:3px 0">${esc(k)} · ${v.n||1} visit${(v.n||1)>1?'s':''}</div>`).join('')}`:''}`;
   body.querySelectorAll('[data-j]').forEach(r=>r.onclick=()=>jumpToMsg(+r.dataset.j)); });
 // <<< places
+// >>> dice
+// ======================= fair dice, coins, cards and games: real randomness the AI can't fudge =======================
+function fairRnd(n){ const a=new Uint32Array(1); (window.crypto||{}).getRandomValues?crypto.getRandomValues(a):(a[0]=Math.floor(Math.random()*2**32)); return a[0]%n; }
+const SUITS=['♠','♥','♦','♣'], RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+function rollExpr(e){ const m=String(e||'d20').toLowerCase().replace(/\s/g,'').match(/^(\d{0,2})d(\d{1,4})([+-]\d{1,3})?$/); if(!m) return null; const n=Math.min(20,Math.max(1,+m[1]||1)), sides=Math.max(2,+m[2]), mod=+(m[3]||0);
+  const rolls=[...Array(n)].map(()=>1+fairRnd(sides)); const tot=rolls.reduce((a,b)=>a+b,0)+mod; return `🎲 ${n}d${sides}${m[3]||''} → ${rolls.join(' + ')}${mod?` ${m[3][0]} ${Math.abs(mod)}`:''}${n>1||mod?` = **${tot}**`:` **${tot}**`.replace('→  ','→ ')}`.replace(/→ (\d+) \*\*\1\*\*/,'→ **$1**'); }
+function diceCmd(cmd,arg){ cmd=cmd.toLowerCase(); arg=(arg||'').trim();
+  if(/^(roll|r)$/.test(cmd)) return rollExpr(arg||'d20');
+  if(/^d\d+$/.test(cmd)) return rollExpr(cmd+(arg&&/^[+-]\d+$/.test(arg)?arg:''));
+  if(/^(flip|coin)$/.test(cmd)) return `🪙 Coin flip → **${fairRnd(2)?'Heads':'Tails'}**`;
+  if(/^(card|draw)$/.test(cmd)){ const n=Math.min(7,Math.max(1,+arg||1)); const deck=[]; for(const s of SUITS) for(const r of RANKS) deck.push(r+s); const out=[]; for(let i=0;i<n;i++) out.push(deck.splice(fairRnd(deck.length),1)[0]); return `🃏 Drew ${n===1?'a card':n+' cards'} → **${out.join('  ')}**`; }
+  if(cmd==='rps'){ const opts=['rock','paper','scissors']; const me=opts.find(o=>o.startsWith(arg.toLowerCase().slice(0,1)))||opts[fairRnd(3)]; const opp=opts[fairRnd(3)]; const c=present()[0];
+    const res=me===opp?'a tie':((me==='rock'&&opp==='scissors')||(me==='paper'&&opp==='rock')||(me==='scissors'&&opp==='paper'))?'you win':`${c?c.name:'they'} win${c?'s':''}`; return `✊ Rock, paper, scissors: you throw **${me}**, ${c?c.name:'they'} throw${c?'s':''} **${opp}** → ${res}`; }
+  if(cmd==='pick'){ const o=arg.split(/\s*(?:,|\bor\b|\|)\s*/).filter(Boolean); if(o.length<2) return null; return `🎯 Picked at random → **${o[fairRnd(o.length)]}**`; }
+  if(cmd==='8ball'){ const a=['It is certain.','Without a doubt.','Most likely.','Ask again later.','Cannot predict now.','Don\'t count on it.','My sources say no.','Very doubtful.','Signs point to yes.','Outlook good.']; return `🎱 Magic 8-ball → **${a[fairRnd(a.length)]}**`; }
+  return null; }
+window.SEND_FILTER=text=>{ let any=false; const out=text.replace(/(^|\s)\/(roll|r|d\d+|flip|coin|card|draw|rps|pick|8ball)\b([^\n/]*)/gi,(m,pre,cmd,arg)=>{ const keepArg=/^(pick|rps)$/i.test(cmd)?arg:(arg.match(/^\s*[0-9d+\-]*/)||[''])[0]; const r=diceCmd(cmd,keepArg.trim()); if(!r) return m; any=true; const rest=arg.slice(keepArg.length); return `${pre}${r}${rest}`; });
+  return any?out:text; };
+PROMPT_HOOKS.push(()=>{ const d6=[...Array(4)].map(()=>1+fairRnd(6)), d20=[...Array(2)].map(()=>1+fairRnd(20)), pct=[...Array(2)].map(()=>1+fairRnd(100)), coin=[...Array(2)].map(()=>fairRnd(2)?'heads':'tails');
+  return `\nFAIR CHANCE: when something in this reply truly comes down to luck for the characters (a dice game, a coin toss, a card draw, a gacha pull, a raffle, a lucky shot), don't choose the outcome; use these pre-rolled results in order and don't mention them as numbers unless the scene shows them: d6 ${d6.join(', ')}; d20 ${d20.join(', ')}; percent ${pct.join(', ')}; coin ${coin.join(', ')}. Rolls ${uN()} makes with 🎲 are already in their message and final.\n`; });
+(()=>{ const ref=$('#moveBtn'); if(!ref||$('#diceBtn')) return; const b=document.createElement('button'); b.className='ghost tool'; b.id='diceBtn'; b.title='Roll dice, flip a coin, draw a card'; b.innerHTML='<span class="hi">🎲</span><span class="hl">Dice</span>'; ref.after(b);
+  b.onclick=e=>{ e.stopPropagation(); let m=$('#diceMenu'); if(m){ m.remove(); return; } m=document.createElement('div'); m.id='diceMenu'; m.className='dice-menu';
+    m.innerHTML=[['/roll d20','🎲 Roll a d20'],['/roll 2d6','🎲 Roll 2d6'],['/flip','🪙 Flip a coin'],['/card','🃏 Draw a card'],['/rps rock','✊ Rock, paper, scissors'],['/pick ','🎯 Pick one of…'],['/8ball','🎱 Magic 8-ball']].map(([c,l])=>`<button class="ghost" data-dc="${c}">${l}</button>`).join('')+'<div class="small" style="padding:6px 8px 2px">Or type them anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee</div>';
+    document.body.appendChild(m); const r=b.getBoundingClientRect(); m.style.position='fixed'; m.style.left=Math.max(8,Math.min(innerWidth-310,r.left))+'px'; m.style.bottom=(innerHeight-r.top+6)+'px'; m.querySelectorAll('[data-dc]').forEach(x=>x.onclick=()=>{ const inp=$('#input'); inp.value=(inp.value.trim()?inp.value.trimEnd()+' ':'')+x.dataset.dc; inp.focus(); m.remove(); });
+    setTimeout(()=>document.addEventListener('click',function h(ev){ if(!ev.target.closest('#diceMenu')){ const mm=$('#diceMenu'); if(mm) mm.remove(); document.removeEventListener('click',h); } }),0); }; })();
+// <<< dice
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4444,8 +4474,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.72.0';
+const APP_VERSION = '0.73.0';
 const CHANGELOG = [
+ {v:'0.73.0', d:'2026-11-20', notes:['Fair dice and games. New 🎲 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes.']},
  {v:'0.72.0', d:'2026-11-20', notes:['Places you\'ve been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the 🗺 World map, districts you\'ve been to are marked 📍 and the rest stay dim until you explore them. 🧰 Tools → 📮 Places shows your postcards (tap one to jump back to that moment) and the places you visit most.']},
  {v:'0.71.0', d:'2026-11-20', notes:['🧰 Tools → 🕸️ Web: a live map of how everyone feels about each other (very close, friendly, neutral, tense, hostile), plus dashed lines for how much each person trusts you. Tap someone to highlight their connections and read each relationship. It changes as the story goes.']},
  {v:'0.70.0', d:'2026-11-20', notes:['Secrets. When someone confides a real secret (or you do), the story remembers who knows it. People keep secrets or let them slip according to who they are, so a secret can spread off-screen to their friends, and the person it belongs to may find out who talked and feel betrayed. 🧰 Tools → 🤫 Secrets shows your secrets and who knows them, plus the ones you\'ve learned.']},
