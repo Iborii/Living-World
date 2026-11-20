@@ -990,6 +990,8 @@ button:hover{background:#262b36}
   </div>
   <div class="grid2">
     <div><label>Background lives on/off</label><select id="sBgOn"><option value="1">On</option><option value="0">Off (save money)</option></select></div>
+    <div><label>Ambient sound</label><select id="sSound"><option value="on">On (rain, wind, crowds, music, text buzz)</option><option value="off">Off</option></select></div>
+    <div><label>Sound volume</label><input type="range" id="sSoundVol" min="0" max="100" step="5"></div>
     <div><label>Weather and light effects</label><select id="sFx"><option value="on">On: rain, snow, fog, stars and the light of the hour behind the story</option><option value="off">Off</option></select></div>
     <div><label>Interface animations</label><select id="sAnim"><option value="full">Full: cards, menus and buttons move</option><option value="calm">Calm: no motion</option></select></div>
     <div><label>Character deaths</label><select id="sDeaths"><option value="on">On: characters can die if the story leads there</option><option value="off">Off: lethal harm leaves them badly hurt instead</option></select></div>
@@ -1291,7 +1293,7 @@ function addContact(id, how){ const P=phone(); if(P.contacts.includes(id)) retur
 function contactPic(c){ const P=S&&S.phone; return (P&&P.photos&&P.photos[c.id])||c.phoneImg||c.img||''; }
 function thread(id){ const P=phone(); return P.threads[id]||(P.threads[id]=[]); }
 function phoneOn(){ return $('#phoneModal').classList.contains('on'); }
-function addText(id, me, text, kind){ const m={me, text:String(text).trim(), t:S.clock, read:me||(phoneOn()&&phView==='chat'&&phoneOpenId===id)}; if(kind) m.kind=kind; if(!m.text) return; thread(id).push(m); if(thread(id).length>400) thread(id).splice(0,100); renderPhoneBadge(); if(phoneOn()) renderPhone(); save(); }
+function addText(id, me, text, kind){ const m={me, text:String(text).trim(), t:S.clock, read:me||(phoneOn()&&phView==='chat'&&phoneOpenId===id)}; if(kind) m.kind=kind; if(!m.text) return; thread(id).push(m); if(thread(id).length>400) thread(id).splice(0,100); if(!me&&kind!=='call') try{ sndBuzz(); }catch(e){} renderPhoneBadge(); if(phoneOn()) renderPhone(); save(); }
 function unreadCount(){ const P=phone(); let n=0; for(const id in P.threads) n+=P.threads[id].filter(m=>!m.me&&!m.read).length; n+=P.calls.filter(c=>c.missed&&!c.out&&!c.seen).length; n+=P.feed.filter(f=>!f.seen).length?1:0; return n; }
 const uN=()=>persona().name||'User';
 function textSnippet(id,n){ return (phone().threads[id]||[]).slice(-n).map(m=>`[${mmdd(m.t)} ${hhmm(m.t)}] ${m.me?uN():charById(id).name}: ${m.text.replace(/\n+/g,' / ')}`).join(' | '); }
@@ -2872,7 +2874,7 @@ function travelBlock(){ const here=S.user.loc; const dHere=String(here).split(',
   const lines=dists.map(d=>{ const r=routeOptions(here,d+', x'); return `${d}: ${r.opts.map(o=>`${o.mode} ${o.min} min${o.cost?` (${money(o.cost)})`:''}`).join(', ')}`; });
   const night=!metroRunning();
   return `GETTING AROUND (real travel time; nobody teleports): from ${dHere}: ${lines.join(' | ')||'everything is close by'}.${night?' The metro has stopped for the night (runs 05:30 to 00:30); buses stop at 23:00. Taxis or walking only.':' Metro runs 05:30 to 00:30, buses until 23:00.'}${rush()?' It\'s rush hour: trains are packed and taxis crawl.':''} When ${uN()} travels to another district, play the trip (the platform, the ride, traffic, the walk) and move the time stamp forward by the trip time, and add [[RIDE: metro|bus|taxi|walk]] next to the [[MOVE]] so the fare is paid. Companions travel with them and pay their own fares unless someone covers them.\n`; }
-function applyRide(arg){ const mode=String(arg||'').trim().toLowerCase().split(/\s|:/)[0]; if(!['metro','bus','taxi','walk'].includes(mode)) return; const S0=S.user; const r=routeOptions(S0.lastLoc||S0.loc, S0.loc);
+function applyRide(arg){ const mode=String(arg||'').trim().toLowerCase().split(/\s|:/)[0]; if(!['metro','bus','taxi','walk'].includes(mode)) return; if(mode==='metro') S.user.lastRide=S.clock; const S0=S.user; const r=routeOptions(S0.lastLoc||S0.loc, S0.loc);
   const o=(r.opts||[]).find(x=>x.mode===mode); if(!o||!o.cost) return;
   if(mode==='taxi') pay('user','taxi',o.cost,'taxi fare'); else { pay('user','transit',o.cost,mode+' fare'); for(const id of S.user.companions) pay(id,'transit',o.cost,mode+' fare'); } }
 
@@ -3105,6 +3107,57 @@ function habitLines(pres){ const rs=allRoutines().filter(r=>pres.some(c=>c.id===
 const STRONG_MOOD=/angry|furious|hurt|betray|upset|sad|heartbroken|devastat|crushed|humiliat|jealous|ecstatic|giddy|elated|thrilled|in love|smitten|anxious|scared|terrified|ashamed|guilty|resent/i;
 function dayMood(c){ const h=hashStr(c.id+isoDate(S.clock))%100; return h<10?'having an off day for no real reason: shorter fuse, low energy':h>91?'in an unusually good mood today':''; }
 function moodCarry(st){ if(!st.mood) return ''; const age=S.clock-st.mood.t; if(age<8*HOUR||age>40*HOUR||!STRONG_MOOD.test(st.mood.word)) return ''; return `still ${age>24*HOUR?'a little ':''}${st.mood.word} from ${age>20*HOUR?'yesterday':'earlier'}${st.mood.why?` (${st.mood.why})`:''}, fading`; }
+
+// ======================= ambient sound (generated in the app, no files) =======================
+// Quiet layers that follow where you are and the weather: rain, wind, thunder, the city's hum, crowd murmur, music through
+// a wall, night insects, the metro, and a buzz when a text comes in.
+const SND={ctx:null, on:false, layers:{}, timer:0, lastThunder:0};
+function sndCfgOn(){ return (CFG.sound||'on')!=='off'; }
+function sndVol(){ return Math.max(0,Math.min(1,(+CFG.soundVol||50)/100)); }
+function noiseBuf(ctx, kind){ const len=ctx.sampleRate*4, b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); let last=0;
+  for(let i=0;i<len;i++){ const w=Math.random()*2-1; if(kind==='brown'){ last=(last+.02*w)/1.02; d[i]=last*3.5; } else if(kind==='pink'){ last=.97*last+.03*w; d[i]=(w*.3+last*2.2); } else d[i]=w; } return b; }
+function mkNoise(kind, filterType, freq, q){ const c=SND.ctx; const src=c.createBufferSource(); src.buffer=noiseBuf(c,kind); src.loop=true; const f=c.createBiquadFilter(); f.type=filterType; f.frequency.value=freq; if(q) f.Q.value=q;
+  const g=c.createGain(); g.gain.value=0; src.connect(f); f.connect(g); g.connect(SND.master); src.start(); return {src,f,g}; }
+function sndInit(){ if(SND.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; const c=SND.ctx=new AC(); SND.master=c.createGain(); SND.master.gain.value=sndVol(); SND.master.connect(c.destination);
+  SND.layers.rain=mkNoise('white','highpass',900,.4); SND.layers.rainLow=mkNoise('pink','lowpass',700,.3);
+  SND.layers.wind=mkNoise('pink','bandpass',380,.6); SND.layers.city=mkNoise('brown','lowpass',180,.5);
+  SND.layers.crowd=mkNoise('pink','bandpass',900,1.4); SND.layers.room=mkNoise('brown','lowpass',90,.3);
+  SND.layers.metro=mkNoise('brown','lowpass',120,.8);
+  // crowd murmur: wobble the volume so it sounds like voices
+  const lfo=c.createOscillator(), lg=c.createGain(); lfo.frequency.value=2.7; lg.gain.value=.25; lfo.connect(lg); lg.connect(SND.layers.crowd.g.gain); lfo.start();
+  // wind gusts
+  const wl=c.createOscillator(), wg=c.createGain(); wl.frequency.value=.11; wg.gain.value=180; wl.connect(wg); wg.connect(SND.layers.wind.f.frequency); wl.start();
+  // music through a wall: a soft kick
+  SND.kick=c.createGain(); SND.kick.gain.value=0; SND.kick.connect(SND.master);
+  // night insects
+  SND.bugs=c.createGain(); SND.bugs.gain.value=0; SND.bugs.connect(SND.master);
+  SND.timer=setInterval(sndUpdate,1500); sndUpdate(); }
+function ramp(g, v, s){ if(!g) return; const t=SND.ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(Math.max(0,v), t, s||1.2); }
+function sndScene(){ if(!S||!W||SCREEN!=='world') return null; const x=wxCached(); const loc=String(S.user.loc||''); const d=dt(S.clock); const night=d.h>=20||d.h<6;
+  const out=isOutdoors(loc,''); const inside=!out;
+  const crowd=/cafe|café|arcade|godfinger|market|mall|galleria|station|square|restaurant|soup|teamilk|yum cha|bar|club|livehouse|precinct|lobby|mart|street/i.test(loc)&&!(night&&d.h<5);
+  const music=/livehouse|club|bar|concert|stage|studio/i.test(loc); const metro=/metro|subway|train|station/i.test(loc)||(S.user.lastRide&&S.clock-S.user.lastRide<20*MIN);
+  const hollow=/hollow/i.test(loc); const rural=/temple|summit|mountain|peninsula|courtyard|garden|park|outer ring|desert/i.test(loc);
+  return {x, out, inside, crowd, music, metro, hollow, rural, night, warm:x.temp>=60}; }
+function sndUpdate(){ if(!SND.ctx) return; const on=sndCfgOn()&&!document.hidden; SND.master.gain.setTargetAtTime(on?sndVol()*.9:0, SND.ctx.currentTime, .6); if(!on) return;
+  const sc=sndScene(); const L=SND.layers; if(!sc){ for(const k in L) ramp(L[k].g,0); ramp(SND.kick,0); ramp(SND.bugs,0); return; }
+  const k=sc.x.kind; const rainAmt={drizzle:.18,rain:.45,downpour:.8,storm:.9}[k]||0; const muff=sc.inside?.35:1;
+  ramp(L.rain.g, rainAmt*.22*muff); L.rain.f.frequency.setTargetAtTime(sc.inside?600:1000, SND.ctx.currentTime, 1); ramp(L.rainLow.g, rainAmt*.35*muff);
+  const windAmt=(k==='storm'?.9:k==='downpour'?.5:k==='snow'?.35:.12)*(sc.out?1:.25)*(sc.hollow?1.6:1); ramp(L.wind.g, windAmt*.3);
+  ramp(L.city.g, (sc.rural||sc.hollow?.05:sc.out?.5:.18)*(sc.night?.6:1)*.35);
+  ramp(L.crowd.g, sc.crowd?(sc.out?.10:.14):0); ramp(L.room.g, sc.inside?.12:0); ramp(L.metro.g, sc.metro?.45:0);
+  // music thump
+  if(sc.music&&!SND.kickT){ SND.kickT=setInterval(()=>{ if(!SND.ctx) return; const c=SND.ctx, o=c.createOscillator(), g=c.createGain(); o.frequency.setValueAtTime(110,c.currentTime); o.frequency.exponentialRampToValueAtTime(42,c.currentTime+.18); g.gain.setValueAtTime(.0001,c.currentTime); g.gain.exponentialRampToValueAtTime(.55,c.currentTime+.01); g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.3); o.connect(g); g.connect(SND.kick); o.start(); o.stop(c.currentTime+.32); }, 500); }
+  if(!sc.music&&SND.kickT){ clearInterval(SND.kickT); SND.kickT=0; } ramp(SND.kick, sc.music?.18:0, .8);
+  // night insects in warm weather outdoors
+  const bugs=sc.night&&sc.out&&sc.warm&&!sc.x.wet; ramp(SND.bugs, bugs?.05:0, 2);
+  if(bugs&&Math.random()<.5){ const c=SND.ctx; for(let i=0;i<3;i++){ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=4200+Math.random()*900; const t=c.currentTime+i*.09+Math.random()*.4; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.4,t+.02); g.gain.linearRampToValueAtTime(0,t+.06); o.connect(g); g.connect(SND.bugs); o.start(t); o.stop(t+.08); } }
+  // thunder
+  if(k==='storm'&&Date.now()-SND.lastThunder>9000&&Math.random()<.25){ SND.lastThunder=Date.now(); const t=mkNoise('brown','lowpass',90,.7); const c=SND.ctx; const g=t.g.gain; const n=c.currentTime; g.setValueAtTime(0,n); g.linearRampToValueAtTime(.9*muff,n+.4); g.exponentialRampToValueAtTime(.001,n+4.5); setTimeout(()=>{ try{ t.src.stop(); }catch(e){} },5000); } }
+// a buzz when a text comes in
+function sndBuzz(){ if(!SND.ctx||!sndCfgOn()) return; const c=SND.ctx; for(let i=0;i<2;i++){ const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=170; const t=c.currentTime+i*.28; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.08*sndVol(),t+.02); g.gain.setValueAtTime(.08*sndVol(),t+.16); g.gain.linearRampToValueAtTime(0,t+.2); const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600; o.connect(f); f.connect(g); g.connect(c.destination); o.start(t); o.stop(t+.22); } }
+// browsers only allow sound after you click something
+document.addEventListener('pointerdown',()=>{ if(sndCfgOn()){ sndInit(); if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); } },{capture:true});
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3370,7 +3423,7 @@ function openSettings(){
   refreshWipeToggle(); vaultUI();
   $('#verLine').textContent=`Version ${APP_VERSION}`+(window.lwUpdate?'':WEBAPP?' (phone/web app)':' (browser version)');
   $('#resetBtn').style.display=W?'':'none'; $('#exportBtn').style.display=W?'':'none'; $('#importBtn').style.display=W?'':'none';
-  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sAnim').value=CFG.anim||'full'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
+  $('#sProvider').value=CFG.provider; $('#sKey').value=CFG.key; $('#sBase').value=CFG.base; $('#sMain').value=CFG.main; $('#sBg').value=CFG.bg; $('#sBeat').value=CFG.beat; $('#sMaxTok').value=CFG.maxTok; $('#sBgOn').value=CFG.bgOn; $('#sSound').value=CFG.sound||'on'; $('#sSoundVol').value=CFG.soundVol==null?50:CFG.soundVol; $('#sRealism').value=CFG.realism||'full'; $('#sAway').value=CFG.away||'pause'; $('#sThink').value=CFG.think||'0'; $('#sDeaths').value=CFG.deaths||'on'; $('#sFx').value=CFG.fx||'on'; $('#sAnim').value=CFG.anim||'full'; $('#sLimit').value=CFG.dailyLimit||0; $('#sVoice').value=CFG.voice||'off'; { const s=spendSummary(); $('#sSpend').textContent=CFG.provider==='deepseek'?`Today about $${s.today.usd.toFixed(3)} (${s.today.calls} requests, ${s.cache}% reused from cache) · this month about $${s.month.toFixed(2)}`:'Spending is tracked for DeepSeek only.'; }
   $('#baseRow').style.display=CFG.provider==='openai'?'':'none';
   $('#costNote').textContent='Tip: the story model writes your scenes (use a strong one). The background model writes everyone else\'s lives many times an hour, so a small cheap model keeps costs down. Raise "update every" to save more.';
   $('#settingsModal').classList.add('on');
@@ -3379,7 +3432,7 @@ $('#settingsBtn').onclick=openSettings;
 $('#sProvider').onchange=e=>{ $('#baseRow').style.display=e.target.value==='openai'?'':'none'; if(e.target.value==='deepseek'){ $('#sMain').value='deepseek-v4-pro'; $('#sBg').value='deepseek-v4-flash'; } if(e.target.value==='anthropic'){ $('#sMain').value='claude-sonnet-5-5'; $('#sBg').value='claude-haiku-5-5'; } if(e.target.value==='openai'&&/^(claude-|deepseek-)/.test($('#sMain').value)){ $('#sMain').value=''; $('#sBg').value=''; $('#sMain').placeholder='model id from your provider, e.g. provider/model-name'; $('#sBg').placeholder='a small, cheap model id'; } };
 $('#closeSettings').onclick=()=>$('#settingsModal').classList.remove('on');
 $('#setAcctBtn').onclick=()=>{ $('#settingsModal').classList.remove('on'); openAuth(); };
-$('#saveSettings').onclick=()=>{ setTimeout(applyAnim,0); const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, anim:$('#sAnim').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
+$('#saveSettings').onclick=()=>{ setTimeout(applyAnim,0); CFG.sound=$('#sSound').value; CFG.soundVol=+$('#sSoundVol').value; setTimeout(()=>{ if(sndCfgOn()) sndInit(); if(typeof sndUpdate==='function') sndUpdate(); },0); const wasHome=SCREEN==='home'; Object.assign(CFG,{provider:$('#sProvider').value,key:$('#sKey').value.trim(),base:$('#sBase').value.trim(),main:$('#sMain').value.trim(),bg:$('#sBg').value.trim(),beat:Math.max(10,+$('#sBeat').value||30),maxTok:+$('#sMaxTok').value||3000,bgOn:$('#sBgOn').value,realism:$('#sRealism').value, away:$('#sAway').value, think:$('#sThink').value, deaths:$('#sDeaths').value, fx:$('#sFx').value, anim:$('#sAnim').value, dailyLimit:Math.max(0,+$('#sLimit').value||0), voice:$('#sVoice').value}); saveCfg(); $('#settingsModal').classList.remove('on'); if(wasHome) renderHome(); else render(); };
 $('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`livingworld-${W.id}-${isoDate(S.clock)}.json`; a.click(); };
 $('#importBtn').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); if(j.world!==W.id) throw new Error('That save is for a different world.'); S=j; save(); render(); notice('Save loaded.'); }catch(err){ notice('Could not load: '+err.message,true); } };
@@ -3560,8 +3613,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.48.0';
+const APP_VERSION = '0.49.0';
 const CHANGELOG = [
+ {v:'0.49.0', d:'2026-11-19', notes:['Ambient sound, made inside the app: rain that\'s muffled when you\'re indoors, wind and gusts (stronger in a storm or a Hollow), thunder, the low hum of the city, crowd murmur in cafés, arcades and stations, music thumping through the wall at the livehouse, the metro rumbling, and crickets on warm nights. Your phone buzzes when a text comes in. It starts after your first click. Turn it off or change the volume in Settings.']},
  {v:'0.48.0', d:'2026-11-19', notes:['Everyday life happens to everyone. Off-screen, characters lose their keys, spill drinks on themselves, run late when the bus doesn\'t come, find money, get fined, crack their phone screens, get packages, stub their toes, run into old friends, get followed by stray cats. It changes their mood, money and clothes, they remember it, and it carries into scenes. Small things happen around you too (a package, a noisy neighbor, a lost stranger asking directions); what you do about them is up to you.', 'Power outages hit whole districts for a few hours: lights off, fridges warming, phones can\'t charge.', 'Habits form around what you actually do. Spend time with someone at the same time and place on a few days and they start expecting it; skip a day and they notice and feel a little put out. Keep it up for weeks and it becomes comfortable but predictable.', 'Moods carry over: a big fight, a heartbreak or a great night still colors the next day before it fades. Everyone has off days and unusually good days too.']},
  {v:'0.47.0', d:'2026-11-19', notes:['People get sick. Colds, the flu and stomach bugs come on gradually (a scratchy throat a day before), get worse, peak and fade over several days, and they spread: spend time near someone contagious and you, or anyone else around, might catch it a day later. Winter and getting soaked in the cold raise the odds. Afterwards people are immune for a few weeks.', 'Eating food that has gone bad can give you food poisoning a few hours later.', 'Anyone badly sick (flu, stomach bug, food poisoning) stays home in bed instead of following their schedule. Cold medicine, cough syrup and painkillers from the pharmacy help, and hangovers already hit the morning after a heavy night. Injuries keep healing day by day as before.']},
  {v:'0.46.0', d:'2026-11-19', notes:['Bodies and clothes keep their state. Walk through the rain without an umbrella and you get damp, wet, then soaked (thin fabric goes see-through) and stay that way until you dry off or change. Spills leave stains until the clothes come off, mud stays on, crying smudges makeup, training leaves people sweaty until they shower, and everyone wakes up with bed hair until they fix it. A shower leaves hair wet for a while.', 'Homes change over time: dishes stack up in the sink, mess builds day by day until someone does chores, laundry piles up with every outfit change, and groceries people bring home go in the fridge, get cooked, and spoil. When you\'re at someone\'s place the story sees all of it.']},

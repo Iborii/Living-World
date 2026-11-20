@@ -1,13 +1,10 @@
 {
- "version": "0.48.0",
+ "version": "0.49.0",
  "date": "2026-11-19",
  "notes": [
-  "Everyday life happens to everyone. Off-screen, characters lose their keys, spill drinks on themselves, run late when the bus doesn't come, find money, get fined, crack their phone screens, get packages, stub their toes, run into old friends, get followed by stray cats. It changes their mood, money and clothes, they remember it, and it carries into scenes. Small things happen around you too (a package, a noisy neighbor, a lost stranger asking directions); what you do about them is up to you.",
-  "Power outages hit whole districts for a few hours: lights off, fridges warming, phones can't charge.",
-  "Habits form around what you actually do. Spend time with someone at the same time and place on a few days and they start expecting it; skip a day and they notice and feel a little put out. Keep it up for weeks and it becomes comfortable but predictable.",
-  "Moods carry over: a big fight, a heartbreak or a great night still colors the next day before it fades. Everyone has off days and unusually good days too."
+  "Ambient sound, made inside the app: rain that's muffled when you're indoors, wind and gusts (stronger in a storm or a Hollow), thunder, the low hum of the city, crowd murmur in caf\u00e9s, arcades and stations, music thumping through the wall at the livehouse, the metro rumbling, and crickets on warm nights. Your phone buzzes when a text comes in. It starts after your first click. Turn it off or change the volume in Settings."
  ],
  "file": "index.html",
- "sha256": "7c32638a7eb8e5b0eeb38f0ea85fa0a2d1889534dfd86b45dd3e0a9f8293adb9",
+ "sha256": "98e868a0802f2524146ec10c9e5a005f854675a5cd63d9a49a097e09c0fca468",
  "minShell": "0.5.0"
 }
