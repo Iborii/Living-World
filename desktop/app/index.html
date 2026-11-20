@@ -1714,6 +1714,7 @@ function stateBits(c, short){ const st=S.chars[c.id]; const n=needsOf(st); const
   for(const x of injuriesOf(st)) out.push((short?'🩹 ':'hurt: ')+injuryText(x,short));
   for(const f of fxBits(st,short)) out.push(f);
   for(const f of condBits(c.id,short)) out.push(f);
+  for(const f of illBits(c.id,short)) out.push(f);
   if(st.mood&&S.clock-st.mood.t<8*HOUR) out.push(short?st.mood.word:`feeling ${st.mood.word}${st.mood.why?` (${st.mood.why})`:''}`);
   if(!short){ const k=actKey(st.act); const reps=(st.acts||[]).filter(a=>a.k===k&&S.clock-a.t<7*24*HOUR).length; if(st.act!=='with you'&&reps>=4) out.push(`getting bored of "${st.act}" (${reps} times this week)`); }
   return out; }
@@ -1772,6 +1773,7 @@ function updateSchedules(){
     const sl=slotFor(c,S.clock);
     if(sl && (st.loc!==sl.loc || st.act!==sl.act)){ st.loc=sl.loc; st.act=sl.act; st.changed=true; }
   }
+  try{ sickOverrides(); }catch(e){}
 }
 
 // ======================= AI client =======================
@@ -2014,6 +2016,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
 ${ITEM_TAG_HELP}
    [[CONDITION: Name: soaked|wet|stained: what|sweaty|muddy|bed hair|smudged makeup|dry|clean]]  when someone gets soaked, spills on themselves, gets muddy, cries their makeup off, or dries off/cleans up (the app keeps it until it's fixed)
+   [[SICK: Name: cold|flu|stomach bug|food poisoning]]  only when someone clearly falls ill in the story (the app tracks how it runs and spreads)
    [[RIDE: metro|bus|taxi|walk]]  with [[MOVE]] when the user travels to another district (pays the fare)
    [[HURT: Name: injury: minor|moderate|serious]]  when a character gets hurt (use "user" only for an injury the user themselves described)
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
@@ -2052,6 +2055,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
   s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock(); if(phonesOn()) s+=phoneLifeBlock(pres);
+  s+=sickBlock(pres);
   { const ub=condBits('user'); if(ub.length) s+=`${uN().toUpperCase()}'S BODY AND CLOTHES RIGHT NOW: ${ub.join('; ')}. Describe how it looks and feels, but ${uN()}'s actions stay theirs.\n`; s+=homeLine(S.user.loc); }
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
@@ -2148,6 +2152,7 @@ function applyControls(text){
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()){ S.user.washed=S.clock; onWash('user'); } else { const c=charByName(arg); if(c){ S.chars[c.id].washed=S.clock; onWash(c.id); } } }
     else if(C==='CONDITION'){ applyCondTag(arg); }
+    else if(C==='SICK'){ const p2=arg.split(':').map(x=>x.trim()); const w=whoId(p2[0]); const k=(p2[1]||'cold').toLowerCase(); const kind=/flu/.test(k)?'flu':/stomach|vomit|bug/.test(k)?'stomach':/poison/.test(k)?'foodpoison':'cold'; if(w){ catchIll(w,kind,p2.slice(2).join(':')); const st=w==='user'?S.user:S.chars[w]; if(st&&st.ill) st.ill.start=S.clock; } }
   }
   if(withList) setCompanions(withList);
   if(rideMode) try{ applyRide(rideMode); }catch(e){}
@@ -2313,7 +2318,7 @@ function tick(){
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
   try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
-  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
+  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); sickTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
   if(!S.paused&&phonesOn()) try{ phoneLifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('phone',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
@@ -2727,6 +2732,7 @@ function useItem(who, name){ const st=who==='user'?S.user:S.chars[who]; if(!st) 
   if(it&&it.adult&&(it.cat==='alcohol'||it.cat==='smoking')&&c&&c.minor) return null;
   if(e){ if(it&&it.uses>1){ e.left=(e.left||it.uses)-1; if(e.left<=0){ e.n--; e.left=it.uses; if(e.n<=0) inv.splice(inv.indexOf(e),1); } } else if(!it||it.uses===1){ e.n--; if(e.n<=0) inv.splice(inv.indexOf(e),1); } }
   if(!it) return e||null; const fx=it.fx;
+  if(['food','snack','drink'].includes(fx)) maybeFoodPoison(who,e);
   if(fx==='food'){ if(who==='user') S.user.lastAte=S.clock; else needsOf(st).lastAte=S.clock; }
   else if(fx==='snack'){ const n=who==='user'?S.user:needsOf(st); n.lastAte=Math.max(n.lastAte||0, S.clock-2.5*HOUR); }
   else if(fx==='alcohol') drink(st, who);
@@ -2992,6 +2998,44 @@ function homeLine(loc){ const res=residentsOf(loc); if(!res.length) return ''; c
   const fr=H.fridge.map(e=>itemLabel(e)); bits.push(fr.length?`fridge: ${fr.join(', ')}`:'the fridge is close to empty (condiments and not much else)');
   const lau=res.filter(c=>(S.chars[c.id].laundry||0)>=6).map(c=>c.name); if(lau.length) bits.push(`${lau.join(' and ')}'s laundry is piling up`);
   return `THIS HOME (${res.map(c=>c.name).join(', ')}'s place; show it, it says something about them): ${bits.join('; ')}.\n`; }
+
+// ======================= sickness: colds that spread, flu, stomach bugs, food poisoning =======================
+const ILL={
+ cold:{name:'a cold',inc:[18,40],sick:[3,6],spread:.035,severe:false,syms:['a scratchy throat','a runny nose','sneezing fits','a stuffy, nasal voice','tired and a bit foggy']},
+ flu:{name:'the flu',inc:[24,48],sick:[4,7],spread:.05,severe:true,syms:['a fever and chills','aching all over','a hacking cough','exhausted, barely able to get up','no appetite']},
+ stomach:{name:'a stomach bug',inc:[12,36],sick:[1,3],spread:.03,severe:true,syms:['nausea','stomach cramps','running to the bathroom','pale and clammy','can\'t keep food down']},
+ foodpoison:{name:'food poisoning',inc:[2,6],sick:[1,2],spread:0,severe:true,syms:['nausea','cramps','vomiting','shaky and pale']},
+};
+function illOf(who){ const st=who==='user'?S.user:S.chars[who]; return st&&st.ill&&S.clock<st.ill.end?st.ill:null; }
+function immune(who){ const st=who==='user'?S.user:S.chars[who]; if(!st) return true; if(who!=='user'){ const c=charById(who); if(!c||isConstruct(c)||isDead(c)) return true; } return st.immuneUntil&&S.clock<st.immuneUntil; }
+function catchIll(who, kind, why){ if(immune(who)||illOf(who)) return false; const d=ILL[kind]; const st=who==='user'?S.user:S.chars[who]; const h=hashStr(who+kind+Math.floor(S.clock/HOUR));
+  const inc=d.inc[0]+(h%(d.inc[1]-d.inc[0]+1)), days=d.sick[0]+(h%(d.sick[1]-d.sick[0]+1)); const start=S.clock+inc*HOUR;
+  st.ill={kind, t:S.clock, start, end:start+days*DAYMS, why:why||'', from:''}; return true; }
+function illStage(ill){ if(S.clock<ill.start) return 'coming down'; const p=(S.clock-ill.start)/(ill.end-ill.start); return p<.25?'getting worse':p<.6?'at its worst':p<.85?'getting better':'nearly over'; }
+function illBits(who, short){ const ill=illOf(who); if(!ill) return []; const d=ILL[ill.kind]; const stg=illStage(ill);
+  if(stg==='coming down'){ const left=(ill.start-S.clock)/HOUR; return left<8?[short?'feeling off':'feeling a little off (coming down with something, doesn\'t know it yet)']:[]; }
+  const n=stg==='at its worst'?d.syms.length:stg==='getting worse'?3:2; const syms=d.syms.slice(0,n).join(', ');
+  return [short?`sick (${ill.kind==='foodpoison'?'food poisoning':ill.kind})`:`sick with ${d.name}, ${stg}: ${syms}${ill.why?` (${ill.why})`:''}`]; }
+function contagious(who){ const ill=illOf(who); if(!ill) return false; const d=ILL[ill.kind]; return d.spread>0&&S.clock>ill.start-10*HOUR&&S.clock<ill.end-DAYMS*0.5; }
+function sickTick(dMin){ if(!S||!W||dMin<=0) return; const h=dMin/60; const people=['user',...W.characters.filter(c=>!isDead(c)).map(c=>c.id)];
+  const locOf=w=>w==='user'?S.user.loc:S.chars[w].loc;
+  // spreading: people in the same place catch it from someone contagious
+  for(const a of people){ if(!contagious(a)) continue; const ill=illOf(a); const d=ILL[ill.kind];
+    for(const b of people){ if(b===a||illOf(b)||immune(b)) continue; const together=sameLoc(locOf(a),locOf(b))||(a==='user'&&S.user.companions.includes(b))||(b==='user'&&S.user.companions.includes(a));
+      if(together&&Math.random()<d.spread*h){ if(catchIll(b, ill.kind)){ const st=b==='user'?S.user:S.chars[b]; st.ill.from=a; } } } }
+  // getting over it gives some immunity
+  for(const w of people){ const st=w==='user'?S.user:S.chars[w]; if(st&&st.ill&&S.clock>=st.ill.end){ st.immuneUntil=S.clock+25*DAYMS; if(w!=='user') addMemory({who:[w], text:`Got over ${ILL[st.ill.kind].name}`, imp:1, src:'sick'}); delete st.ill; } }
+  // a small daily chance of catching a cold; more in winter and after getting soaked and cold
+  const day=Math.floor(S.clock/DAYMS); if(S._sickDay!==day){ S._sickDay=day; const winter=/winter|late autumn|fall/i.test(weather(S.clock).season);
+    for(const w of people){ const c=condOf(w); const chilled=(c.wet>=1.5&&wxNow(S.clock).temp<55)?.08:0; const p=(winter?.012:.005)+chilled; if(Math.random()<p) catchIll(w, Math.random()<.18?'flu':Math.random()<.15?'stomach':'cold', chilled?'after getting soaked and cold':''); } } }
+// eating spoiled food can make you sick
+function maybeFoodPoison(who, e){ if(e&&isSpoiled(e)&&Math.random()<.7) catchIll(who,'foodpoison','from eating '+e.name.toLowerCase()+' that had gone bad'); }
+// the very sick stay home in bed
+function sickOverrides(){ for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead||S.user.companions.includes(c.id)) continue; const ill=illOf(c.id); if(!ill||!ILL[ill.kind].severe) continue; const stg=illStage(ill); if(stg==='coming down'||stg==='nearly over') continue;
+    const home=homeOf(c); if(!home) continue; st.loc=home; st.act=`home sick in bed (${ILL[ill.kind].name})`; } }
+function sickBlock(pres){ const out=[]; const u=illBits('user'); if(u.length) out.push(`${uN()} is ${u[0]} (describe how it feels; what ${uN()} does about it is up to them)`);
+  for(const c of pres){ if(contagious(c.id)&&illOf(c.id)&&S.clock>=illOf(c.id).start) out.push(`${c.name} is contagious; close contact can spread it`); }
+  return out.length?`SICKNESS: ${out.join('. ')}.\n`:''; }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3447,8 +3491,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.46.0';
+const APP_VERSION = '0.47.0';
 const CHANGELOG = [
+ {v:'0.47.0', d:'2026-11-19', notes:['People get sick. Colds, the flu and stomach bugs come on gradually (a scratchy throat a day before), get worse, peak and fade over several days, and they spread: spend time near someone contagious and you, or anyone else around, might catch it a day later. Winter and getting soaked in the cold raise the odds. Afterwards people are immune for a few weeks.', 'Eating food that has gone bad can give you food poisoning a few hours later.', 'Anyone badly sick (flu, stomach bug, food poisoning) stays home in bed instead of following their schedule. Cold medicine, cough syrup and painkillers from the pharmacy help, and hangovers already hit the morning after a heavy night. Injuries keep healing day by day as before.']},
  {v:'0.46.0', d:'2026-11-19', notes:['Bodies and clothes keep their state. Walk through the rain without an umbrella and you get damp, wet, then soaked (thin fabric goes see-through) and stay that way until you dry off or change. Spills leave stains until the clothes come off, mud stays on, crying smudges makeup, training leaves people sweaty until they shower, and everyone wakes up with bed hair until they fix it. A shower leaves hair wet for a while.', 'Homes change over time: dishes stack up in the sink, mess builds day by day until someone does chores, laundry piles up with every outfit change, and groceries people bring home go in the fridge, get cooked, and spoil. When you\'re at someone\'s place the story sees all of it.']},
  {v:'0.45.0', d:'2026-11-19', notes:['Phones behave like phones. Batteries drain (faster for people glued to their screens) and charge at home or overnight; a power bank gives you +50%. A dead phone can\'t text or call, and a character\'s dead phone means your texts wait until they charge it.', 'No signal inside Hollows, tunnels, basements and the like: your texts queue and go out when you\'re back in range, and calls won\'t connect.', 'Read receipts: Sent, Delivered, Read 14:02. Characters can leave you on read, and they remember doing it.', 'Missed calls offer to leave a voicemail, and the character reacts to it when they get to it (call back, text back, or not). Calls to a dead or out-of-range phone go straight to voicemail.']},
  {v:'0.44.0', d:'2026-11-19', notes:['Travel takes real time and money. Walking, the metro (05:30 to 00:30), buses (until 23:00) or a taxi (any time, slow and pricey at rush hour). The story plays the trip and moves the clock forward by the trip time, and fares come out of your wallet (your companions pay their own unless someone covers them).', 'Text someone to come over and they really decide: how much they trust you, what they\'re doing, how far away they are, whether they can afford the fare, and their mood. If they say yes they give an honest ETA, actually travel (you can watch them on the map), and turn up in the scene. If you\'ve left by then, they text asking where you went, and they remember it.']},

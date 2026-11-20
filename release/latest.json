@@ -1,11 +1,12 @@
 {
- "version": "0.46.0",
+ "version": "0.47.0",
  "date": "2026-11-19",
  "notes": [
-  "Bodies and clothes keep their state. Walk through the rain without an umbrella and you get damp, wet, then soaked (thin fabric goes see-through) and stay that way until you dry off or change. Spills leave stains until the clothes come off, mud stays on, crying smudges makeup, training leaves people sweaty until they shower, and everyone wakes up with bed hair until they fix it. A shower leaves hair wet for a while.",
-  "Homes change over time: dishes stack up in the sink, mess builds day by day until someone does chores, laundry piles up with every outfit change, and groceries people bring home go in the fridge, get cooked, and spoil. When you're at someone's place the story sees all of it."
+  "People get sick. Colds, the flu and stomach bugs come on gradually (a scratchy throat a day before), get worse, peak and fade over several days, and they spread: spend time near someone contagious and you, or anyone else around, might catch it a day later. Winter and getting soaked in the cold raise the odds. Afterwards people are immune for a few weeks.",
+  "Eating food that has gone bad can give you food poisoning a few hours later.",
+  "Anyone badly sick (flu, stomach bug, food poisoning) stays home in bed instead of following their schedule. Cold medicine, cough syrup and painkillers from the pharmacy help, and hangovers already hit the morning after a heavy night. Injuries keep healing day by day as before."
  ],
  "file": "index.html",
- "sha256": "025bb78480917035070e7bdb61bb102fd18784c942c3d9233c02ea1402164d49",
+ "sha256": "d6969ac314033f4a841b4b56f57090f3d8e676c2a8da035abad68daf69e1df0e",
  "minShell": "0.5.0"
 }
