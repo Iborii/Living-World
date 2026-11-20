@@ -1,10 +1,10 @@
 {
- "version": "0.55.2",
+ "version": "0.55.3",
  "date": "2026-11-20",
  "notes": [
-  "Dracaene is no longer timid. Like in the game, she is quietly confident and composed: she takes charge, talks to strangers easily and only gets flustered over specific things (praising herself by accident, being teased in public, Lindverne picking her up)."
+  "Dracaene puts both hands over her mouth when she is shocked or in awe."
  ],
  "file": "index.html",
- "sha256": "25806bfb846ab47de8444d78851623730704b839523e92520a33fde892582aec",
+ "sha256": "a80ba436433cc6e780df8d10498e11dacb6a5cb9daf65ff8e5ca46434fdd7391",
  "minShell": "0.5.0"
 }
