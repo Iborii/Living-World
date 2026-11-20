@@ -1294,10 +1294,12 @@ function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads|
     const start=(W.opening&&W.opening.contacts)||(W.opening&&W.opening.companions)||[]; P.contacts=[...new Set([...Object.keys(P.threads).filter(id=>P.threads[id].length), ...start])]; }
   return P; }
 const isContact=id=>phone().contacts.includes(id);
-function addContact(id, how, nick){ const P=phone(); P.nick=P.nick||{}; const c=charById(id); if(!c) return false; if(nick&&String(nick).trim()) P.nick[id]=String(nick).trim().slice(0,40); if(P.contacts.includes(id)) return false; P.contacts.push(id);
-  addText(id,true,how==='gave'?`📇 ${c.name} put their number in your phone${P.nick[id]?` (saved as "${P.nick[id]}")`:''}`:how==='swap'?'📇 You swapped numbers':'📇 Added to your contacts','call');
-  addMemory({who:[id], text:how==='gave'?`Put my number in ${uN()}'s phone${P.nick[id]?` and saved myself as "${P.nick[id]}"`:''}`:`${c.name} and ${uN()} swapped phone numbers`, imp:2, src:'phone'});
-  pushNotif({icon:'📇', app:'Contacts', title:'New contact added', body:P.nick[id]?`"${P.nick[id]}" (${c.full})`:c.full, open:{view:'chat',id}}); save(); return true; }
+function addContact(id, how, nick, viaId){ const P=phone(); P.nick=P.nick||{}; const c=charById(id); if(!c) return false; if(nick&&String(nick).trim()) P.nick[id]=String(nick).trim().slice(0,40); if(P.contacts.includes(id)) return false; P.contacts.push(id);
+  const via=viaId?charById(viaId):null;
+  addText(id,true,how==='passed'&&via?`📇 ${via.name} gave you ${c.name}'s number`:how==='gave'?`📇 ${c.name} put their number in your phone${P.nick[id]?` (saved as "${P.nick[id]}")`:''}`:how==='swap'?'📇 You swapped numbers':'📇 Added to your contacts','call');
+  if(how==='passed'&&via){ addMemory({who:[via.id], text:`Gave ${uN()} ${c.name}'s phone number`, imp:2, src:'phone'}); (P.passed=P.passed||{})[id]=via.id; }  // ${c.name} doesn't know yet
+  else addMemory({who:[id], text:how==='gave'?`Put my number in ${uN()}'s phone${P.nick[id]?` and saved myself as "${P.nick[id]}"`:''}`:`${c.name} and ${uN()} swapped phone numbers`, imp:2, src:'phone'});
+  pushNotif({icon:'📇', app:'Contacts', title:'New contact added', body:(P.nick[id]?`"${P.nick[id]}" (${c.full})`:c.full)+(how==='passed'&&via?` · from ${via.name}`:''), open:{view:'chat',id}}); save(); return true; }
 function contactPic(c){ const P=S&&S.phone; return (P&&P.photos&&P.photos[c.id])||c.phoneImg||c.img||''; }
 function thread(id){ const P=phone(); return P.threads[id]||(P.threads[id]=[]); }
 function phoneOn(){ return $('#phoneModal').classList.contains('on'); }
@@ -1361,7 +1363,7 @@ const cleanLines=(out,c)=>out.replace(/^\s*\|.*\|\s*$/mg,'').split('\n').map(l=>
 async function textReply(c, extra){
   const th=thread(c.id).slice(-24); const pn=uN();
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
-${charVoice(c, th.map(m=>m.text).join(' '))}
+${charVoice(c, th.map(m=>m.text).join(' '))}${(phone().passed||{})[c.id]&&!thread(c.id).some(m=>!m.me&&m.kind!=='call')?`\n\nYou never gave ${pn} your number: ${charById(phone().passed[c.id])?.name||'someone'} passed it along. This is a number you don't have saved, so at first you don't know who's texting; react like you would to that.`:''}
 
 Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
@@ -2028,7 +2030,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[WITH: Name, Name]] or [[WITH: nobody]]  REQUIRED in every reply, as the last control line: exactly which main characters are physically with the user at the end of this reply. Leave out anyone who stayed behind, went home, was never there, or is only on the phone. If the user goes off with one person (a date, a walk), everyone else is left out
 `}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  whenever the user's words or actions this turn matter to a character: kindness, help, keeping or breaking a promise, rudeness, lying, flirting they did or didn't want. Usually 1 to 3, up to 8 for something big. Most replies with a real interaction should have at least one
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
-   [[NUMBER: Name]]  whenever a character's number ends up in the user's phone in ANY way: swapping numbers, writing it on their hand or a napkin, grabbing the user's phone and typing it in themselves (even as a joke), or the user taking it. If they saved themselves under a funny name, add it: [[NUMBER: Name: saved as "Your Favorite Angel"]]
+   [[NUMBER: Name]]  whenever a character's number ends up in the user's phone in ANY way (one tag per number). If someone passes along SOMEONE ELSE'S number, tag the person whose number it is: [[NUMBER: Velina: from Norma]]. Ways it happens: swapping numbers, writing it on their hand or a napkin, grabbing the user's phone and typing it in themselves (even as a joke), or the user taking it. If they saved themselves under a funny name, add it: [[NUMBER: Name: saved as "Your Favorite Angel"]]
    [[TEXT: Name: message]]  when a character in the scene actually sends the user a phone text (one tag per text). Show them typing it in the story first
    [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
    [[MOOD: Name: feeling: why]]  when something clearly changes how a character feels (angry, hurt, giddy, sulking…)
@@ -2171,14 +2173,17 @@ function applyControls(text){
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
-    else if(C==='NUMBER'){ const p2=arg.split(':').map(x=>x.trim()); const c=charByName(p2[0]); const nick=(p2.slice(1).join(':').match(/["“']([^"”']{1,40})["”']/)||[])[1]||p2.slice(1).join(':').replace(/^saved as\s*/i,'').trim(); if(c&&hasPhone(c)){ numberTagged=true; addContact(c.id, /saved|put|typed/i.test(arg)||nick?'gave':'swap', nick); } }
+    else if(C==='NUMBER'){ const p2=arg.split(':').map(x=>x.trim()); const c=charByName(p2[0]); const rest=p2.slice(1).join(':');
+      const fm=rest.match(/\b(?:from|via|given by|passed (?:along )?by|courtesy of)\s+([^"“”',;]+)/i); const via=fm?charByName(fm[1].trim()):null;
+      const nick=(rest.match(/["“']([^"”']{1,40})["”']/)||[])[1]||((rest.match(/saved as\s+([^,;]+)/i)||[])[1]||'').trim();
+      if(c&&hasPhone(c)) addContact(c.id, via&&via.id!==c.id?'passed':(/saved|put|typed/i.test(rest)||nick?'gave':'swap'), nick, via&&via.id!==c.id?via.id:null); }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()){ S.user.washed=S.clock; onWash('user'); } else { const c=charByName(arg); if(c){ S.chars[c.id].washed=S.clock; onWash(c.id); } } }
     else if(C==='CONDITION'){ applyCondTag(arg); }
     else if(C==='SICK'){ const p2=arg.split(':').map(x=>x.trim()); const w=whoId(p2[0]); const k=(p2[1]||'cold').toLowerCase(); const kind=/flu/.test(k)?'flu':/stomach|vomit|bug/.test(k)?'stomach':/poison/.test(k)?'foodpoison':'cold'; if(w){ catchIll(w,kind,p2.slice(2).join(':')); const st=w==='user'?S.user:S.chars[w]; if(st&&st.ill) st.ill.start=S.clock; } }
   }
   if(withList) setCompanions(withList);
   if(rideMode) try{ applyRide(rideMode); }catch(e){}
-  if(!numberTagged) try{ detectNumbers(keep.join('\n'), present()); }catch(e){}
+  try{ detectNumbers(keep.join('\n'), present()); }catch(e){}
   for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act=S.chars[id].ovr?S.chars[id].ovr.act+' (with you)':'with you'; }
   return keep.join('\n').trim();
 }
@@ -3272,7 +3277,12 @@ function notifListHTML(){ const L=(S.notifs||[]).slice(-6).reverse(); if(!L.leng
 function contactName(c){ const nk=phone().nick&&phone().nick[c.id]; return nk||c.full; }
 // fallback: a character obviously put their number in the user's phone but the story forgot the tag
 const NUM_RX=/\b(put|puts|putting|type[sd]?|typing|punch(es|ed|ing)?|enter(s|ed|ing)?|add(s|ed|ing)?|save[sd]?|saving|program(s|med)?|key(s|ed)? in|scrawl(s|ed)?|writes?|wrote|jot(s|ted)?|gives?|gave|giving|slips?|slipped|hands?|handed)\b[^.!?\n]{0,60}\b(number|contact|digits)\b|\bswap(s|ped|ping)? numbers\b|\bexchang(e|es|ed|ing) numbers\b/i;
-function detectNumbers(text, pres){ if(!phonesOn()) return; const t=String(text||''); if(!NUM_RX.test(t)) return;
+function detectNumbers(text, pres){ if(!phonesOn()) return; const t=String(text||'');
+  // someone passing along a third person's number: "Velina's number", "the number for Velina"
+  for(const c of W.characters){ if(isContact(c.id)||!hasPhone(c)||isDead(c)) continue; const nm=c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const m=t.match(new RegExp(`[^.!?\\n]*(?:\\b${nm}(?:'s|’s)\\s+(?:phone\\s+|cell\\s+)?(?:number|contact|digits)|\\b(?:number|contact|digits)\\s+(?:for|of)\\s+${nm}\\b)[^.!?\\n]*`,'i'));
+    if(m&&/\b(give|gives|gave|giving|send|sends|sent|texts?|share[sd]?|pass(es|ed)?|add(s|ed)?|put|puts|type[sd]?|save[sd]?|here'?s|forward(s|ed)?|airdrop|write[s]?|wrote|scrawl)/i.test(m[0])){ const via=pres.find(o=>o.id!==c.id&&new RegExp(`\\b${o.name}\\b`,'i').test(m[0])); addContact(c.id, via?'passed':'swap', null, via?via.id:null); } }
+  if(!NUM_RX.test(t)) return;
   for(const c of pres){ if(isContact(c.id)||!hasPhone(c)) continue; const re=new RegExp(`${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^.!?\\n]{0,120}(?:${NUM_RX.source})|(?:${NUM_RX.source})[^.!?\\n]{0,80}${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'i'); if(re.test(t)){ const nick=(t.match(new RegExp(`(?:saved|save[sd]?|named|label(?:l)?ed|under)\\s+(?:herself|himself|themself|themselves|it|her number|his number)?\\s*(?:as|under)\\s+["“']([^"”'\\n]{1,40})["”']`,'i'))||[])[1]; addContact(c.id,'gave',nick); } } }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
@@ -3729,8 +3739,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.51.1';
+const APP_VERSION = '0.51.2';
 const CHANGELOG = [
+ {v:'0.51.2', d:'2026-11-19', notes:['Characters can pass along someone else\'s number (Norma giving you Velina\'s): it goes into your contacts as Velina, marked as from Norma. Norma remembers giving it to you; Velina doesn\'t know you have it until you text her. Giving several numbers at once now works too.']},
  {v:'0.51.1', d:'2026-11-19', notes:['Periods are toned down to how they really go for most people: a small moment at most (slipping off to the restroom, a painkiller with lunch, a chocolate craving) and then she gets on with her day. How much it shows depends on her toughness and changes month to month: often she barely notices, sometimes it\'s a mild day, occasionally a rougher one, and even then it\'s never treated like an injury. Characters stop bringing it up over and over.']},
  {v:'0.51.0', d:'2026-11-19', notes:['Body physics for adult women: busts bounce and settle when someone runs, jumps, laughs or flops onto the couch (more with a bigger bust or no bra, held still by a sports bra or tight top), hips and butts sway and jiggle on stairs, thighs shift when sitting. It shows up naturally alongside hair and cloth movement, and never for anyone under 18 or protected.', 'Phone notifications: a banner slides down like a real phone for new contacts, texts (with a preview), people arriving, paydays and bills. Tap it to jump to the chat; the latest ones also sit on your phone\'s home screen.', 'Characters can now give you their number in any way the story plays it: swapping numbers, writing it on your hand, or grabbing your phone and typing it in themselves. If they save themselves under a joke name ("Your Favorite Angel 🖤"), that\'s the name in your contacts. If the story forgets to register it, the app catches it from the text.']},
  {v:'0.50.0', d:'2026-11-19', notes:['Jobs and bills. Characters earn for the hours they actually work and get paid every Friday evening; rent is due on the 1st and phone bills on the 15th. Whoever comes up short gets stressed about it, remembers it, and may text you (if they trust you) to vent or ask to borrow money. Set your own job, pay and rent in Bag & money, and the story can pay you for work you do.', 'Debts are remembered: lend someone money and they (and you) know who owes whom until it\'s paid back.', 'Gift tastes. Every character has real loves, likes and things they can\'t stand, from canon for the Zenless cast (Cissia and eggs, Yinhu and coupons, Fufu and broccoli…) and from their sheet for everyone else. A good gift raises trust and they remember it; a bad one gets an honest reaction and, a day or two later, quietly re-gifted to a friend or shoved in a drawer. The same gift over and over gets less exciting, and big reactions get gossiped about. Use the Give button in your bag.']},

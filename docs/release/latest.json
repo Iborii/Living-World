@@ -1,10 +1,10 @@
 {
- "version": "0.51.1",
+ "version": "0.51.2",
  "date": "2026-11-19",
  "notes": [
-  "Periods are toned down to how they really go for most people: a small moment at most (slipping off to the restroom, a painkiller with lunch, a chocolate craving) and then she gets on with her day. How much it shows depends on her toughness and changes month to month: often she barely notices, sometimes it's a mild day, occasionally a rougher one, and even then it's never treated like an injury. Characters stop bringing it up over and over."
+  "Characters can pass along someone else's number (Norma giving you Velina's): it goes into your contacts as Velina, marked as from Norma. Norma remembers giving it to you; Velina doesn't know you have it until you text her. Giving several numbers at once now works too."
  ],
  "file": "index.html",
- "sha256": "842bb7f63dd63ac0d250d9579d30c41fd6ee1f1d607663b5799d6d7f5f899f57",
+ "sha256": "9fd3134e8808655b3c6653f68db983168cf21772a357064152572e2cd7dbb097",
  "minShell": "0.5.0"
 }
