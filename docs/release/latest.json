@@ -1,10 +1,10 @@
 {
- "version": "0.55.0",
+ "version": "0.55.1",
  "date": "2026-11-20",
  "notes": [
-  "All your chats in one place. On a computer, tap the Chats tab on the left edge and a sidebar slides in; on a phone, tap the round \ud83d\udcac button at the bottom and a sheet slides up. It lists every story, Everyone story, group story, group chat, 1-on-1, roleplay and timeline you can continue, newest first, with who's in it, the in-story time and the last line. Tap one to jump straight back in."
+  "Norma now sits the way she does in her agent pose: either legs crossed, or knees together with one knee a little higher than the other, on chairs and on the floor alike."
  ],
  "file": "index.html",
- "sha256": "1af56a835f9e840a7b537206c56f667de250370207baa1a3fbb799ba26f46412",
+ "sha256": "a6cf1a632bcecc834d438ee0d4a8cb1e07a5bf12d7d7f157d8642712bdd9e1b1",
  "minShell": "0.5.0"
 }
