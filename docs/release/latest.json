@@ -1,10 +1,10 @@
 {
- "version": "0.74.0",
+ "version": "0.75.0",
  "date": "2026-11-20",
  "notes": [
-  "Do Not Disturb. A new \ud83c\udf19 Focus app on the phone: turn on Do Not Disturb now, or every night between times you choose. Texts and notifications still arrive, but with no banner and no buzz, and a \ud83c\udf19 shows on the Phone button. Nobody knows you're on silent, so if you take hours to answer, they notice (\"finally. where were you\")."
+  "Weather alerts. When a thunderstorm, heavy rain or snow is on the way (or it's dangerously hot or bitterly cold), your phone gets a weather alert, and the \ud83c\udf26\ufe0f Weather app shows it at the top. Everyone else got the alert too, so people may mention it, change plans, grab an umbrella or head inside early."
  ],
  "file": "index.html",
- "sha256": "752061cd04b574458b577080754be382b8ef0e144e65856367a88955d9b9b460",
+ "sha256": "548c9785bbeb0985c58a6ecc5dd610f07302c81d5a4cef6fec746ee4069c12f0",
  "minShell": "0.5.0"
 }

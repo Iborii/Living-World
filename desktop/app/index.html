@@ -774,6 +774,9 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .dice-menu{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;min-width:220px;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .dice-menu button{text-align:left;padding:7px 10px}
 /* <<< dice */
+/* >>> wxalert */
+.wx-alert{background:rgba(224,90,90,.14);border:1px solid rgba(224,90,90,.5);border-radius:12px;padding:8px 12px;margin-bottom:12px}
+/* <<< wxalert */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -4024,6 +4027,16 @@ PROMPT_HOOKS.push(()=>{ const d6=[...Array(4)].map(()=>1+fairRnd(6)), d20=[...Ar
     document.body.appendChild(m); const r=b.getBoundingClientRect(); m.style.position='fixed'; m.style.left=Math.max(8,Math.min(innerWidth-310,r.left))+'px'; m.style.bottom=(innerHeight-r.top+6)+'px'; m.querySelectorAll('[data-dc]').forEach(x=>x.onclick=()=>{ const inp=$('#input'); inp.value=(inp.value.trim()?inp.value.trimEnd()+' ':'')+x.dataset.dc; inp.focus(); m.remove(); });
     setTimeout(()=>document.addEventListener('click',function h(ev){ if(!ev.target.closest('#diceMenu')){ const mm=$('#diceMenu'); if(mm) mm.remove(); document.removeEventListener('click',h); } }),0); }; })();
 // <<< dice
+// >>> wxalert
+// ======================= weather alerts on the phone =======================
+function wxAlertFor(ms){ const out=[]; for(let h=1;h<=4;h++){ const t=ms+h*HOUR; const w=wxNow(t); if(['storm','downpour','snow'].includes(w.kind)&&wxNow(ms).kind!==w.kind){ out.push({kind:w.kind, t:Math.floor(t/HOUR)*HOUR, desc:w.desc}); break; } }
+  const now=weather(ms); if(now.temp>=95) out.push({kind:'heat', t:ms, desc:`${now.temp}°F`}); if(now.temp<=25) out.push({kind:'cold', t:ms, desc:`${now.temp}°F`}); return out; }
+const WXA={storm:['⛈️','Thunderstorm warning','Thunderstorms expected around'],downpour:['🌧️','Heavy rain advisory','Heavy rain expected around'],snow:['❄️','Snow advisory','Snow expected around'],heat:['🥵','Heat advisory','It\'s dangerously hot:'],cold:['🥶','Cold advisory','Bitter cold:']};
+function wxAlertTick(){ if(!S||!W||SCREEN!=='world') return; S.wxAlerted=S.wxAlerted||{}; for(const a of wxAlertFor(S.clock)){ const key=a.kind+'|'+isoDate(a.t)+'|'+(a.kind==='heat'||a.kind==='cold'?'':dt(a.t).h);
+    if(S.wxAlerted[key]) continue; S.wxAlerted[key]=1; const L=WXA[a.kind]; if(phonesOn()) pushNotif({icon:L[0], app:'Weather', title:L[1], body:`${L[2]} ${a.kind==='heat'||a.kind==='cold'?a.desc:hhmm(a.t)}`, open:{view:'wx'}}); } }
+setInterval(()=>{ try{ wxAlertTick(); }catch(e){} }, 30000);
+PROMPT_HOOKS.push(()=>{ const A=wxAlertFor(S.clock); if(!A.length) return ''; return `\nWEATHER ALERT on everyone's phones: ${A.map(a=>`${WXA[a.kind][1]} (${a.kind==='heat'||a.kind==='cold'?a.desc:'around '+hhmm(a.t)})`).join('; ')}. People who checked their phones may mention it, change plans, grab umbrellas or head inside early.\n`; });
+// <<< wxalert
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4493,8 +4506,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.74.0';
+const APP_VERSION = '0.75.0';
 const CHANGELOG = [
+ {v:'0.75.0', d:'2026-11-20', notes:['Weather alerts. When a thunderstorm, heavy rain or snow is on the way (or it\'s dangerously hot or bitterly cold), your phone gets a weather alert, and the 🌦️ Weather app shows it at the top. Everyone else got the alert too, so people may mention it, change plans, grab an umbrella or head inside early.']},
  {v:'0.74.0', d:'2026-11-20', notes:['Do Not Disturb. A new 🌙 Focus app on the phone: turn on Do Not Disturb now, or every night between times you choose. Texts and notifications still arrive, but with no banner and no buzz, and a 🌙 shows on the Phone button. Nobody knows you\'re on silent, so if you take hours to answer, they notice ("finally. where were you").']},
  {v:'0.73.0', d:'2026-11-20', notes:['Fair dice and games. New 🎲 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes.']},
  {v:'0.72.0', d:'2026-11-20', notes:['Places you\'ve been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the 🗺 World map, districts you\'ve been to are marked 📍 and the rest stay dim until you explore them. 🧰 Tools → 📮 Places shows your postcards (tap one to jump back to that moment) and the places you visit most.']},
@@ -4983,7 +4997,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
   }
   else if(phView==='wx'){ phHeader('Weather',esc(W.setting||''),true);
     const hrs=[...Array(8)].map((_,i)=>S.clock+i*3*60*MIN); const days=[...Array(5)].map((_,i)=>Math.floor(S.clock/DAYMS)*DAYMS+i*DAYMS+12*60*MIN);
-    B.innerHTML=`<div style="padding:16px"><div class="ph-clock" style="font-size:44px">${weather(S.clock).temp}°F</div><div class="ph-date">${esc(weather(S.clock).desc)}</div>
+    B.innerHTML=`<div style="padding:16px">${(()=>{ try{ return wxAlertFor(S.clock).map(x=>`<div class="wx-alert">${WXA[x.kind][0]} <b>${WXA[x.kind][1]}</b><div class="small">${WXA[x.kind][2]} ${x.kind==='heat'||x.kind==='cold'?x.desc:hhmm(x.t)}</div></div>`).join(''); }catch(e){ return ''; } })()}<div class="ph-clock" style="font-size:44px">${weather(S.clock).temp}°F</div><div class="ph-date">${esc(weather(S.clock).desc)}</div>
       <div class="ph-sec" style="padding-left:0">Next hours</div><div style="display:flex;gap:10px;overflow:auto">${hrs.map(t=>`<div class="ph-wx"><div class="small">${hhmm(t)}</div><b>${weather(t).temp}°</b><div class="small">${esc(weather(t).desc)}</div></div>`).join('')}</div>
       <div class="ph-sec" style="padding-left:0">Next days</div>${days.map(t=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f2129"><span>${wdName(t)}</span><span class="small">${esc(weather(t).desc)}</span><b>${weather(t).temp}°F</b></div>`).join('')}</div>`;
   }
