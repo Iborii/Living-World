@@ -1,10 +1,10 @@
 {
- "version": "0.54.0",
+ "version": "0.54.1",
  "date": "2026-11-20",
  "notes": [
-  "Start a new roleplay without losing your old one: on a world's page (or the Everyone story on a universe page), \"Start new roleplay\" begins a fresh story in a separate save. You pick the scene like a brand new start, name it, and switch between your roleplays from the same page any time. \"Start over\" still exists if you really want to wipe one."
+  "The Sunbringers have a lot more free time, and spend most of it together: weekday lunches at Cuppa Moment, dinners at each other's quarters (tea and talk at Eldreda's, Lindverne's Starlight Knight movie nights), Friday nights out on Beckford Street, Saturday strolls and game night, Sunday brunch and dinner cooked together. Work hours are shorter, with real free time in the late afternoon."
  ],
  "file": "index.html",
- "sha256": "6be54026e29a9f2cb3ab902d324028b222a56a2c9002befc431498ba8a3a6c97",
+ "sha256": "6af506014cbfb28f20598d1005afb96d2bc168a81dbdfe75767a5644e2774f63",
  "minShell": "0.5.0"
 }
