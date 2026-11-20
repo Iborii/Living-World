@@ -1,10 +1,10 @@
 {
- "version": "0.73.0",
+ "version": "0.74.0",
  "date": "2026-11-20",
  "notes": [
-  "Fair dice and games. New \ud83c\udfb2 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes."
+  "Do Not Disturb. A new \ud83c\udf19 Focus app on the phone: turn on Do Not Disturb now, or every night between times you choose. Texts and notifications still arrive, but with no banner and no buzz, and a \ud83c\udf19 shows on the Phone button. Nobody knows you're on silent, so if you take hours to answer, they notice (\"finally. where were you\")."
  ],
  "file": "index.html",
- "sha256": "12eae6778348ce5294560ac5dfa649e7864fbc05dc0bbb601bd9179e7f0fa66b",
+ "sha256": "752061cd04b574458b577080754be382b8ef0e144e65856367a88955d9b9b460",
  "minShell": "0.5.0"
 }

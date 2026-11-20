@@ -751,6 +751,7 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .bub.me .rx{right:auto;left:6px}.bub.has-rx{margin-bottom:14px}.bub.them{cursor:pointer}
 .react-bar{display:flex;gap:2px;background:#22242d;border:1px solid #33364a;border-radius:20px;padding:3px 6px;width:max-content;margin:-2px 0 8px;animation:enterUp .2s ease}
 .react-bar button{background:none;border:0;font-size:19px;padding:2px 4px;cursor:pointer;border-radius:50%}.react-bar button.on,.react-bar button:hover{background:#3a3d50}
+.dnd-mark{font-size:11px;margin-left:2px}
 /* <<< phone2 */
 /* >>> ach */
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
@@ -1483,7 +1484,7 @@ ${relLines([c].concat(W.characters.filter(x=>x.id!==c.id)), c.id)}
 Trust toward ${pn}: ${st.trust}/100 (${trustLabel(st.trust)}).
 ${(()=>{ const i=cycleInfo(c,S.clock); return i&&i.note?`Body today: ${i.label}: ${i.note}.\n`:''; })()}${(()=>{ const p=plansBlock(c.id); return p?`Your plans with ${pn}:\n${p}\n`:''; })()}
 Right now (${timeLine(S.clock)}) ${c.name} is at ${st.loc}, ${st.act}.`; }
-function threadMsgs(th){ const msgs=th.map(m=>({role:m.me?'user':'assistant', content:m.text+(m.react?(m.me?` (you reacted ${m.react} to this)`:` (${uN()} reacted ${m.react} to this)`):'')}));
+function threadMsgs(th){ const msgs=th.map((m,i)=>({role:m.me?'user':'assistant', content:(()=>{ const pv=th[i-1]; const gap=m.me&&pv&&!pv.me&&m.t-pv.t>=3*HOUR?Math.round((m.t-pv.t)/HOUR):0; return gap?`(${uN()} answered ${gap} hours later) `:''; })()+m.text+(m.react?(m.me?` (you reacted ${m.react} to this)`:` (${uN()} reacted ${m.react} to this)`):'')}));
   while(msgs.length&&msgs[0].role==='assistant') msgs.shift();
   const merged=[]; for(const m of msgs){ const L=merged[merged.length-1]; if(L&&L.role===m.role) L.content+='\n'+m.content; else merged.push({...m}); } return merged; }
 const cleanLines=(out,c)=>out.replace(/^\s*\|.*\|\s*$/mg,'').split('\n').map(l=>l.replace(/^\s*(\*|-)\s*/,'').replace(new RegExp('^'+c.name+':\\s*','i'),'').replace(/^"|"$/g,'').trim()).filter(l=>l&&!/^(ACCEPT|DECLINE)$/i.test(l));
@@ -3633,6 +3634,24 @@ document.addEventListener('click',e=>{ const bar=e.target.closest('.react-bar');
   const b=e.target.closest('#phBody .bub.them'); if(!b||!phoneOpenId) return; const all=[...document.querySelectorAll('#phBody .bub')]; const th=thread(phoneOpenId).filter(m=>true); const idx=all.indexOf(b); const m=th[idx]; if(!m||m.me) return;
   const r=document.createElement('div'); r.className='react-bar'; r.innerHTML=REACTS.map(x=>`<button data-rx="${x}" class="${m.react===x?'on':''}">${x}</button>`).join(''); b.after(r);
   r.querySelectorAll('[data-rx]').forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); m.react=m.react===x.dataset.rx?'':x.dataset.rx; if(!m.react) delete m.react; save(); renderPhone(); }); });
+
+// ---------- Do Not Disturb ----------
+function dndCfg(){ S.dnd=S.dnd||{on:false, sched:false, from:'23:00', to:'07:00'}; return S.dnd; }
+function dndActive(){ if(!S) return false; const d=dndCfg(); if(d.on) return true; if(!d.sched) return false; const m=dt(S.clock).h*60+dt(S.clock).mi, a=toMin(d.from), b=toMin(d.to); return a<b?(m>=a&&m<b):(m>=a||m<b); }
+(()=>{ const _p=pushNotif; pushNotif=function(n){ if(dndActive()&&!/Calendar|Contacts/.test(n.app||'')){ if(!S) return; S.notifs=S.notifs||[]; S.notifs.push({icon:n.icon||'🔔', app:n.app||'', title:String(n.title||'').slice(0,80), body:String(n.body||'').slice(0,160), t:S.clock, open:n.open||null, quiet:true}); if(S.notifs.length>40) S.notifs.splice(0,S.notifs.length-40); return; } return _p.apply(this,arguments); };
+  const _b=sndBuzz; sndBuzz=function(){ if(dndActive()) return; return _b.apply(this,arguments); }; })();
+PROMPT_HOOKS.push(()=>dndActive()?`\n${uN()}'S PHONE is on Do Not Disturb: texts and notifications arrive silently, so ${uN()} doesn't notice them until they look at their phone.\n`:'');
+PHONE_VIEWS.dnd=(B,P)=>{ phHeader('Do Not Disturb','',true); const d=dndCfg();
+  B.innerHTML=`<div style="padding:16px"><label style="display:flex;gap:10px;align-items:center;font-size:16px"><input type="checkbox" id="dndOn" ${d.on?'checked':''} style="width:auto"> 🌙 Do Not Disturb now</label>
+  <p class="small">No banners and no buzzing. Texts still arrive; you see them when you open your phone. People don't know you're on silent, so if you take hours to answer, they notice.</p>
+  <label style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="dndSched" ${d.sched?'checked':''} style="width:auto"> Every night</label>
+  <div class="grid2"><div><label>From</label><input type="time" id="dndFrom" value="${d.from}"></div><div><label>To</label><input type="time" id="dndTo" value="${d.to}"></div></div>
+  <p class="small">${dndActive()?'🌙 Do Not Disturb is on right now.':'Do Not Disturb is off right now.'}</p></div>`;
+  const upd=()=>{ d.on=$('#dndOn').checked; d.sched=$('#dndSched').checked; d.from=$('#dndFrom').value||'23:00'; d.to=$('#dndTo').value||'07:00'; save(); renderPhone(); renderDndMark(); };
+  ['dndOn','dndSched','dndFrom','dndTo'].forEach(id=>$('#'+id).onchange=upd); };
+if(!PHONE_APPS.some(a=>a[0]==='dnd')) PHONE_APPS.push(['dnd','🌙']);
+function renderDndMark(){ const b=$('#phoneBtn'); if(!b||!S) return; let m=b.querySelector('.dnd-mark'); if(dndActive()){ if(!m){ m=document.createElement('span'); m.className='dnd-mark'; m.textContent='🌙'; b.appendChild(m); } } else if(m) m.remove(); }
+setInterval(()=>{ try{ if(SCREEN==='world') renderDndMark(); }catch(e){} }, 5000);
 // <<< phone2
 // >>> album
 // ======================= memories album: firsts and milestones with each character =======================
@@ -4474,8 +4493,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.73.0';
+const APP_VERSION = '0.74.0';
 const CHANGELOG = [
+ {v:'0.74.0', d:'2026-11-20', notes:['Do Not Disturb. A new 🌙 Focus app on the phone: turn on Do Not Disturb now, or every night between times you choose. Texts and notifications still arrive, but with no banner and no buzz, and a 🌙 shows on the Phone button. Nobody knows you\'re on silent, so if you take hours to answer, they notice ("finally. where were you").']},
  {v:'0.73.0', d:'2026-11-20', notes:['Fair dice and games. New 🎲 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes.']},
  {v:'0.72.0', d:'2026-11-20', notes:['Places you\'ve been. Every new place you visit gets a postcard: its name, the date and weather, who was with you, and a line about what it was like. On the 🗺 World map, districts you\'ve been to are marked 📍 and the rest stay dim until you explore them. 🧰 Tools → 📮 Places shows your postcards (tap one to jump back to that moment) and the places you visit most.']},
  {v:'0.71.0', d:'2026-11-20', notes:['🧰 Tools → 🕸️ Web: a live map of how everyone feels about each other (very close, friendly, neutral, tense, hostile), plus dashed lines for how much each person trusts you. Tap someone to highlight their connections and read each relationship. It changes as the story goes.']},
@@ -4970,7 +4990,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
   if(phView!=='chat'){ $('#phCallBtn').style.display='none'; $('#phInvBtn').style.display='none'; }
   renderPhoneBadge(); save();
 }
-function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather',gallery:'Photos'})[k]; }
+function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather',gallery:'Photos',dnd:'Focus'})[k]; }
 function lightColor(hex){ const m=String(hex).match(/^#?([0-9a-f]{6})$/i); if(!m) return false; const n=parseInt(m[1],16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>150; }
 function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; if(phoneDead('user')){ notice('🪫 Your phone is dead. Charge it at home or use a power bank.',true); return; } $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v); S.user.batt=Math.max(0,battOf('user')-0.4);
   if(!S.branch&&present().some(x=>x.id===c.id)){ // they're right here: their phone buzzes in the scene
