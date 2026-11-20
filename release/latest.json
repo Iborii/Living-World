@@ -1,10 +1,10 @@
 {
- "version": "0.68.0",
+ "version": "0.69.0",
  "date": "2026-11-20",
  "notes": [
-  "Plans and promises. Plans you make out loud in the story (\"tomorrow at six, the arcade\") are now tracked just like phone invites: the other person puts it in their schedule and shows up, and if you don't, they notice and may text you about it. Promises are remembered too (\"I'll pay you back by Friday\"); overdue or broken ones get brought up. \ud83e\uddf0 Tools \u2192 \ud83e\udd1d Plans shows what's coming up, how past plans went, and your promises, which you can mark as kept or broken."
+  "\ud83c\udfc6 Achievements: 29 badges for things that happen across all your stories, from becoming close with someone, keeping a promise, being there on someone's birthday and getting soaked in the rain, to 1,000 messages in one story. A little banner pops up when you unlock one; see them all in \ud83e\uddf0 Tools \u2192 \ud83c\udfc6 Achievements. The Tools tabs now wrap onto two rows on a computer so you can see them all."
  ],
  "file": "index.html",
- "sha256": "449bb61f123b459fdb4a01d66969175abbf13f0f026f06cc2be560770efe9ca2",
+ "sha256": "403d309f78e43837382648d813a4f2435b26f7fb0a7983b363d0538a2a7da196",
  "minShell": "0.5.0"
 }

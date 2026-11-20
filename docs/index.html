@@ -736,6 +736,7 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .msg.flash{animation:msgFlash 1.8s ease}@keyframes msgFlash{0%,40%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
 @media (max-width:760px){ #toolsModal .box.tools-box{padding-top:env(safe-area-inset-top)!important} }
 :root{--rd-fs:17.5px} @media (max-width:760px){ :root{--rd-fs:16.5px} }
+@media (min-width:761px){ .tools-tabs{flex-wrap:wrap;overflow:visible} }
 /* <<< tools */
 /* >>> phone2 */
 .bub.photo{padding:4px;background:transparent!important;border:0!important;max-width:78%}
@@ -750,6 +751,14 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .react-bar{display:flex;gap:2px;background:#22242d;border:1px solid #33364a;border-radius:20px;padding:3px 6px;width:max-content;margin:-2px 0 8px;animation:enterUp .2s ease}
 .react-bar button{background:none;border:0;font-size:19px;padding:2px 4px;cursor:pointer;border-radius:50%}.react-bar button.on,.react-bar button:hover{background:#3a3d50}
 /* <<< phone2 */
+/* >>> ach */
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.ach{border:1px solid var(--line);border-radius:12px;padding:12px;opacity:.55;text-align:center}.ach.got{opacity:1;border-color:var(--accent);background:rgba(232,180,90,.06)}
+.ach .ai{display:block;font-size:30px;margin-bottom:4px}.ach b{display:block;font-size:14px}
+.ach-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,140%);z-index:130;display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5);transition:transform .45s cubic-bezier(.2,.8,.2,1);max-width:92vw}
+.ach-toast.on{transform:translate(-50%,0)}.ach-toast .ai{font-size:30px}
+@media (max-width:760px){ .ach-toast{bottom:calc(90px + env(safe-area-inset-bottom))} }
+/* <<< ach */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -3813,6 +3822,68 @@ toolTab('plans','🤝 Plans',body=>{ const P=phone(); const nm=w=>w==='user'?'Yo
       if(c&&p.from==='user'){ const st2=S.chars[cid]; if(st==='kept'){ st2.trust=Math.min(100,st2.trust+2); addMemory({who:[cid],text:`${uN()} kept their promise: ${p.text}`,imp:2,src:'promise'}); } else { st2.trust=Math.max(0,st2.trust-4); addMemory({who:[cid],text:`${uN()} broke their promise: ${p.text}`,imp:3,src:'promise'}); st2.mood={word:'let down',why:`${uN()} broke a promise`,t:S.clock}; } } }
     save(); renderTools(); }); });
 // <<< plans
+// >>> ach
+// ======================= achievements: badges for things that happen across all your stories =======================
+const ACH_KEY='livingworld_ach';
+const ACH=[
+ ['first','✍️','First words','Send your first message in a story'],
+ ['chat100','💬','Regular','100 messages in one story'],
+ ['chat1000','📚','Novelist','1,000 messages in one story'],
+ ['friend','🤝','Friends now','Reach 50 trust with someone'],
+ ['close','💛','Close','Reach 75 trust with someone'],
+ ['bff','✨','Inseparable','Reach 90 trust with someone'],
+ ['contacts5','📇','Networking','5 contacts in your phone'],
+ ['contacts10','🦋','Social butterfly','10 contacts in your phone'],
+ ['photo','📷','Say cheese','Send or get a photo'],
+ ['photos10','🖼️','Shutterbug','10 photos in your gallery'],
+ ['joke','😂','You had to be there','Start an inside joke or get a nickname'],
+ ['jokes5','🎭','Comedy club','5 inside jokes or nicknames in one story'],
+ ['promise','🫡','Word of honor','Keep a promise'],
+ ['broken','💔','Oops','Stand someone up or break a promise'],
+ ['plans','📅','It\'s a date','Show up for plans you made'],
+ ['bday','🎂','Happy birthday!','Be with someone on their birthday'],
+ ['nightowl','🦉','Night owl','Still out with someone between 2 and 4 in the morning'],
+ ['soaked','🌧️','Singing in the rain','Get soaked through'],
+ ['sick','🤒','Under the weather','Catch something'],
+ ['rich','💰','Loaded','Have 10,000 in your wallet (Dennies, dollars, whatever it is)'],
+ ['explorer','🧭','Explorer','Visit 10 different places in one story'],
+ ['diary','📔','Trusted with secrets','Read someone\'s diary'],
+ ['album','📸','Scrapbook','25 moments in your album'],
+ ['restore','⏪','Second chances','Go back to a restore point'],
+ ['book','📕','Published','Export a story as a book'],
+ ['fork','⑂','What if…','Start a new timeline from a message'],
+ ['everyone','🌐','Everyone at once','Play an Everyone story'],
+ ['group','👥','Group chat','Send a message in a group chat'],
+ ['week','🗓️','A week in their lives','Play a story for 7 in-story days'],
+];
+function achGet(){ try{ return JSON.parse(LS.getItem(ACH_KEY)||'{}'); }catch(e){ return {}; } }
+function achUnlock(id, quiet){ const A=achGet(); if(A[id]) return false; const a=ACH.find(x=>x[0]===id); if(!a) return false; A[id]={t:Date.now(), w:W?(W.title||'').split(':')[0]:''}; try{ LS.setItem(ACH_KEY,JSON.stringify(A)); }catch(e){}
+  if(!quiet) achToast(a); return true; }
+function achToast(a){ const el=document.createElement('div'); el.className='ach-toast'; el.innerHTML=`<span class="ai">${a[1]}</span><div><div class="small">Achievement unlocked</div><b>${esc(a[2])}</b><div class="small">${esc(a[3])}</div></div>`; document.body.appendChild(el);
+  setTimeout(()=>el.classList.add('on'),30); setTimeout(()=>{ el.classList.remove('on'); setTimeout(()=>el.remove(),500); },4200); }
+function achCheck(){ if(!S||!W) return; const A=achGet(); const fresh=[]; const u=id=>{ if(!A[id]&&!fresh.includes(id)) fresh.push(id); };
+  const mine=S.chat.filter(m=>m.role==='user'&&!m.hidden).length; if(mine>=1) u('first'); if(S.chat.length>=100) u('chat100'); if(S.chat.length>=1000) u('chat1000');
+  const tr=W.characters.map(c=>(S.chars[c.id]||{}).trust||0); const mx=Math.max(0,...tr); if(mx>=50) u('friend'); if(mx>=75) u('close'); if(mx>=90) u('bff');
+  try{ const n=W.characters.filter(c=>isContact(c.id)).length; if(n>=5) u('contacts5'); if(n>=10) u('contacts10'); }catch(e){}
+  try{ const ph=allPhotos().length; if(ph>=1) u('photo'); if(ph>=10) u('photos10'); }catch(e){}
+  const jk=(S.jokes||[]).length; if(jk>=1) u('joke'); if(jk>=5) u('jokes5');
+  if((S.promises||[]).some(p=>p.status==='kept'&&p.from==='user')) u('promise'); const P=phone();
+  if((S.promises||[]).some(p=>p.status==='broken'&&p.from==='user')||P.invites.some(v=>v.status==='stood-up')) u('broken'); if(P.invites.some(v=>v.status==='met')) u('plans');
+  const d=dt(S.clock); const md=`${pad(d.mo)}-${pad(d.d)}`; if(present().some(c=>bdayOf(c)===md)) u('bday');
+  if(d.h>=2&&d.h<4&&S.user.companions.length) u('nightowl'); try{ if(condOf('user').wet>=2) u('soaked'); if(illOf('user')) u('sick'); }catch(e){}
+  try{ if(walletOf('user').money>=10000) u('rich'); }catch(e){}
+  S.visitedA=S.visitedA||[]; const base=String(S.user.loc||'').split('(')[0].trim(); if(base&&!S.visitedA.includes(base)){ S.visitedA.push(base); } if(S.visitedA.length>=10) u('explorer');
+  if(Object.values(S.diary||{}).some(D=>Object.keys(D).length)) u('diary');
+  const al=Object.values(S.firsts||{}).reduce((n,F)=>n+Object.keys(F).length,0)+(S.pins||[]).length; if(al>=25) u('album');
+  if(W.combined&&!W.group&&!W.chat) u('everyone'); if(S.branch&&!S.branch.charId&&!S.branch.fresh) u('fork'); if(W.chat&&mine>=1) u('group');
+  const first=S.chat.find(m=>m.t); if(first&&S.clock-first.t>=7*DAYMS) u('week');
+  if(fresh.length===1) achUnlock(fresh[0]); else if(fresh.length>1){ fresh.forEach(id=>achUnlock(id,true)); achToast(['','🏆',`${fresh.length} achievements unlocked`,'See them in 🧰 Tools → 🏆 Achievements']); } }
+REPLY_HOOKS.push(()=>{ try{ achCheck(); }catch(e){} }); setInterval(()=>{ try{ if(SCREEN==='world') achCheck(); }catch(e){} }, 20000);
+(()=>{ const _r=restoreBackup; restoreBackup=function(){ const n=S.chat.length; const r=_r.apply(this,arguments); if(S.chat.length!==n||true) setTimeout(()=>{ if(bkList().some(b=>b.why==='before restore')) achUnlock('restore'); },300); return r; };
+  const _b=exportBook; exportBook=function(){ const r=_b.apply(this,arguments); achUnlock('book'); return r; }; })();
+toolTab('ach','🏆 Achievements',body=>{ const A=achGet(); const got=ACH.filter(a=>A[a[0]]).length;
+  body.innerHTML=`<p class="small" style="margin-top:0">${got} of ${ACH.length} unlocked, across all your stories.</p><div class="ach-grid">${ACH.map(a=>{ const x=A[a[0]]; return `<div class="ach ${x?'got':''}"><span class="ai">${x?a[1]:'🔒'}</span><b>${esc(a[2])}</b><div class="small">${esc(a[3])}</div>${x?`<div class="small" style="margin-top:4px;color:var(--accent)">${new Date(x.t).toLocaleDateString()}${x.w?' · '+esc(x.w):''}</div>`:''}</div>`; }).join('')}</div>`; });
+// <<< ach
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4282,8 +4353,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.68.0';
+const APP_VERSION = '0.69.0';
 const CHANGELOG = [
+ {v:'0.69.0', d:'2026-11-20', notes:['🏆 Achievements: 29 badges for things that happen across all your stories, from becoming close with someone, keeping a promise, being there on someone\'s birthday and getting soaked in the rain, to 1,000 messages in one story. A little banner pops up when you unlock one; see them all in 🧰 Tools → 🏆 Achievements. The Tools tabs now wrap onto two rows on a computer so you can see them all.']},
  {v:'0.68.0', d:'2026-11-20', notes:['Plans and promises. Plans you make out loud in the story ("tomorrow at six, the arcade") are now tracked just like phone invites: the other person puts it in their schedule and shows up, and if you don\'t, they notice and may text you about it. Promises are remembered too ("I\'ll pay you back by Friday"); overdue or broken ones get brought up. 🧰 Tools → 🤝 Plans shows what\'s coming up, how past plans went, and your promises, which you can mark as kept or broken.']},
  {v:'0.67.0', d:'2026-11-20', notes:['Text reactions. Tap someone\'s text to react with ❤️ 😂 😮 😢 😡 or 👍, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone.']},
  {v:'0.66.0', d:'2026-11-20', notes:['Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). 🧰 Tools → 😂 Jokes lists them, and you can add or remove your own.']},
