@@ -2176,7 +2176,8 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=raceLoreBlock([...pres, persona()], ctx);
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
   for(const c of absent){ if(isDead(c)) continue; const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
-  s+='\nREMEMBER: spoken dialogue shows real emotion through punctuation and sound (! ?! ... stutters, dashes, stretched words, interjections), in each character\'s own voice. Never flat lines of only commas and periods.\n';
+  try{ for(const f of (window.PROMPT_HOOKS||[])) s+=f(pres)||''; }catch(e){}
+  s+='\nREMEMBER: spoken dialogue sounds like real people in each character\'s own voice, never flat; emotion shows through punctuation and sound only as much as the moment calls for (a calm remark gets a calm line; big feelings get the ! ?! stutters and cut-offs).\n';
   return subUser(s);
 }
 function snapState(){ return JSON.parse(JSON.stringify({clock:S.clock, user:S.user, trust:Object.fromEntries(Object.entries(S.chars).map(([k,v])=>[k,{trust:v.trust,washed:v.washed,mood:v.mood||null,outfit:v.outfit||null}])), contacts:(S.phone&&S.phone.contacts)||null, rel:S.rel||null})); }
@@ -3469,6 +3470,16 @@ function toolsInit(){ if($('#toolsBtn')) return; const pb=$('#phoneBtn'); if(!pb
   $('#toolsClose').onclick=closeTools; $('#toolsModal').addEventListener('click',e=>{ if(e.target.id==='toolsModal') closeTools(); });
   document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'&&SCREEN==='world'&&!document.querySelector('.modal.on')){ e.preventDefault(); openTools('search'); } }); }
 toolsInit();
+
+// ---------- 2. story notes: your own rules for this story ----------
+var PROMPT_HOOKS=window.PROMPT_HOOKS=window.PROMPT_HOOKS||[];
+PROMPT_HOOKS.push(()=>{ const n=String(S.notes||'').trim(); return n?`\nSTORY NOTES FROM THE USER (their rules for this story; always follow them, quietly, without mentioning them):\n${n.slice(0,4000)}\n`:''; });
+toolTab('notes','📝 Notes',body=>{
+  body.innerHTML=`<p class="small" style="margin-top:0">Rules and facts for this story that the AI always follows, every reply. Use it for things it keeps forgetting or getting wrong. One per line works best.</p>
+  <textarea id="ntText" rows="12" style="width:100%" placeholder="Examples:\nAria doesn't know my name yet.\nIt's been raining all week in this story.\nNangong owes me 200 Dennies and keeps dodging it.\nKeep scenes slow; no time skips.">${esc(S.notes||'')}</textarea>
+  <div class="rowbtns" style="margin-top:8px"><button class="primary" id="ntSave">Save notes</button><span class="small" id="ntMsg" style="align-self:center"></span></div>`;
+  $('#ntSave').onclick=()=>{ S.notes=$('#ntText').value.slice(0,4000); save(); $('#ntMsg').textContent=S.notes.trim()?'Saved. The AI follows these from the next reply on.':'Notes cleared.'; };
+  $('#ntText').oninput=()=>{ $('#ntMsg').textContent=$('#ntText').value.length>4000?'Too long: only the first 4,000 characters are kept.':'Not saved yet.'; }; });
 // <<< tools
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3939,8 +3950,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.56.0';
+const APP_VERSION = '0.57.0';
 const CHANGELOG = [
+ {v:'0.57.0', d:'2026-11-20', notes:['🧰 Tools → 📝 Notes: write your own rules and facts for a story (like "Aria doesn\'t know my name yet") and the AI follows them every reply. Also: the reminder about emotional dialogue now asks for emotion in proportion, so calm moments stay calm.']},
  {v:'0.56.0', d:'2026-11-20', notes:['New 🧰 Tools button in a story, with 🔎 Search: find any word, name or place across the whole story, even the oldest messages. Tap a result to jump straight to it (it lights up). On a computer, Ctrl+F opens it too.']},
  {v:'0.55.6', d:'2026-11-20', notes:['Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications.']},
  {v:'0.55.5', d:'2026-11-20', notes:['Fixed: on phones, a character\'s profile couldn\'t scroll, so you got stuck and couldn\'t reach Edit. It scrolls now.']},
