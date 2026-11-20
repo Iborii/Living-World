@@ -1713,6 +1713,7 @@ function stateBits(c, short){ const st=S.chars[c.id]; const n=needsOf(st); const
   if(n.stress>=85) out.push('frazzled'); else if(n.stress>=60) out.push('stressed');
   for(const x of injuriesOf(st)) out.push((short?'🩹 ':'hurt: ')+injuryText(x,short));
   for(const f of fxBits(st,short)) out.push(f);
+  for(const f of condBits(c.id,short)) out.push(f);
   if(st.mood&&S.clock-st.mood.t<8*HOUR) out.push(short?st.mood.word:`feeling ${st.mood.word}${st.mood.why?` (${st.mood.why})`:''}`);
   if(!short){ const k=actKey(st.act); const reps=(st.acts||[]).filter(a=>a.k===k&&S.clock-a.t<7*24*HOUR).length; if(st.act!=='with you'&&reps>=4) out.push(`getting bored of "${st.act}" (${reps} times this week)`); }
   return out; }
@@ -1741,8 +1742,8 @@ async function genWardrobe(c){ if(wardrobeBusy.has(c.id)||!CFG.key||CFG.bgOn==='
 function applyLifeTag(C, arg, only){ // shared by the story and off-screen scenes
   const nameOf=s=>String(s||'').trim(); const parts=arg.split(':').map(x=>x.trim());
   if(C==='ATE'){ const a=parts[0].toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.lastAte=S.clock; else { const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))) needsOf(S.chars[c.id]).lastAte=S.clock; } return true; }
-  if(C==='MOOD'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]) S.chars[c.id].mood={word:parts[1].slice(0,40), why:(parts.slice(2).join(':')||'').slice(0,140), t:S.clock}; return true; }
-  if(C==='OUTFIT'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]){ const desc=parts.slice(1).join(':').slice(0,300); const wr=wardrobeOf(c); const m=wr.find(o=>desc.toLowerCase().startsWith(o.name.toLowerCase())); S.chars[c.id].outfit=m?{...m, since:S.clock}:{name:desc.split(/[,(]/)[0].slice(0,60), desc, kind:wantKind(c), since:S.clock}; } return true; }
+  if(C==='MOOD'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]&&/cry|cried|sob|tear/i.test(parts.slice(1).join(' '))) onCry(c.id); if(c&&(!only||only.includes(c.id))&&parts[1]) S.chars[c.id].mood={word:parts[1].slice(0,40), why:(parts.slice(2).join(':')||'').slice(0,140), t:S.clock}; return true; }
+  if(C==='OUTFIT'){ const c=charByName(parts[0]); if(c&&(!only||only.includes(c.id))&&parts[1]){ const desc=parts.slice(1).join(':').slice(0,300); const wr=wardrobeOf(c); const m=wr.find(o=>desc.toLowerCase().startsWith(o.name.toLowerCase())); onOutfitChange(c.id); S.chars[c.id].outfit=m?{...m, since:S.clock}:{name:desc.split(/[,(]/)[0].slice(0,60), desc, kind:wantKind(c), since:S.clock}; } return true; }
   if(C==='BUY'){ const c=charByName(parts[0]); if(c&&parts[1]){ wardrobeOf(c).push({name:parts[1].slice(0,60), kind:OUTFIT_KINDS.includes((parts[2]||'').toLowerCase())?parts[2].toLowerCase():'casual', desc:(OUTFIT_KINDS.includes((parts[2]||'').toLowerCase())?parts.slice(3).join(':'):parts.slice(2).join(':')).slice(0,300), bought:S.clock}); } return true; }
   if(C==='RETURN'){ const c=charByName(parts[0]); if(c&&parts[1]){ const wr=wardrobeOf(c); const i=wr.findIndex(o=>o.name.toLowerCase()===parts[1].toLowerCase()); if(i>=0) wr.splice(i,1); } return true; }
   if(C==='HURT'||C==='HEAL'){ const who=parts[0]; const isUser=who.toLowerCase()==='user'||who.toLowerCase()===(persona().name||'').toLowerCase(); const c=isUser?null:charByName(who); const st=isUser?S.user:(c&&S.chars[c.id]); if(!st||(c&&only&&!only.includes(c.id))) return true;
@@ -2012,6 +2013,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[OUTFIT: Name: what they're wearing now]]  when a character changes clothes
    [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
 ${ITEM_TAG_HELP}
+   [[CONDITION: Name: soaked|wet|stained: what|sweaty|muddy|bed hair|smudged makeup|dry|clean]]  when someone gets soaked, spills on themselves, gets muddy, cries their makeup off, or dries off/cleans up (the app keeps it until it's fixed)
    [[RIDE: metro|bus|taxi|walk]]  with [[MOVE]] when the user travels to another district (pays the fare)
    [[HURT: Name: injury: minor|moderate|serious]]  when a character gets hurt (use "user" only for an injury the user themselves described)
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
@@ -2050,6 +2052,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
   s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock(); if(phonesOn()) s+=phoneLifeBlock(pres);
+  { const ub=condBits('user'); if(ub.length) s+=`${uN().toUpperCase()}'S BODY AND CLOTHES RIGHT NOW: ${ub.join('; ')}. Describe how it looks and feels, but ${uN()}'s actions stay theirs.\n`; s+=homeLine(S.user.loc); }
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
   for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':(()=>{ const L=S.chars[c.id].log.filter(e=>S.clock-e.t<=24*60*MIN).slice(-4); return L.length?`WHAT REALLY HAPPENED TO ${c.name.toUpperCase()} WHILE ${uN().toUpperCase()} WASN'T AROUND (true events, oldest first; ${c.name} lived through them, remembers them and still feels their effects: mood, tiredness, hunger, injuries, things they're carrying or wearing. Let them show and come up naturally, especially when ${c.name} first runs into ${uN()} or is asked what they've been up to. Never contradict them):\n${L.map(e=>`[${hhmm(e.t)}${e.with&&e.with.length>1?', with '+e.with.filter(x=>x!==c.id).map(x=>charById(x)?.name).filter(Boolean).join(', '):''}] ${e.text.replace(/\n+/g,' ').slice(0,600)}`).join('\n')}\n`:''; })()}\n`; }
@@ -2143,7 +2146,8 @@ function applyControls(text){
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
-    else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
+    else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()){ S.user.washed=S.clock; onWash('user'); } else { const c=charByName(arg); if(c){ S.chars[c.id].washed=S.clock; onWash(c.id); } } }
+    else if(C==='CONDITION'){ applyCondTag(arg); }
   }
   if(withList) setCompanions(withList);
   if(rideMode) try{ applyRide(rideMode); }catch(e){}
@@ -2214,16 +2218,16 @@ STATE: ${cs.map(c=>`${c.name}: ${stateLine(c)}${S.chars[c.id].outfit?`; wearing 
 ${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${livingBeatBlock(ids)}${itemsBeatBlock(cs)}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
-Optional lines when they apply: DOING: Name: what they're doing when the scene ends, if it isn't what their schedule says (fell asleep early, still out, in the bath…) · ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · BOUGHT: Name: item: quantity (something from a shop; they pay for it) · USE: Name: item (took or used something they carry) · SPENT: Name: amount: on what (food out, tickets, fares) · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.id==='phoenix'&&!x.undyingReason?'Phoenix (she dies and revives; add DIED for her and the app revives her)':zzzBuiltin(x)&&!x.undyingReason?x.name+' (retreats to rest instead)':x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
+Optional lines when they apply: DOING: Name: what they're doing when the scene ends, if it isn't what their schedule says (fell asleep early, still out, in the bath…) · ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · BOUGHT: Name: item: quantity (something from a shop; they pay for it) · USE: Name: item (took or used something they carry) · SPENT: Name: amount: on what (food out, tickets, fares) · CONDITION: Name: soaked|stained: what|muddy|smudged makeup|clean · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.id==='phoenix'&&!x.undyingReason?'Phoenix (she dies and revives; add DIED for her and the app revives her)':zzzBuiltin(x)&&!x.undyingReason?x.name+' (retreats to rest instead)':x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:800});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*(BOUGHT|USE|SPENT):\s*([^\n]+)$/gim)) applyItemTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*(BOUGHT|USE|SPENT):\s*([^\n]+)$/gim)) applyItemTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*CONDITION:\s*([^\n]+)$/gim)) applyCondTag(lm[1], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
   gossipFromBeat(out, ids);
-  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|BOUGHT|USE|SPENT|HURT|DIED|GOSSIP):.*$/gim,'').trim();
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|BOUGHT|USE|SPENT|CONDITION|HURT|DIED|GOSSIP):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -2309,6 +2313,7 @@ function tick(){
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
   try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
+  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
   if(!S.paused&&phonesOn()) try{ phoneLifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('phone',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
@@ -2921,6 +2926,73 @@ function markRead(c){ for(const m of thread(c.id)) if(m.me&&!m.seenAt) m.seenAt=
 function leaveVoicemail(c){ const t=prompt(`Leave a voicemail for ${c.name}:`); if(!t||!t.trim()) return; addText(c.id,true,`🎙 Voicemail: ${t.trim()}`,'voicemail');
   const P=phone(); P.extra[c.id]=`${uN()} called, you missed it, and they left you a voicemail: "${t.trim()}". When you get to it, react like you would (call back, text back, or not).`; if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; save(); renderPhone(); }
 
+// ======================= bodies, clothes and homes keep their state =======================
+// Rain soaks you and you stay wet until you dry off or change; stains stay until the clothes come off; bed hair lasts until
+// someone fixes it; sweat lasts until a shower. Homes collect dishes, laundry and mess, and the fridge holds what was bought.
+const OUTDOOR=/street|square|park|courtyard|stairs|market|beach|port|plaza|outside|outdoors|road|bridge|rooftop|roof|on the way|walking|stall|archway|alley|trail|riverside|harbor|pier|station platform|bus stop|garden|field/i;
+const INDOOR=/inside|indoors|\b(room|cafe|café|shop|store|mart|pharmacy|restaurant|livehouse|studio|office|hall|kitchen|apartment|dorm|house|home|lobby|gallery|arcade|cinema|bar|club|precinct|hq|library|metro car|taxi|bus)\b/i;
+const SWEATY_ACT=/train|gym|workout|work out|jog|run|dance|danc|rehears|fight|sparr|practice|exercise|stunt|climb|sweep|carry|haul|hollow/i;
+const FRESHEN=/shower|bath|wash|getting ready|brush(ing)? (her|his|their) hair|doing (her|his|their) hair|makeup|dressing/i;
+function condOf(who){ const st=who==='user'?S.user:S.chars[who]; if(!st) return {}; return st.cond||(st.cond={}); }
+function isOutdoors(loc, act){ const s=String(loc||'')+' '+String(act||''); return OUTDOOR.test(s)&&!INDOOR.test(String(loc||'').split(',').slice(1).join(',')); }
+function hasUmbrella(who){ return invOf(who).some(e=>/umbrella|parasol/i.test(e.name))||(who!=='user'&&/umbrella|parasol/i.test(String(charById(who)?.brief||''))); }
+function bodyTick(dMin){ if(!S||!W||dMin<=0) return; const wx=wxNow(S.clock); const h=dMin/60;
+  const step=(who, loc, act)=>{ const c=condOf(who); const out=isOutdoors(loc,act);
+    // rain and snow
+    if(out&&(wx.wet||wx.kind==='snow')){ const rate={drizzle:.6,rain:1.6,downpour:3.5,storm:4,snow:.8}[wx.kind]||1; const shield=hasUmbrella(who)?(wx.kind==='storm'||wx.kind==='downpour'?.45:.15):1;
+      c.wet=Math.min(3,(c.wet||0)+rate*shield*h); c.wetT=S.clock; c.wetBy=wx.kind==='snow'?'snow':'rain'; }
+    else if(c.wet){ c.wet=Math.max(0,c.wet-(out?.35:.6)*h); if(c.wet<.05) delete c.wet; }
+    // sweat
+    if(SWEATY_ACT.test(act||'')) { c.sweaty=Math.min(3,(c.sweaty||0)+.8*h); c.sweatT=S.clock; }
+    if(FRESHEN.test(act||'')){ delete c.bedhair; if(/shower|bath|wash/i.test(act||'')){ delete c.sweaty; delete c.makeup; delete c.mud; c.wetHair=S.clock; } }
+    if(c.wetHair&&S.clock-c.wetHair>75*MIN) delete c.wetHair; };
+  step('user', S.user.loc, '');
+  for(const ch of W.characters){ const st=S.chars[ch.id]; if(!st||st.dead) continue; const asleep=SLEEPY.test(st.act||'');
+    if(asleep) st._slept=true; else if(st._slept){ st._slept=false; const c=condOf(ch.id); c.bedhair=S.clock; }
+    step(ch.id, st.loc, st.act); }
+  homeTick(dMin); }
+function condBits(who, short){ const c=condOf(who); const out=[]; const wetW=c.wet>=2?'soaked through':c.wet>=1?'wet':c.wet>=.3?'damp':'';
+  if(wetW) out.push(short?`${wetW} (${c.wetBy||'rain'})`:`${wetW} from the ${c.wetBy||'rain'}: hair dripping, clothes clinging${c.wet>=1?', thin or light fabric going see-through':''}; stays that way until they dry off or change`);
+  if(c.wetHair&&!wetW) out.push(short?'hair still wet':'hair still wet from the shower');
+  if(c.sweaty>=1) out.push(short?'sweaty':`sweaty from ${c.sweaty>=2?'a hard workout':'moving around'} (needs a shower)`);
+  for(const s of (c.stains||[]).slice(-3)) out.push(short?`${s} stain`:`a ${s} stain on their clothes`);
+  if(c.mud) out.push(short?'muddy':'mud on their shoes and clothes');
+  if(c.makeup) out.push(short?'smudged makeup':'makeup smudged from crying');
+  if(c.bedhair&&S.clock-c.bedhair<5*HOUR) out.push(short?'bed hair':'bed hair, still a little rumpled from sleep');
+  return out; }
+// story tag: [[CONDITION: Name: wet | soaked | stained: coffee | sweaty | muddy | bed hair | smudged makeup | dry | clean]]
+function applyCondTag(arg, only){ const p=arg.split(':').map(x=>x.trim()); const who=whoId(p[0]); if(!who||(only&&who!=='user'&&!only.includes(who))) return; const c=condOf(who); const k=(p[1]||'').toLowerCase(); const extra=p.slice(2).join(':');
+  if(/soak|drench/.test(k)){ c.wet=2.5; c.wetBy=extra||'water'; } else if(/wet|damp|splash/.test(k)){ c.wet=Math.max(c.wet||0,1.2); c.wetBy=extra||'water'; }
+  else if(/stain|spill/.test(k)){ (c.stains=c.stains||[]).push((extra||k.replace(/stain(ed)?|spill(ed)?/,'').trim()||'dark').slice(0,30)); }
+  else if(/sweat/.test(k)) c.sweaty=2; else if(/mud|dirt/.test(k)) c.mud=S.clock; else if(/bed ?hair|messy hair/.test(k)) c.bedhair=S.clock; else if(/makeup|mascara/.test(k)) c.makeup=S.clock;
+  else if(/dry/.test(k)) delete c.wet; else if(/clean|fresh/.test(k)){ for(const x of ['wet','sweaty','stains','mud','makeup','bedhair']) delete c[x]; } }
+// changing clothes takes wet, stained and muddy clothes off; it counts toward laundry
+function onOutfitChange(who){ const c=condOf(who); if(c.wet>=1) c.wet=.4; delete c.stains; delete c.mud; const st=who==='user'?S.user:S.chars[who]; if(st) st.laundry=(st.laundry||0)+1; }
+function onWash(who){ const c=condOf(who); for(const x of ['sweaty','makeup','mud','bedhair']) delete c[x]; c.wetHair=S.clock; delete c.wet; }
+function onCry(who){ const c=condOf(who); c.makeup=S.clock; }
+
+// ---------- homes ----------
+function homeOf(c){ if(!c||!c.schedule) return null; const night=c.schedule.filter(x=>SLEEPY.test(x.act||'')).map(x=>x.loc); if(!night.length) return null; const f={}; for(const l of night) f[l]=(f[l]||0)+1; return Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0]; }
+function homeKey(loc){ return String(loc||'').split('(')[0].trim().toLowerCase(); }
+function homeState(loc){ S.homes=S.homes||{}; const k=homeKey(loc); return S.homes[k]||(S.homes[k]={dishes:2,mess:1,fridge:[],t:S.clock}); }
+function residentsOf(loc){ const k=homeKey(loc); return W.characters.filter(c=>homeOf(c)&&homeKey(homeOf(c))===k); }
+function homeTick(dMin){ S.homes=S.homes||{}; const h=dMin/60;
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead) continue; const home=homeOf(c); if(!home||homeKey(st.loc)!==homeKey(home)) continue; const H=homeState(home); const a=st.act||'';
+    if(/\b(eat|breakfast|lunch|dinner|snack|cook)/i.test(a)) H.dishes=Math.min(40,H.dishes+.9*h);
+    if(/dishes|washing up|clean|tid(y|ies)|chores|vacuum|sweep/i.test(a)){ H.dishes=Math.max(0,H.dishes-6*h); H.mess=Math.max(0,H.mess-2*h); }
+    if(/laundry|washing clothes|folding/i.test(a)){ st.laundry=0; }
+    if(/cook/i.test(a)&&H.fridge.length&&Math.random()<.4*h){ const i=H.fridge.findIndex(e=>!isSpoiled(e)); if(i>=0){ const e=H.fridge[i]; e.n--; if(e.n<=0) H.fridge.splice(i,1); } }
+    // groceries they carry go in the fridge when they get home
+    const inv=invOf(c.id); for(let i=inv.length-1;i>=0;i--){ const it=ITEM_BY_ID[inv[i].id]; if(it&&it.cat==='grocery'){ H.fridge.push(inv[i]); inv.splice(i,1); } } }
+  // mess builds up a little every day
+  const day=Math.floor(S.clock/DAYMS); if(S._messDay!==day){ S._messDay=day; for(const k in S.homes){ const H=S.homes[k]; H.mess=Math.min(10,H.mess+.6); H.fridge=H.fridge.filter(e=>!isSpoiled(e)||S.clock-e.t<(ITEM_BY_ID[e.id]?.spoil||0)*HOUR+7*DAYMS); } } }
+function homeLine(loc){ const res=residentsOf(loc); if(!res.length) return ''; const H=homeState(loc); const bits=[];
+  bits.push(H.dishes>=12?`a sink piled with dirty dishes (${Math.round(H.dishes)})`:H.dishes>=5?'dirty dishes stacking up in the sink':'the kitchen fairly clean');
+  bits.push(H.mess>=7?'a real mess: clothes on chairs, wrappers, things everywhere':H.mess>=4?'lived-in and untidy':H.mess>=2?'a little cluttered':'tidy');
+  const fr=H.fridge.map(e=>itemLabel(e)); bits.push(fr.length?`fridge: ${fr.join(', ')}`:'the fridge is close to empty (condiments and not much else)');
+  const lau=res.filter(c=>(S.chars[c.id].laundry||0)>=6).map(c=>c.name); if(lau.length) bits.push(`${lau.join(' and ')}'s laundry is piling up`);
+  return `THIS HOME (${res.map(c=>c.name).join(', ')}'s place; show it, it says something about them): ${bits.join('; ')}.\n`; }
+
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3375,8 +3447,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.45.0';
+const APP_VERSION = '0.46.0';
 const CHANGELOG = [
+ {v:'0.46.0', d:'2026-11-19', notes:['Bodies and clothes keep their state. Walk through the rain without an umbrella and you get damp, wet, then soaked (thin fabric goes see-through) and stay that way until you dry off or change. Spills leave stains until the clothes come off, mud stays on, crying smudges makeup, training leaves people sweaty until they shower, and everyone wakes up with bed hair until they fix it. A shower leaves hair wet for a while.', 'Homes change over time: dishes stack up in the sink, mess builds day by day until someone does chores, laundry piles up with every outfit change, and groceries people bring home go in the fridge, get cooked, and spoil. When you\'re at someone\'s place the story sees all of it.']},
  {v:'0.45.0', d:'2026-11-19', notes:['Phones behave like phones. Batteries drain (faster for people glued to their screens) and charge at home or overnight; a power bank gives you +50%. A dead phone can\'t text or call, and a character\'s dead phone means your texts wait until they charge it.', 'No signal inside Hollows, tunnels, basements and the like: your texts queue and go out when you\'re back in range, and calls won\'t connect.', 'Read receipts: Sent, Delivered, Read 14:02. Characters can leave you on read, and they remember doing it.', 'Missed calls offer to leave a voicemail, and the character reacts to it when they get to it (call back, text back, or not). Calls to a dead or out-of-range phone go straight to voicemail.']},
  {v:'0.44.0', d:'2026-11-19', notes:['Travel takes real time and money. Walking, the metro (05:30 to 00:30), buses (until 23:00) or a taxi (any time, slow and pricey at rush hour). The story plays the trip and moves the clock forward by the trip time, and fares come out of your wallet (your companions pay their own unless someone covers them).', 'Text someone to come over and they really decide: how much they trust you, what they\'re doing, how far away they are, whether they can afford the fare, and their mood. If they say yes they give an honest ETA, actually travel (you can watch them on the map), and turn up in the scene. If you\'ve left by then, they text asking where you went, and they remember it.']},
  {v:'0.43.0', d:'2026-11-19', notes:['Items and money. You and every character now carry real things and real money (Dennies in Zenless worlds, dollars elsewhere; change the name, symbol and price scale in Bag & money). Nangong can afford anything, Cissia is always broke, and nobody can pay with money they don\'t have.', 'Shops: every world gets convenience stores, pharmacies, grocery stores, cafés, clothing, florists, gift shops, liquor stores and an adult boutique, with opening hours, prices and stock that can sell out. New Eridu uses its own places (141, JC Pharmacy, Lumina Galleria, Richard Teamilk, Peace Herbal, Yum Cha Sin…). Browse them in 🗺 World → 🛍 Shops and buy when you\'re there.', 'Anyone under 18 waits outside 18+ shops and can\'t buy alcohol, cigarettes or adult items.', 'Items do things over time: melatonin makes you drowsy half an hour later, Pepto settles a stomach, coffee and energy drinks wire you up (and crash), drinks add up from tipsy to wasted with a hangover the next morning, heat patches ease cramps, aphrodisiacs work only on adults and never decide anything for anyone. Food spoils, coffee goes cold, ice cream melts.', 'The story can buy, use, give and pay: characters hand each other things, split bills, pay for taxis and buy things off-screen too. See Schedules → Bag & money for your bag, everyone\'s wallet and recent spending.']},
