@@ -3504,6 +3504,33 @@ toolTab('reading','🔠 Reading',body=>{ const r=readCfg();
   $('#rdReset').onclick=()=>{ CFG.reading={...READ_DEF}; saveCfg(); applyReading(); renderTools(); }; });
 setTimeout(()=>{ try{ applyReading(); }catch(e){} },0);
 var SCREEN_HOOKS=window.SCREEN_HOOKS=window.SCREEN_HOOKS||[]; SCREEN_HOOKS.push(()=>{ try{ applyReading(); }catch(e){} });
+
+// ---------- 4. restore points: automatic backups of each story ----------
+const BK_PRE='lwbk_';
+function bkList(key){ try{ return JSON.parse(LS.getItem(BK_PRE+(key||SAVE_KEY))||'[]'); }catch(e){ return []; } }
+function bkSet(list,key){ try{ LS.setItem(BK_PRE+(key||SAVE_KEY), JSON.stringify(list)); return true; }catch(e){ notice('Could not keep a restore point (storage is full).',true); return false; } }
+function bkLastLine(st){ const m=[...(st.chat||[])].reverse().find(x=>x.role==='assistant'&&x.text); return m?plainMsg(m).replace(/\s+/g,' ').trim().slice(0,140):''; }
+function makeBackup(why){ if(!W||!S||!S.chat||!S.chat.length) return false; const data=JSON.stringify(S); const list=bkList();
+  const last=list[list.length-1]; if(last&&last.data===data) return false;
+  list.push({t:Date.now(), clock:S.clock, n:S.chat.length, why:why||'auto', line:bkLastLine(S), data});
+  const manual=list.filter(b=>b.why==='manual'), auto=list.filter(b=>b.why!=='manual');
+  const keep=[...manual.slice(-5), ...auto.slice(-10)].sort((a,b)=>a.t-b.t); return bkSet(keep); }
+function bkTick(){ if(SCREEN!=='world'||!S||!W||busyMain) return; const list=bkList(); const last=list.filter(b=>b.why!=='manual').pop();
+  const grown=S.chat.length-(last?last.n:0); const age=Date.now()-(last?last.t:0);
+  if(!last&&S.chat.length>=4) makeBackup('auto'); else if(last&&((grown>=12&&age>20*60000)||(grown>=2&&age>6*3600000))) makeBackup('auto'); }
+setInterval(()=>{ try{ bkTick(); }catch(e){} }, 60000);
+SCREEN_HOOKS.push(n=>{ if(n==='world') setTimeout(()=>{ try{ bkTick(); }catch(e){} },3000); });
+function restoreBackup(i){ const list=bkList(); const b=list[i]; if(!b) return;
+  if(!confirm(`Go back to this restore point (${new Date(b.t).toLocaleString()}, ${b.n} messages)? Your story as it is right now is kept as a restore point first, so you can come back to it.`)) return;
+  makeBackup('before restore'); LS.setItem(SAVE_KEY, b.data); load(); closeTools(); render(); notice('⏪ Story restored to '+new Date(b.t).toLocaleString()+'.'); }
+toolTab('restore','⏪ Restore',body=>{ const list=bkList();
+  body.innerHTML=`<p class="small" style="margin-top:0">The app keeps restore points of this story automatically while you play (the last 10, plus up to 5 you make yourself). Going back never deletes anything: your current story is saved as a restore point first.</p>
+  <div class="rowbtns"><button class="primary" id="bkNow">Make a restore point now</button></div>
+  <div id="bkList" style="margin-top:12px">${list.length?list.map((b,i)=>({b,i})).reverse().map(({b,i})=>`<div class="sr-row" style="cursor:default"><div class="sr-m">${new Date(b.t).toLocaleString()} · story time ${mmdd(b.clock)} ${hhmm(b.clock)} · ${b.n} messages${b.why==='manual'?' · ⭐ yours':b.why==='before restore'?' · saved before a restore':''}</div>${esc(b.line||'')}${b.line?'…':''}
+    <div class="rowbtns" style="margin-top:8px"><button class="ghost small" data-bkr="${i}">⏪ Go back to this</button><button class="ghost small" data-bkd="${i}">Delete</button></div></div>`).join(''):'<div class="small">No restore points yet. The first one is made after a few messages.</div>'}</div>`;
+  $('#bkNow').onclick=()=>{ if(makeBackup('manual')) notice('⭐ Restore point saved.'); else notice('Nothing new to save since the last restore point.'); renderTools(); };
+  body.querySelectorAll('[data-bkr]').forEach(b=>b.onclick=()=>restoreBackup(+b.dataset.bkr));
+  body.querySelectorAll('[data-bkd]').forEach(b=>b.onclick=()=>{ if(!confirm('Delete this restore point? This can\'t be undone.')) return; const l=bkList(); l.splice(+b.dataset.bkd,1); bkSet(l); renderTools(); }); });
 // <<< tools
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3974,8 +4001,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.58.0';
+const APP_VERSION = '0.59.0';
 const CHANGELOG = [
+ {v:'0.59.0', d:'2026-11-20', notes:['🧰 Tools → ⏪ Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with "Make a restore point now"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost.']},
  {v:'0.58.0', d:'2026-11-20', notes:['🧰 Tools → 🔠 Reading: change the story\'s text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it.']},
  {v:'0.57.0', d:'2026-11-20', notes:['🧰 Tools → 📝 Notes: write your own rules and facts for a story (like "Aria doesn\'t know my name yet") and the AI follows them every reply. Also: the reminder about emotional dialogue now asks for emotion in proportion, so calm moments stay calm.']},
  {v:'0.56.0', d:'2026-11-20', notes:['New 🧰 Tools button in a story, with 🔎 Search: find any word, name or place across the whole story, even the oldest messages. Tap a result to jump straight to it (it lights up). On a computer, Ctrl+F opens it too.']},

@@ -1,10 +1,10 @@
 {
- "version": "0.58.0",
+ "version": "0.59.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udd20 Reading: change the story's text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it."
+  "\ud83e\uddf0 Tools \u2192 \u23ea Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with \"Make a restore point now\"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost."
  ],
  "file": "index.html",
- "sha256": "87b40196c4b4f1bba55871a003e42ca80256996fe234ffd89aa5ffdf79b59647",
+ "sha256": "32f82fd407c25b42e059919cf459a186c1457e209e50572dd1438df8840ff2b0",
  "minShell": "0.5.0"
 }
