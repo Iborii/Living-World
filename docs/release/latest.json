@@ -1,10 +1,10 @@
 {
- "version": "0.55.5",
+ "version": "0.55.6",
  "date": "2026-11-20",
  "notes": [
-  "Fixed: on phones, a character's profile couldn't scroll, so you got stuck and couldn't reach Edit. It scrolls now."
+  "Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications."
  ],
  "file": "index.html",
- "sha256": "9a2edaf1e2e8b9bb10549248acf11df975a88953f768c793d7d31b21165cb209",
+ "sha256": "5378cbe6cd7fc4f23a4df5889c27ef7b373650965acaae637121149f13aab434",
  "minShell": "0.5.0"
 }

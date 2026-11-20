@@ -722,6 +722,7 @@ body:not(.chats-ui) #chatsFab{display:none}
 #chatsFab:hover{background:rgba(40,42,52,.95)}
 #chatsScrim{position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s}
 body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
+@media (max-width:760px){ #hubModal .box.hub-box,#worldModal .box{padding-top:env(safe-area-inset-top)!important} #notifBanner{top:calc(10px + env(safe-area-inset-top))} }
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -3884,8 +3885,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.55.5';
+const APP_VERSION = '0.55.6';
 const CHANGELOG = [
+ {v:'0.55.6', d:'2026-11-20', notes:['Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications.']},
  {v:'0.55.5', d:'2026-11-20', notes:['Fixed: on phones, a character\'s profile couldn\'t scroll, so you got stuck and couldn\'t reach Edit. It scrolls now.']},
  {v:'0.55.4', d:'2026-11-20', notes:['The Sunbringer sisters now stand in a proper staircase: looking straight ahead, Lindverne is at eye level with Eldreda\'s chest, and Dracaene with Lindverne\'s. Lindverne is now average height instead of tall.']},
  {v:'0.55.3', d:'2026-11-20', notes:['Dracaene puts both hands over her mouth when she is shocked or in awe.']},
