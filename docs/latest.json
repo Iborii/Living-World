@@ -1,10 +1,10 @@
 {
- "version": "0.60.0",
+ "version": "0.61.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udcd5 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF."
+  "Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the \ud83d\udcf7 button next to the message box: describe the photo and they react to it. A new \ud83d\uddbc\ufe0f Photos app on the phone keeps every photo sent and received."
  ],
  "file": "index.html",
- "sha256": "55d5583ad1185a9ca33b857b6b294849a7a742f7aa27886cb8baa227a002241c",
+ "sha256": "ada76801f98558a45e1236b0e6224c66753ed12f85ef8735779dc59a9c6aaca1",
  "minShell": "0.5.0"
 }

@@ -737,6 +737,15 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 @media (max-width:760px){ #toolsModal .box.tools-box{padding-top:env(safe-area-inset-top)!important} }
 :root{--rd-fs:17.5px} @media (max-width:760px){ :root{--rd-fs:16.5px} }
 /* <<< tools */
+/* >>> phone2 */
+.bub.photo{padding:4px;background:transparent!important;border:0!important;max-width:78%}
+.ph-photo{border-radius:14px;overflow:hidden;background:#15161c;border:1px solid #2a2c36;width:220px;max-width:100%}
+.ph-photo .pic{height:150px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;background:linear-gradient(135deg,var(--p1,#2b3f66),var(--p2,#5a2f4f))}
+.ph-photo .pic::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 25%,rgba(255,255,255,.22),transparent 45%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 2px,transparent 2px 4px)}
+.ph-photo .cap{padding:8px 10px;font-size:12.5px;line-height:1.4;color:#d9d6ce}
+.ph-gal{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
+.ph-gal .ph-photo{width:auto;cursor:pointer}.ph-gal .ph-photo .pic{height:110px;font-size:30px}.ph-gal .who{font-size:11px;color:var(--muted);padding:0 10px 8px}
+/* <<< phone2 */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -923,7 +932,7 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
   <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><span id="phBatt" class="small" style="white-space:nowrap"></span><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
   <div class="ph-body" id="phBody"></div><input type="file" id="phPhotoFile" accept="image/*" style="display:none">
-  <div class="ph-send" id="phSendRow" style="display:none"><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
+  <div class="ph-send" id="phSendRow" style="display:none"><button class="ghost" id="phCam" title="Send a photo" style="padding:6px 9px">📷</button><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
 </div></div>
 
 <div class="modal" id="evModal"><div class="box">
@@ -1455,7 +1464,7 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}${(phone().passed||{})[c.id]&&!thread(c.id).some(m=>!m.me&&m.kind!=='call')?`\n\nYou never gave ${pn} your number: ${charById(phone().passed[c.id])?.name||'someone'} passed it along. This is a number you don't have saved, so at first you don't know who's texting; react like you would to that.`:''}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. A photo counts as a message: when it truly fits (showing where they are, something funny or pretty they saw, food, a new outfit, a selfie; not in every conversation), they can send one as its own line written exactly as [photo: one sentence describing what the picture shows]. When ${pn} sends a [photo: …], react to what's in it. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
   const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
@@ -1468,7 +1477,7 @@ Write ${c.name}'s reply as real phone texts: their own texting style (slang, pun
   const lastMe=[...th].reverse().find(m=>m.me);
   addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
   if(lines.length){ const st=S.chars[c.id]; st.log.push({t:S.clock, text:`*${c.name} pauses ${String(st.act||'what they were doing').replace(/\s*\(with you\)$/,'')} to pull out their phone and text ${pn} back.* "${lines.join(' / ').slice(0,300)}"`, with:[c.id], loc:st.loc}); st.changed=true; }
-  if(!phoneOn()||phoneOpenId!==c.id) pushNotif({icon:'💬', app:phoneApp(), title:contactName(c), body:lines.join(' · '), open:{view:'chat',id:c.id}});
+  if(!phoneOn()||phoneOpenId!==c.id) pushNotif({icon:'💬', app:phoneApp(), title:contactName(c), body:lines.map(l=>isPhotoText(l)?'📷 Photo':l).join(' · '), open:{view:'chat',id:c.id}});
   return decision?decision.toUpperCase():null;
 }
 // ---- invitations (like Knock Knock invites) ----
@@ -3564,6 +3573,26 @@ toolTab('book','📕 Export',body=>{ const n=S.chat.filter(m=>!(m.role==='user'&
   <div class="rowbtns"><button class="primary" id="bkGo">📕 Download the book (${n} messages)</button></div>`;
   $('#bkGo').onclick=()=>{ exportBook({you:$('#bkYou').checked}); notice('📕 Book downloaded.'); }; });
 // <<< tools
+// >>> phone2
+// ======================= phone extras: photos =======================
+var PHONE_VIEWS=window.PHONE_VIEWS=window.PHONE_VIEWS||{};
+const PHOTO_RX=/^\s*\[(?:photo|pic|picture|image|selfie)\s*:\s*([^\]]+)\]\s*$/i;
+function isPhotoText(t){ return PHOTO_RX.test(String(t||'')); }
+function photoDesc(t){ const m=String(t||'').match(PHOTO_RX); return m?m[1].trim():''; }
+function photoEmoji(d){ const s=d.toLowerCase(); const map=[[/selfie|face|smil|pout|mirror/,'🤳'],[/cat|kitten/,'🐱'],[/dog|puppy/,'🐶'],[/food|bun|cake|noodle|ramen|tea|coffee|dinner|lunch|breakfast|snack|pizza|dumpling/,'🍜'],[/sky|sunset|sunrise|cloud/,'🌇'],[/rain|storm/,'🌧️'],[/snow/,'❄️'],[/night|neon|city|street/,'🌃'],[/stage|concert|band|guitar|mic/,'🎤'],[/outfit|dress|clothes|shirt|shoes/,'👗'],[/flower|garden|tree|park/,'🌸'],[/beach|sea|ocean|water/,'🌊'],[/game|arcade|controller/,'🎮'],[/bangboo|robot|machine/,'🤖'],[/book|study|notes/,'📚'],[/mountain|temple|summit/,'⛰️']];
+  for(const [r,e] of map) if(r.test(s)) return e; return '📷'; }
+function photoColors(d){ let h=0; for(const ch of d) h=(h*31+ch.charCodeAt(0))>>>0; const a=h%360, b=(a+70+(h>>8)%80)%360; return [`hsl(${a} 45% 32%)`,`hsl(${b} 50% 24%)`]; }
+function photoCard(desc){ const [p1,p2]=photoColors(desc); return `<div class="ph-photo"><div class="pic" style="--p1:${p1};--p2:${p2}">${photoEmoji(desc)}</div><div class="cap">${esc(subUser(desc))}</div></div>`; }
+function bubHTML(m){ return isPhotoText(m.text)?photoCard(photoDesc(m.text)):esc(subUser(m.text)); }
+function allPhotos(){ const P=phone(); const out=[]; for(const id in P.threads){ const c=charById(id); for(const m of P.threads[id]) if(isPhotoText(m.text)) out.push({id, c, me:m.me, t:m.t, d:photoDesc(m.text)}); } return out.sort((a,b)=>b.t-a.t); }
+PHONE_VIEWS.gallery=(B,P)=>{ phHeader('Photos','',true); const ph=allPhotos();
+  B.innerHTML=ph.length?`<div class="ph-gal">${ph.map(x=>`<div class="ph-photo" data-gc="${x.id}">${photoCard(x.d).replace(/^<div class="ph-photo">|<\/div>$/g,'')}<div class="who">${x.me?'You → '+esc(x.c?contactName(x.c):'?'):esc(x.c?contactName(x.c):'?')} · ${wdName(x.t).slice(0,3)} ${mmdd(x.t)} ${hhmm(x.t)}</div></div>`).join('')}</div>`
+    :'<div class="small" style="padding:16px">No photos yet. When someone texts you a photo, or you send one with 📷, it shows up here.</div>';
+  B.querySelectorAll('[data-gc]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.gc)); };
+if(!PHONE_APPS.some(a=>a[0]==='gallery')) PHONE_APPS.splice(PHONE_APPS.findIndex(a=>a[0]==='wx'),0,['gallery','🖼️']);
+function sendPhoto(){ if(!phoneOpenId) return; const d=prompt('Describe the photo you send (what it shows):',''); if(!d||!d.trim()) return; const inp=$('#phInput'); const keep=inp.value; inp.value=`[photo: ${d.trim().replace(/[\[\]]/g,'')}]`; sendText(); inp.value=keep; }
+(()=>{ const b=$('#phCam'); if(b) b.onclick=sendPhoto; })();
+// <<< phone2
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4033,8 +4062,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.60.0';
+const APP_VERSION = '0.61.0';
 const CHANGELOG = [
+ {v:'0.61.0', d:'2026-11-20', notes:['Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the 📷 button next to the message box: describe the photo and they react to it. A new 🖼️ Photos app on the phone keeps every photo sent and received.']},
  {v:'0.60.0', d:'2026-11-20', notes:['🧰 Tools → 📕 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF.']},
  {v:'0.59.0', d:'2026-11-20', notes:['🧰 Tools → ⏪ Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with "Make a restore point now"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost.']},
  {v:'0.58.0', d:'2026-11-20', notes:['🧰 Tools → 🔠 Reading: change the story\'s text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it.']},
@@ -4404,6 +4434,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
   const B=$('#phBody'); const P=phone(); const PC=phoneCfg(); const everyone=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(hasPhone); const cs=everyone.filter(c=>isContact(c.id));
   const box=$('#phoneModal .box'); box.style.setProperty('--pa',PC.accent||'#d9a441'); box.style.setProperty('--pat',lightColor(PC.accent||'#d9a441')?'#16130c':'#fff');
   $('#phTime').textContent=`${hhmm(S.clock)} · ${wdName(S.clock).slice(0,3)} ${mmdd(S.clock)}`; $('#phWx').textContent=`${weather(S.clock).temp}°F`;
+  if(window.PHONE_VIEWS&&PHONE_VIEWS[phView]){ $('#phSendRow').style.display='none'; return PHONE_VIEWS[phView](B,P); }
   if(phView==='home'){ phHeader(esc(phoneApp()==='Knock Knock'?'Phone':'Phone'),'',false);
     const unr=Object.values(P.threads).reduce((n,t)=>n+t.filter(m=>!m.me&&!m.read).length,0), mc=P.calls.filter(c=>c.missed&&!c.out&&!c.seen).length, fu=P.feed.filter(f=>!f.seen).length;
     const app=(k,ic,l,badge)=>`<button class="ph-app" data-app="${k}"><span class="ic">${ic}</span>${badge?`<span class="bd">${badge}</span>`:''}<span class="lb">${l}</span></button>`;
@@ -4433,7 +4464,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     const here=everyone.filter(c=>!isContact(c.id)&&present().includes(c));
     const addRow=`<div class="ph-addc">${here.length?`<div class="small" style="margin-bottom:6px">With you right now:</div>${here.map(c=>`<div class="ph-item" style="padding:6px 0;border:0;cursor:default">${avHTML(c,34,false)}<div style="flex:1"><b>${esc(c.full)}</b></div><button class="primary" data-swap="${c.id}">Swap numbers</button></div>`).join('')}`:`<div class="small">You only have the numbers of people you've swapped with. Swap numbers with someone when you're with them, or they may give you theirs in the story.</div>`}</div>`;
     B.innerHTML=addRow+(sorted.length?'':'<div class="small" style="padding:12px 16px">No contacts yet.</div>')+sorted.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
-      return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(contactName(c))}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
+      return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(contactName(c))}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+(isPhotoText(last.text)?'📷 Photo':esc(last.text)):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
     B.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
     B.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>{ addContact(b.dataset.swap,'swap'); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${uN()} and ${charById(b.dataset.swap).name} swap phone numbers just now. Show it briefly in the next reply if it fits.)`}); renderPhone(); });
   }
@@ -4442,7 +4473,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     const av=$('#phAv'); const pic=contactPic(c); av.style.display='flex'; av.style.background=avatarBg(c.color,pic); av.textContent=pic?'':c.name[0]; av.title='Tap to set a contact photo'; av.style.cursor='pointer';
     av.onclick=()=>{ const f=$('#phPhotoFile'); f.onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return; P.photos[c.id]=await shrinkImage(file,256); save(); renderPhone(); }; f.click(); };
     let lastDay='', html='';
-    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
+    for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}${isPhotoText(m.text)?' photo':''}" title="${hhmm(m.t)}">${bubHTML(m)}</div>`; }
     const s=contactStatus(c); let waiting='';
     if(phoneBusy.has(c.id)) waiting=`<div class="ph-typing">${esc(c.name)} is typing…</div>`;
     else if(P.pending[c.id]) waiting=`<div class="ph-typing">${!reachable(c.id)||!reachable('user')?esc(receiptFor(c)):'Delivered'}${S.paused?' · the story is paused, so time isn\'t passing':s.k==='asleep'?` · ${esc(c.name)} is asleep and will see it when they wake up`:s.k==='busy'?` · ${esc(c.name)} is busy (${esc(S.chars[c.id].act)}), so it may take a few minutes`:''}</div>`;
@@ -4515,7 +4546,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
   if(phView!=='chat'){ $('#phCallBtn').style.display='none'; $('#phInvBtn').style.display='none'; }
   renderPhoneBadge(); save();
 }
-function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather'})[k]; }
+function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather',gallery:'Photos'})[k]; }
 function lightColor(hex){ const m=String(hex).match(/^#?([0-9a-f]{6})$/i); if(!m) return false; const n=parseInt(m[1],16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>150; }
 function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; if(phoneDead('user')){ notice('🪫 Your phone is dead. Charge it at home or use a power bank.',true); return; } $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v); S.user.batt=Math.max(0,battOf('user')-0.4);
   if(!S.branch&&present().some(x=>x.id===c.id)){ // they're right here: their phone buzzes in the scene
