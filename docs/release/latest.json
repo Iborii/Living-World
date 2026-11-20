@@ -1,10 +1,10 @@
 {
- "version": "0.61.0",
+ "version": "0.62.0",
  "date": "2026-11-20",
  "notes": [
-  "Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the \ud83d\udcf7 button next to the message box: describe the photo and they react to it. A new \ud83d\uddbc\ufe0f Photos app on the phone keeps every photo sent and received."
+  "\ud83e\uddf0 Tools \u2192 \ud83d\udcf8 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your \ud83d\udccc pinned moments are there too. Tap any of them to jump back to that moment."
  ],
  "file": "index.html",
- "sha256": "ada76801f98558a45e1236b0e6224c66753ed12f85ef8735779dc59a9c6aaca1",
+ "sha256": "db3c5482afc196f4063397c92d109dd7d18c72f069f0ef43f1e4575da3fca614",
  "minShell": "0.5.0"
 }

@@ -2246,6 +2246,7 @@ async function generateReply(){
     if(S._storyShown&&S._storyShown.length){ S.storyDone=S.storyDone||{}; S.storyN=S.storyN||{}; S._storyShown.forEach(id=>{ S.storyN[id]=(S.storyN[id]||0)+1; if(S.storyN[id]>=4) S.storyDone[id]=true; }); S._storyShown=[]; }
     syncClockFromStamp(full); tickNeeds(); msg.text=applyControls(full); delete msg.streaming; // clock first, so "just ate" happens at the new time
     const lastU=[...S.chat].reverse().find(m=>m.role==='user'); extractMemories(lastU&&!lastU.hidden?lastU.text:'', msg.text); checkDoing(msg.text,false,lastU&&!lastU.hidden?lastU.text:'');
+    try{ for(const f of (window.REPLY_HOOKS||[])) f(msg); }catch(e){ console.warn('reply hook',e); }
     msg.snap=snapState(); if(CFG.voice==='auto') speakText(msg.text); maybeSummarize().catch(()=>{}); // runs in the background; you can keep playing
   }catch(e){ if(e.stopped&&msg.text.trim()){ msg.text=applyControls(msg.text); delete msg.streaming; syncClockFromStamp(msg.text); } else { S.chat.splice(S.chat.indexOf(msg),1); if(!e.stopped) errMsg=e.message; } }
   busyMain=false; setBusyUI(); render(); save(); if(errMsg) notice(errMsg,true); // shown after the redraw so it doesn't get wiped
@@ -3593,6 +3594,44 @@ if(!PHONE_APPS.some(a=>a[0]==='gallery')) PHONE_APPS.splice(PHONE_APPS.findIndex
 function sendPhoto(){ if(!phoneOpenId) return; const d=prompt('Describe the photo you send (what it shows):',''); if(!d||!d.trim()) return; const inp=$('#phInput'); const keep=inp.value; inp.value=`[photo: ${d.trim().replace(/[\[\]]/g,'')}]`; sendText(); inp.value=keep; }
 (()=>{ const b=$('#phCam'); if(b) b.onclick=sendPhoto; })();
 // <<< phone2
+// >>> album
+// ======================= memories album: firsts and milestones with each character =======================
+var REPLY_HOOKS=window.REPLY_HOOKS=window.REPLY_HOOKS||[];
+const FIRSTS={met:['👋','First met'],text:['💬','First text'],call:['📞','First call'],gift:['🎁','First gift from you'],argue:['⚡','First real argument'],laugh:['😂','First time you made them laugh'],hug:['🤗','First hug'],kiss:['💋','First kiss'],
+  t50:['🤝','Became friends'],t75:['💛','Grew close'],t90:['✨','Trusts you completely'],photo:['📷','First photo'],sleepover:['🛏️','First time staying over'],meal:['🍜','First meal together']};
+function addFirst(id,k,snip,ix){ if(!S||!id||!FIRSTS[k]) return; S.firsts=S.firsts||{}; const F=S.firsts[id]=S.firsts[id]||{}; if(F[k]) return false;
+  const c=charById(id); if(!c) return; if(k==='kiss'&&(c.minor||c.protect)) return; F[k]={t:S.clock, snip:String(snip||'').replace(/\s+/g,' ').trim().slice(0,220), ix:ix==null?-1:ix}; return true; }
+function firstSnip(text, name){ const t=plainMsg({text}); const sents=t.split(/(?<=[.!?…"])\s+/); const hit=sents.find(x=>x.includes(name)); return (hit||sents[0]||'').slice(0,220); }
+REPLY_HOOKS.push(msg=>{ const ix=S.chat.indexOf(msg); const t=msg.text||''; const pres=present(); S._tr=S._tr||{};
+  for(const c of pres){ const nm=c.name; const near=new RegExp(`${nm}[^.!?\\n]{0,140}`, 'i'); const seg=(t.match(new RegExp(`[^.!?\\n]*${nm}[^.!?\\n]*[.!?]?`,'gi'))||[]).join(' ');
+    if(new RegExp(`\\b${nm}\\b`).test(t)) addFirst(c.id,'met',firstSnip(t,nm),ix);
+    if(/\b(laugh|laughs|laughing|giggl|snort|cracks up|bursts out)/i.test(seg)) addFirst(c.id,'laugh',firstSnip(t,nm),ix);
+    if(/\b(hug|hugs|hugging|embrace|throws (her|his|their) arms around)/i.test(seg)) addFirst(c.id,'hug',firstSnip(t,nm),ix);
+    if(/\b(kiss|kisses|kissing)\b/i.test(seg)&&!/cheek|hand|forehead/i.test(seg)) addFirst(c.id,'kiss',firstSnip(t,nm),ix);
+    if(/\b(eat|eats|eating|dinner|lunch|breakfast|share[sd]? (a|the) (meal|bowl|plate))/i.test(t)&&/\b(together|with you|across from)/i.test(t)) addFirst(c.id,'meal',firstSnip(t,nm),ix);
+    const st=S.chars[c.id]; const was=S._tr[c.id]!=null?S._tr[c.id]:(S._pretr||{})[c.id]; const now=st.trust;
+    if(was!=null){ if(now-was<=-5) addFirst(c.id,'argue',firstSnip(t,nm),ix); for(const [lv,k] of [[50,'t50'],[75,'t75'],[90,'t90']]) if(was<lv&&now>=lv) addFirst(c.id,k,firstSnip(t,nm),ix); }
+    S._tr[c.id]=now; }
+  if(/\b(sleep(s)? over|stay(s|ing)? the night|spend(s)? the night)\b/i.test(t)) for(const c of pres) addFirst(c.id,'sleepover',firstSnip(t,c.name),ix); });
+// texts, calls, gifts, photos
+(()=>{ const _add=addText; addText=function(id,me,text,kind){ const r=_add.apply(this,arguments); try{ if(kind==='call'){ if(/^📞 Call/.test(text)) addFirst(id,'call',String(text).replace('📞 ','')); }
+    else if(isPhotoText(text)) addFirst(id,'photo',(me?'You sent: ':'They sent: ')+photoDesc(text)); else if(!kind&&!/^📇/.test(text)) addFirst(id,'text',(me?'You: ':'')+String(text)); }catch(e){} return r; };
+  const _gift=onGift; onGift=function(from,to,item){ const r=_gift.apply(this,arguments); try{ if(from==='user') addFirst(to,'gift',`You gave them ${item}.`); }catch(e){} return r; }; })();
+toolTab('album','📸 Album',body=>{ const F=S.firsts||{}; const pins=(S.pins||[]);
+  const ids=W.characters.filter(c=>F[c.id]&&Object.keys(F[c.id]).length).map(c=>c.id);
+  const card=(e,label,x,c)=>`<div class="sr-row" ${x.ix>=0?`data-j="${x.ix}"`:''} style="${x.ix>=0?'':'cursor:default'}"><div class="sr-m">${e} <b style="color:${c?c.color:'var(--accent)'}">${esc(label)}</b> · ${wdName(x.t).slice(0,3)} ${mmdd(x.t)} ${hhmm(x.t)}</div>${esc(subUser(x.snip||''))}</div>`;
+  let h=`<p class="small" style="margin-top:0">Firsts and milestones with each person, collected as they happen. Tap one to jump back to that moment.</p>`;
+  if(pins.length) h+=`<h3 style="margin:16px 0 8px">📌 Moments you pinned</h3>`+pins.map(p=>{ const ix=S.chat.findIndex(m=>m.t===p.t&&m.text.slice(0,200)===p.text); return card('📌',p.title,{t:p.t,snip:plainMsg({text:p.text}).slice(0,200),ix}); }).join('');
+  for(const id of ids){ const c=charById(id); const list=Object.entries(F[id]).sort((a,b)=>a[1].t-b[1].t);
+    h+=`<h3 style="margin:18px 0 8px;display:flex;align-items:center;gap:8px">${avHTML(c,28,false)} ${esc(c.full)} <span class="small">${list.length} moment${list.length>1?'s':''}</span></h3>`+list.map(([k,x])=>card(FIRSTS[k][0],FIRSTS[k][1],x,c)).join(''); }
+  if(!ids.length&&!pins.length) h+='<div class="small">Nothing here yet. Your first meeting with someone is the first memory.</div>';
+  body.innerHTML=h; body.querySelectorAll('[data-j]').forEach(r=>r.onclick=()=>jumpToMsg(+r.dataset.j)); });
+
+function metScan(){ S.firsts=S.firsts||{}; for(const c of W.characters){ if(S.firsts[c.id]&&S.firsts[c.id].met) continue; const sp=new RegExp(`^\\s*${c.name}:`,'m');
+    let ix=S.chat.findIndex(m=>m.role==='assistant'&&sp.test(m.text||'')); if(ix<0) continue; addFirst(c.id,'met',firstSnip(S.chat[ix].text,c.name),ix); S.firsts[c.id].met.t=S.chat[ix].t; } }
+function trInit(){ if(!S||!W) return; try{ metScan(); }catch(e){} S._tr=S._tr||{}; for(const c of W.characters){ const st=S.chars[c.id]; if(st&&S._tr[c.id]==null) S._tr[c.id]=st.trust; } }
+SCREEN_HOOKS.push(n=>{ if(n==='world') try{ trInit(); }catch(e){} });
+// <<< album
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4062,8 +4101,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.61.0';
+const APP_VERSION = '0.62.0';
 const CHANGELOG = [
+ {v:'0.62.0', d:'2026-11-20', notes:['🧰 Tools → 📸 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your 📌 pinned moments are there too. Tap any of them to jump back to that moment.']},
  {v:'0.61.0', d:'2026-11-20', notes:['Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the 📷 button next to the message box: describe the photo and they react to it. A new 🖼️ Photos app on the phone keeps every photo sent and received.']},
  {v:'0.60.0', d:'2026-11-20', notes:['🧰 Tools → 📕 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF.']},
  {v:'0.59.0', d:'2026-11-20', notes:['🧰 Tools → ⏪ Restore: the app now keeps restore points of each story while you play (the last 10 automatic ones, plus up to 5 you save yourself with "Make a restore point now"). Go back to any of them; your current story is saved as a restore point first, so nothing is ever lost.']},
