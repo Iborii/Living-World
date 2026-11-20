@@ -1,10 +1,10 @@
 {
- "version": "0.55.3",
+ "version": "0.55.4",
  "date": "2026-11-20",
  "notes": [
-  "Dracaene puts both hands over her mouth when she is shocked or in awe."
+  "The Sunbringer sisters now stand in a proper staircase: looking straight ahead, Lindverne is at eye level with Eldreda's chest, and Dracaene with Lindverne's. Lindverne is now average height instead of tall."
  ],
  "file": "index.html",
- "sha256": "a80ba436433cc6e780df8d10498e11dacb6a5cb9daf65ff8e5ca46434fdd7391",
+ "sha256": "f7e125f3d877cde483ca9b7e994d5e26e8692bdfa266ac6e4de0c63d817893ee",
  "minShell": "0.5.0"
 }
