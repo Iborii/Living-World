@@ -1,10 +1,10 @@
 {
- "version": "0.70.0",
+ "version": "0.71.0",
  "date": "2026-11-20",
  "notes": [
-  "Secrets. When someone confides a real secret (or you do), the story remembers who knows it. People keep secrets or let them slip according to who they are, so a secret can spread off-screen to their friends, and the person it belongs to may find out who talked and feel betrayed. \ud83e\uddf0 Tools \u2192 \ud83e\udd2b Secrets shows your secrets and who knows them, plus the ones you've learned."
+  "\ud83e\uddf0 Tools \u2192 \ud83d\udd78\ufe0f Web: a live map of how everyone feels about each other (very close, friendly, neutral, tense, hostile), plus dashed lines for how much each person trusts you. Tap someone to highlight their connections and read each relationship. It changes as the story goes."
  ],
  "file": "index.html",
- "sha256": "a02f73d9d9859c021418a74addb3a1eb562de646de330aad77453ec540cd8419",
+ "sha256": "0b35c4f60ebc6af3231242db5b2b8efeb1929d1645d9753d2895e447ab7de3f3",
  "minShell": "0.5.0"
 }
