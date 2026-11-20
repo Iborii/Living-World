@@ -1,10 +1,10 @@
 {
- "version": "0.64.0",
+ "version": "0.65.0",
  "date": "2026-11-20",
  "notes": [
-  "Dreams. Characters dream when they sleep, shaped by what happened to them lately (or by worries and bad moods, which make for restless nights), and some mornings they wake up remembering one. They might bring it up (\"I had the weirdest dream\u2026\") or keep it to themselves. Their dreams show up in their off-screen story too."
+  "\ud83e\uddf0 Tools \u2192 \ud83d\udcd4 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked \ud83d\udd12 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself."
  ],
  "file": "index.html",
- "sha256": "9dff3210382613d4bf05e7bd8a2689f1c78f392ca29ce863c15dc2d958f9bc62",
+ "sha256": "7c058ab55725687e79006dd2fbcac0d2492da57f94a1375ad1d0fd60fd8d3341",
  "minShell": "0.5.0"
 }

@@ -3694,6 +3694,35 @@ setInterval(()=>{ try{ dreamTick(); }catch(e){} }, 20000);
 PROMPT_HOOKS.push(pres=>{ const L=pres.filter(c=>{ const d=S.chars[c.id].dream; return d&&S.clock-d.t<10*HOUR; }).map(c=>`${c.name} woke up this morning from ${S.chars[c.id].dream.text}. They might mention it if it comes up or if it's on their mind (a passing "I had the weirdest dream…"), or keep it to themselves; don't force it.`);
   return L.length?`\nLAST NIGHT'S DREAMS:\n- ${L.join('\n- ')}\n`:''; });
 // <<< dreams
+// >>> diary
+// ======================= diaries: characters write about their day; you can read one once they trust you enough =======================
+const DIARY_TRUST=75;
+function diaryDays(c){ const mine=S.memories.filter(m=>m.who.includes(c.id)&&m.src!=='dream'); const days=[...new Set(mine.map(m=>isoDate(m.t)))].sort(); const today=isoDate(S.clock);
+  return days.filter(d=>d<today||dt(S.clock).h>=21); }
+async function writeDiary(c, day){ const mems=S.memories.filter(m=>m.who.includes(c.id)&&isoDate(m.t)===day).sort((a,b)=>a.t-b.t).slice(-14); if(!mems.length) return '';
+  const st=S.chars[c.id]; const pn=uN(); const minor=c.minor||c.protect;
+  const sys=`You are ${c.full}, writing in your private diary at the end of the day (${wdName(parseStart(day,'12:00'))}, ${day}). Stay completely in character.
+${charVoice(c, mems.map(m=>m.text).join(' '))}
+
+Write tonight's diary entry: first person, in ${c.name}'s own private voice (how they really think when nobody's reading: honest, maybe petty, soft, funny or worried in ways they'd never say out loud), 80 to 170 words. Only things that actually happened today (listed below) and how ${c.name} feels about them, including what they really think of ${pn}. No dates or headers, no sign-off formula unless it fits them. ${minor?'Keep it age-appropriate: no romance or anything sexual.':''}`;
+  const user=`What happened today:\n${mems.map(m=>`- ${hhmm(m.t)} ${m.text}`).join('\n')}\nTheir mood: ${st.mood?st.mood.word+(st.mood.why?' ('+st.mood.why+')':''):'normal'}. Trust in ${pn}: ${st.trust}/100.`;
+  const out=await callAI({system:sys, messages:[{role:'user',content:user}], model:CFG.bg, maxTokens:420});
+  return String(out||'').replace(/^\s*(dear diary[,.]?\s*)?/i,m=>m).trim(); }
+let DIARY_SEL=null, DIARY_BUSY=false;
+toolTab('diary','📔 Diaries',body=>{ const cs=W.characters.filter(c=>!isDead(c)&&!isConstruct(c)&&S.memories.some(m=>m.who.includes(c.id)));
+  if(!cs.length){ body.innerHTML='<div class="small">Nobody has written anything yet.</div>'; return; }
+  if(!DIARY_SEL||!cs.some(c=>c.id===DIARY_SEL)) DIARY_SEL=cs[0].id; const c=charById(DIARY_SEL); const st=S.chars[c.id]; const open=st.trust>=DIARY_TRUST||(S.diaryOpen||{})[c.id];
+  S.diary=S.diary||{}; const D=S.diary[c.id]=S.diary[c.id]||{}; const days=diaryDays(c);
+  body.innerHTML=`<div class="rowbtns" style="flex-wrap:wrap;margin-bottom:10px">${cs.map(x=>`<button class="ghost small${x.id===c.id?' on':''}" data-dc="${x.id}" style="${x.id===c.id?'border-color:var(--accent)':''}">${esc(x.name)}${S.chars[x.id].trust>=DIARY_TRUST||(S.diaryOpen||{})[x.id]?'':' 🔒'}</button>`).join('')}</div>
+  ${open?`<p class="small" style="margin-top:0">${esc(c.name)} trusts you enough to let you read it. Entries are written at the end of each day from what really happened to them.</p>
+    ${days.length?`<div class="rowbtns"><button class="primary" id="dWrite" ${DIARY_BUSY?'disabled':''}>${DIARY_BUSY?'Writing…':`Read the latest entries`}</button></div>`:''}
+    <div id="dList" style="margin-top:12px">${days.slice().reverse().map(d=>`<div class="sr-row" style="cursor:default"><div class="sr-m">${wdName(parseStart(d,'12:00'))}, ${mdName(d.slice(5))}</div>${D[d]?fmt(D[d]):'<span class="small">Not read yet.</span>'}</div>`).join('')||'<div class="small">Nothing written yet.</div>'}</div>`
+  :`<div class="sr-row" style="cursor:default;text-align:center;padding:26px"><div style="font-size:40px">🔒</div><b>${esc(c.name)} keeps a diary.</b><p class="small">It's private. ${esc(c.name)} would have to trust you a lot more before letting you read it (trust ${st.trust}/${DIARY_TRUST}).</p><p class="small">If ${esc(c.name)} hands it to you in the story, you can unlock it yourself:</p><button class="ghost small" id="dUnlock">They showed it to me</button></div>`}`;
+  body.querySelectorAll('[data-dc]').forEach(b=>b.onclick=()=>{ DIARY_SEL=b.dataset.dc; renderTools(); });
+  const ul=$('#dUnlock'); if(ul) ul.onclick=()=>{ if(!confirm(`Only do this if ${c.name} actually let you read it in the story. Unlock ${c.name}'s diary?`)) return; (S.diaryOpen=S.diaryOpen||{})[c.id]=1; save(); renderTools(); };
+  const wb=$('#dWrite'); if(wb) wb.onclick=async()=>{ DIARY_BUSY=true; renderTools(); const todo=days.filter(d=>!D[d]).slice(-3);
+    try{ for(const d of todo){ const t=await writeDiary(c,d); if(t) D[d]=t; } save(); }catch(e){ notice('Could not read the diary: '+e.message,true); } DIARY_BUSY=false; if(TOOLS.cur==='diary'&&$('#toolsModal').classList.contains('on')) renderTools(); }; });
+// <<< diary
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4163,8 +4192,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.64.0';
+const APP_VERSION = '0.65.0';
 const CHANGELOG = [
+ {v:'0.65.0', d:'2026-11-20', notes:['🧰 Tools → 📔 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked 🔒 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself.']},
  {v:'0.64.0', d:'2026-11-20', notes:['Dreams. Characters dream when they sleep, shaped by what happened to them lately (or by worries and bad moods, which make for restless nights), and some mornings they wake up remembering one. They might bring it up ("I had the weirdest dream…") or keep it to themselves. Their dreams show up in their off-screen story too.']},
  {v:'0.63.0', d:'2026-11-20', notes:['Birthdays for everyone. Every Zenless Zone Zero character now has their canon birthday (from the official agent calendar), and it\'s on the calendar. A few days before, close friends quietly plan something, whisper about it, or ask you to help keep it a surprise; on the day, people who know wish them happy birthday. Your phone reminds you the day before for people you know. 🧰 Tools → 🎂 Birthdays: see who\'s next, set your own birthday (people who trust you will remember it), and give a birthday to characters who don\'t have a canon one.']},
  {v:'0.62.0', d:'2026-11-20', notes:['🧰 Tools → 📸 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your 📌 pinned moments are there too. Tap any of them to jump back to that moment.']},
