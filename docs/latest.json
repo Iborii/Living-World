@@ -1,11 +1,10 @@
 {
- "version": "0.52.0",
+ "version": "0.52.1",
  "date": "2026-11-20",
  "notes": [
-  "Group stories: on a universe page, use \"+ Group worlds together\" to pick any worlds (for example Yunkui Summit + Roscaelifer + the Angels of Delusion), name it, and play them as one story where everyone lives side by side. Each group story has its own save.",
-  "Season 3 living arrangements: whenever Roscaelifer is part of the story (the Everyone in Zenless story or a group story), Belle, Wise, Cissia and Billy live at Amber Hall on Beckford Street, the Aurelia Academy dorm across from Roarin' Brekkies. Belle and Wise are cover \"transfer students\" (no classes) getting Etheric treatment at the CCD and running the Random Play branch; Cissia is registered as Phaethon's \"emotional support pet\" and Billy as a \"domestic support unit\", and the two bicker nonstop. Housekeeper Bonnie, shy Shirley upstairs and Boodiac's basement Divination Parlor are part of the building."
+  "Cissia's Amber Hall status is accurate now: Norma filed it, and she is officially registered in Aurelia Academy's records as an emotional support pet, which gets her free meals, housing and her own private room. Velina says it's just text in a file, so nobody makes her act like a pet. Billy embraced being a \"domestic support unit\" and vowed to be the most badass guardian Amber Hall's ever seen."
  ],
  "file": "index.html",
- "sha256": "c641f617968b02f7979dce2a2b43760c792cef2cae7310b9ad3f5597df269bd5",
+ "sha256": "9b1234e6319e06717cc034a2b859d6e4b8566293653e151c0ad6a6500a8973e8",
  "minShell": "0.5.0"
 }
