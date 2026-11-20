@@ -3669,6 +3669,31 @@ toolTab('bday','🎂 Birthdays',body=>{ const list=W.characters.filter(c=>bdayOf
   body.querySelectorAll('[data-sb]').forEach(i=>i.onchange=()=>{ if(!i.value) return; S.bdays=S.bdays||{}; S.bdays[i.dataset.sb]=i.value.slice(5); save(); renderTools(); });
   $('#ubSave').onclick=()=>{ const v=$('#ubDate').value; S.userBday=v?v.slice(5):''; save(); $('#ubMsg').textContent=v?`Saved: ${mdName(S.userBday)}.`:'Cleared.'; }; });
 // <<< bday
+// >>> dreams
+// ======================= dreams: characters dream at night and may bring it up =======================
+const DREAM_TWISTS=['but everyone spoke backwards','but the floor kept turning into water','and it would not stop raining indoors','but they were somehow late for everything','and a Bangboo was narrating the whole thing',
+ 'but all the doors led back to the same room','and they could fly, badly','but their teeth kept falling out','and it was all happening on a stage with no audience','but nobody could see them',
+ 'and the city was upside down','but they had forgotten how to read','and it was snowing indoors','but it was their first day of school again','and they could not find their shoes',
+ 'and it turned into a cooking show','but their phone kept ringing and they could never answer it','and the sky was the wrong color','but they were tiny, the size of a mug','and everyone was wearing their clothes'];
+const DREAM_SOLO=['falling from somewhere very high','being chased through endless hallways','showing up to something important in their pajamas','a huge feast they never got to eat','swimming in a warm, quiet sea',
+ 'a place from their childhood','being lost in a Hollow','flying over the city at night','a test they had not studied for','a long train ride to nowhere'];
+function dreamFor(c){ const st=S.chars[c.id]; const h=hashStr(c.id+isoDate(S.clock)); const pick=(a,o)=>a[(h>>>(o||0))%a.length];
+  const mems=S.memories.filter(m=>m.who.includes(c.id)&&S.clock-m.t<3*DAYMS&&m.src!=='dream').sort((a,b)=>(b.imp-a.imp)||(b.t-a.t)).slice(0,4);
+  const bad=st.mood&&STRONG_MOOD.test(st.mood.word)&&/angry|hurt|betray|upset|sad|heartbroken|anxious|scared|terrified|ashamed|guilty|jealous/i.test(st.mood.word);
+  if(h%5===0) return null; // didn't remember a dream
+  let about; if(mems.length&&h%3!==0){ const m=mems[(h>>>3)%mems.length]; about=m.text.replace(/^(I |Texted with |Got over )/,'').replace(/\.$/,''); about=`something about ${about.charAt(0).toLowerCase()+about.slice(1)}`; }
+  else about=pick(DREAM_SOLO,4);
+  const kind=bad?'a restless, uneasy dream':h%4===0?'a vivid dream':h%4===1?'a weird dream':h%4===2?'an oddly specific dream':'a strange, half-remembered dream';
+  return {t:S.clock, kind, text:`${kind}: ${about}, ${pick(DREAM_TWISTS,7)}`}; }
+function dreamTick(){ if(SCREEN!=='world'||!S||!W) return;
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead||isConstruct&&isConstruct(c)) continue; const asleep=SLEEPY.test(st.act||'');
+    if(asleep){ if(!st._dz) st._dz=S.clock; continue; }
+    if(st._dz){ const slept=S.clock-st._dz; delete st._dz; if(slept<3*HOUR) continue; const d=dreamFor(c); if(!d) continue; st.dream=d;
+      addMemory({who:[c.id], text:`Dreamt ${d.text}`, imp:1, src:'dream'}); st.log.push({t:S.clock, text:`*${c.name} wakes up from ${d.text}.*`, with:[c.id], loc:st.loc, life:true}); st.changed=true; } } }
+setInterval(()=>{ try{ dreamTick(); }catch(e){} }, 20000);
+PROMPT_HOOKS.push(pres=>{ const L=pres.filter(c=>{ const d=S.chars[c.id].dream; return d&&S.clock-d.t<10*HOUR; }).map(c=>`${c.name} woke up this morning from ${S.chars[c.id].dream.text}. They might mention it if it comes up or if it's on their mind (a passing "I had the weirdest dream…"), or keep it to themselves; don't force it.`);
+  return L.length?`\nLAST NIGHT'S DREAMS:\n- ${L.join('\n- ')}\n`:''; });
+// <<< dreams
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4138,8 +4163,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.63.0';
+const APP_VERSION = '0.64.0';
 const CHANGELOG = [
+ {v:'0.64.0', d:'2026-11-20', notes:['Dreams. Characters dream when they sleep, shaped by what happened to them lately (or by worries and bad moods, which make for restless nights), and some mornings they wake up remembering one. They might bring it up ("I had the weirdest dream…") or keep it to themselves. Their dreams show up in their off-screen story too.']},
  {v:'0.63.0', d:'2026-11-20', notes:['Birthdays for everyone. Every Zenless Zone Zero character now has their canon birthday (from the official agent calendar), and it\'s on the calendar. A few days before, close friends quietly plan something, whisper about it, or ask you to help keep it a surprise; on the day, people who know wish them happy birthday. Your phone reminds you the day before for people you know. 🧰 Tools → 🎂 Birthdays: see who\'s next, set your own birthday (people who trust you will remember it), and give a birthday to characters who don\'t have a canon one.']},
  {v:'0.62.0', d:'2026-11-20', notes:['🧰 Tools → 📸 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your 📌 pinned moments are there too. Tap any of them to jump back to that moment.']},
  {v:'0.61.0', d:'2026-11-20', notes:['Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the 📷 button next to the message box: describe the photo and they react to it. A new 🖼️ Photos app on the phone keeps every photo sent and received.']},
