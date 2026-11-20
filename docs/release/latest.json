@@ -1,10 +1,10 @@
 {
- "version": "0.75.1",
+ "version": "0.75.2",
  "date": "2026-11-20",
  "notes": [
-  "Phone polish for the new features: the \ud83e\uddf0 Tools button no longer overlaps the clock, the round \ud83d\udcac Chats button hides while a window is open, and Album moments quote the full line (no more cutting off at \"Ms.\")."
+  "Dialogue has life again. Lines had gone flat (only commas and periods) while the action lines next to them showed the feeling. Now the size of a reaction still stays in proportion, but every spoken line carries the speaker's feeling in its own words and punctuation: ! for warmth or surprise, ? for questions, ... for hesitating, \"Hehe\", \"Hm?\", \"Oops!\". Dracaene especially: composed, but warm and bright when she talks, not a monotone."
  ],
  "file": "index.html",
- "sha256": "19b95cad6b69586015f8a0d9720e60951000677024e028297d10e30580d73efd",
+ "sha256": "7864081dab139ee46dcc44ed14c08a2c813a62b01b9fcec6e41f5d436c0dab2e",
  "minShell": "0.5.0"
 }
