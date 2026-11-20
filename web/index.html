@@ -841,7 +841,7 @@ button:hover{background:#262b36}
 <div class="modal" id="hubModal"><div class="box hub-box"><div class="hub-head"><div id="hubTabs" class="hub-tabs"></div><button class="ghost" id="hubClose" title="Close">✕</button></div><div id="hubBody" class="hub-body"></div></div></div>
 <div class="modal" id="phoneModal"><div class="box">
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
-  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
+  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><span id="phBatt" class="small" style="white-space:nowrap"></span><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
   <div class="ph-body" id="phBody"></div><input type="file" id="phPhotoFile" accept="image/*" style="display:none">
   <div class="ph-send" id="phSendRow" style="display:none"><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
 </div></div>
@@ -1311,6 +1311,8 @@ function contactStatus(c){ const st=S.chars[c.id]; const area=(st.loc||'').split
   const withU=S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc);
   if(SLEEPY.test(st.act)&&!/trying to sleep|can't sleep|cannot sleep|woke/i.test(st.act)) return {k:'asleep',label:'Asleep',sub:withU?'Right next to you':'Do not disturb'};
   if(withU) return {k:'with',label:'With you',sub:area};
+  if(c.phone!==false&&S.chars[c.id]&&S.chars[c.id].batt!=null&&S.chars[c.id].batt<=0) return {k:'busy',label:'Phone off',sub:'Texts will wait'};
+  if(c.phone!==false&&!hasSignal(c.id)) return {k:'busy',label:'No signal',sub:area};
   if(BUSY.test(st.act)) return {k:'busy',label:'Busy',sub:st.act.split(/[,(]/)[0].trim()};
   return {k:'free',label:'Available',sub:area}; }
 function replyDelay(c){ const k=contactStatus(c).k; if(k==='with') return 0.3+Math.random()*0.7; if(k==='busy') return 4+Math.random()*10; return 0.5+Math.random()*3.5; }
@@ -1318,8 +1320,9 @@ let phoneBusy=new Set();
 function processPhone(){ const P=phone();
   for(const id in P.pending){ const at=P.pending[id]; const c=charById(id); if(!c){ delete P.pending[id]; continue; }
     if(S.clock<at||phoneBusy.has(id)) continue; if(SLEEPY.test(S.chars[id].act)) continue; // they'll see it when they wake up
+    if(c.phone!==false&&!reachable(id)) continue; // dead phone or no signal: it waits
     if(!S.branch&&present().some(x=>x.id===id)&&!P.extra[id]){ delete P.pending[id]; S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${c.name} hasn't answered ${uN()}'s last ${phoneApp()} text yet, and now they're together in person. ${c.name} can bring it up or answer it face to face.)`}); save(); continue; }
-    delete P.pending[id]; phoneBusy.add(id); delete P.err[id]; if(phoneOn()) renderPhone();
+    delete P.pending[id]; phoneBusy.add(id); delete P.err[id]; markRead(c); if(phoneOn()) renderPhone();
     const extra=P.extra[id]; delete P.extra[id];
     textReply(c, extra).then(d=>resolveInvite(c,d)).catch(e=>{ P.err[id]=e.message; notice('Text reply failed: '+e.message,true); }).finally(()=>{ phoneBusy.delete(id); if(phoneOn()) renderPhone(); }); }
   // invitations: did the user show up?
@@ -1350,12 +1353,14 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}.${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
   const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
   const comeM=out.match(/^\s*COMING:\s*(\d+)/mi);
-  const lines=cleanLines(out.replace(/^\s*COMING:.*$/gmi,''),c).slice(0,4);
+  const leftRead=/^\s*\[READ\]\s*$/m.test(out)&&!out.replace(/^\s*\[READ\]\s*$/gm,'').replace(/^\s*(ACCEPT|DECLINE)\s*$/gmi,'').trim();
+  const lines=leftRead?[]:cleanLines(out.replace(/^\s*COMING:.*$/gmi,'').replace(/^\s*\[READ\]\s*$/gmi,''),c).slice(0,4);
+  if(leftRead){ const lm=[...thread(c.id)].reverse().find(m=>m.me); if(lm) lm.leftOnRead=true; addMemory({who:[c.id], text:`Read ${pn}'s text and didn't answer`, imp:1, src:'text'}); }
   if(comeM&&!S.user.companions.includes(c.id)) try{ startComing(c,+comeM[1]); }catch(e){ console.warn('coming',e); }
   for(const l of lines) addText(c.id,false,l);
   const lastMe=[...th].reverse().find(m=>m.me);
@@ -1392,11 +1397,14 @@ Write only what ${c.name} says out loud on the phone, plus small sounds you can 
   return {txt, hang}; }
 async function startCall(c){
   const P=phone(); const k=contactStatus(c).k;
+  if(phoneDead('user')){ notice('🪫 Your phone is dead.',true); return; } if(!hasSignal('user')){ notice('📵 No signal here. The call won\'t go through.',true); return; }
+  const vm=c.phone!==false&&!reachable(c.id);
   CALL={id:c.id, t:S.clock, lines:[], state:'ringing'}; phView='call'; phoneOpenId=c.id; renderPhone();
   await new Promise(r=>setTimeout(r,1800+Math.random()*1500)); if(!CALL||CALL.id!==c.id) return;
-  const answers=k==='asleep'?false:k==='busy'?Math.random()<0.45:Math.random()<0.92;
+  const answers=vm?false:k==='asleep'?false:k==='busy'?Math.random()<0.45:Math.random()<0.92;
   if(!answers){ P.calls.push({id:c.id, t:S.clock, out:true, missed:true}); addText(c.id,true,'📞 Missed call','call');
-    CALL.state='missed'; renderPhone(); P.extra[c.id]=`${uN()} just tried to call you and you couldn't pick up (${S.chars[c.id].act}). Text them back about it when you can.`; P.pending[c.id]=S.clock+replyDelay(c)*MIN; save(); return; }
+    CALL.state='missed'; renderPhone(); P.extra[c.id]=`${uN()} just tried to call you and you couldn't pick up (${vm?(phoneDead(c.id)?'your phone was dead':'you had no signal'):S.chars[c.id].act}). Text them back about it when you can.`; P.pending[c.id]=S.clock+replyDelay(c)*MIN; save();
+    setTimeout(()=>{ if(confirm(vm?`It went straight to ${c.name}'s voicemail. Leave a message?`:`${c.name} didn't pick up. Leave a voicemail?`)) leaveVoicemail(c); },400); return; }
   CALL.state='live'; renderPhone(); await callSay(c, null);
 }
 async function callSay(c, text){ if(!CALL) return; if(text) CALL.lines.push({me:true,text}); CALL.thinking=true; renderPhone();
@@ -2041,7 +2049,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=deathBlock();
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
-  s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock();
+  s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock(); if(phonesOn()) s+=phoneLifeBlock(pres);
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
   for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':(()=>{ const L=S.chars[c.id].log.filter(e=>S.clock-e.t<=24*60*MIN).slice(-4); return L.length?`WHAT REALLY HAPPENED TO ${c.name.toUpperCase()} WHILE ${uN().toUpperCase()} WASN'T AROUND (true events, oldest first; ${c.name} lived through them, remembers them and still feels their effects: mood, tiredness, hunger, injuries, things they're carrying or wearing. Let them show and come up naturally, especially when ${c.name} first runs into ${uN()} or is asked what they've been up to. Never contradict them):\n${L.map(e=>`[${hhmm(e.t)}${e.with&&e.with.length>1?', with '+e.with.filter(x=>x!==c.id).map(x=>charById(x)?.name).filter(Boolean).join(', '):''}] ${e.text.replace(/\n+/g,' ').slice(0,600)}`).join('\n')}\n`:''; })()}\n`; }
@@ -2301,6 +2309,7 @@ function tick(){
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
   try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
+  if(!S.paused&&phonesOn()) try{ phoneLifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('phone',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
 }
@@ -2631,7 +2640,7 @@ const ITEMS=[
  // misc and gifts
  {id:'umbrella',name:'Umbrella',cat:'misc',price:12,uses:0},
  {id:'charger',name:'Phone charger',cat:'misc',price:15,uses:0},
- {id:'powerbank',name:'Power bank',cat:'misc',price:25,uses:0},
+ {id:'powerbank',name:'Power bank',cat:'misc',price:25,uses:3,fx:'charge'},
  {id:'batteries',name:'Batteries',cat:'misc',price:5,uses:4},
  {id:'lighter',name:'Lighter',cat:'misc',price:2,uses:0},
  {id:'flowers',name:'Bouquet of flowers',cat:'gift',price:18,uses:0,spoil:144},
@@ -2717,6 +2726,7 @@ function useItem(who, name){ const st=who==='user'?S.user:S.chars[who]; if(!st) 
   else if(fx==='snack'){ const n=who==='user'?S.user:needsOf(st); n.lastAte=Math.max(n.lastAte||0, S.clock-2.5*HOUR); }
   else if(fx==='alcohol') drink(st, who);
   else if(fx==='period'){ st.periodCare=S.clock; }
+  else if(fx==='charge'){ st.batt=Math.min(100,(st.batt==null?50:st.batt)+50); }
   else if(fx==='bandage'){ const h=(st.hurt||[]).find(x=>x.sev==='minor'&&!x.dressed); if(h) h.dressed=S.clock; }
   else if(FX[fx]) addFx(st, fx);
   return e||{name:it.name}; }
@@ -2875,6 +2885,41 @@ function comingTick(){ if(!S.coming||!S.coming.length) return; const keep=[];
     else if(hasPhone(c)&&isContact(c.id)) addText(c.id,false,`i'm at ${x.loc.split(',').slice(-1)[0].trim()}... where are you??`);
     addMemory({who:[c.id], text:`Went to ${x.loc} because ${uN()} asked me to come${sameDist?'':', but they weren\'t there'}`, imp:2, src:'coming'}); }
   S.coming=keep; }
+
+// ======================= phone realism: battery, signal, read receipts, voicemail =======================
+const HOMEY=/\b(home|room|apartment|flat|bedroom|dorm|house|guest room|living room|loft|attic|suite|quarters|bed)\b/i;
+const NOSIGNAL=/\bhollow\b|underground|tunnel|basement|bunker|vault|cave|elevator|sewer|catacomb|ether/i;
+const HEAVY_PHONE=/scroll|phone|text|stream|game|social|inter-knot|knock knock|video|music|doomscroll/i;
+function battOf(who){ const st=who==='user'?S.user:S.chars[who]; if(!st) return 100; if(st.batt==null) st.batt=who==='user'?82:55+(hashStr(String(who))%45); return st.batt; }
+function hasSignal(who){ const loc=who==='user'?S.user.loc:(S.chars[who]&&S.chars[who].loc); return !NOSIGNAL.test(String(loc||'')); }
+function phoneDead(who){ return battOf(who)<=0; }
+function reachable(who){ return !phoneDead(who)&&hasSignal(who); }
+function battIcon(n){ return n<=0?'🪫 dead':n<=15?`🪫 ${Math.round(n)}%`:`🔋 ${Math.round(n)}%`; }
+function phoneLifeTick(dMin){ if(!S||!W||dMin<=0) return; const h=dMin/60;
+  // you
+  { const st=S.user; battOf('user'); const charging=(st.chargingUntil&&S.clock<st.chargingUntil)||HOMEY.test(String(st.loc||''));
+    st.batt=Math.max(0,Math.min(100,st.batt+(charging?35:-(phoneOn()&&$('#phoneModal')&&$('#phoneModal').classList.contains('on')?9:3.5))*h));
+    if(st.batt<=15&&!st._lowWarned){ st._lowWarned=true; notice(`🪫 Your phone is at ${Math.round(st.batt)}%.`); } if(st.batt>25) st._lowWarned=false; }
+  // everyone else
+  for(const c of W.characters){ if(c.phone===false) continue; const st=S.chars[c.id]; if(!st||st.dead) continue; battOf(c.id);
+    const charging=SLEEPY.test(st.act||'')||(HOMEY.test(String(st.loc||''))&&!/out|leaving|heading/i.test(st.act||''));
+    const drain=HEAVY_PHONE.test(st.act||'')?8:3.5; st.batt=Math.max(0,Math.min(100,st.batt+(charging?30:-drain)*h)); }
+  // texts that couldn't go out (no signal / dead phone) go out when they can
+  const P=phone(); if(reachable('user')) for(const id in P.threads){ const th=P.threads[id]; let any=false; for(const m of th) if(m.me&&m.queued){ delete m.queued; m.t=S.clock; any=true; } if(any&&!P.pending[id]) P.pending[id]=S.clock+(charById(id)?replyDelay(charById(id)):2)*MIN; } }
+function phoneLifeBlock(pres){ const out=[]; const ub=battOf('user');
+  if(ub<=20||!hasSignal('user')) out.push(`${uN()}'s phone: ${ub<=0?'dead':Math.round(ub)+'% battery'}${hasSignal('user')?'':', no signal here'}.`);
+  for(const c of pres){ if(c.phone===false) continue; const b=battOf(c.id); if(b<=15) out.push(`${c.name}'s phone: ${b<=0?'dead':Math.round(b)+'%, about to die'}.`); }
+  return out.length?`PHONES RIGHT NOW: ${out.join(' ')} (a dying phone is a real problem: no maps, no texts, no calls until it charges.)\n`:''; }
+// status under your last text: Sent / Delivered / Read
+function receiptFor(c){ const th=thread(c.id); const last=[...th].reverse().find(m=>m.me&&m.kind!=='call'); if(!last) return '';
+  if(last.queued) return `Not sent: ${!hasSignal('user')?'no signal here':'your phone is dead'}. It'll go out when you can.`;
+  if(last.seenAt) return `Read ${hhmm(last.seenAt)}${last.leftOnRead?' · no reply':''}`;
+  if(!reachable(c.id)) return `Sent · not delivered (${phoneDead(c.id)?'their phone seems to be off':'they seem to have no signal'})`;
+  return 'Delivered'; }
+function markRead(c){ for(const m of thread(c.id)) if(m.me&&!m.seenAt) m.seenAt=S.clock; }
+// leave a voicemail after a missed call
+function leaveVoicemail(c){ const t=prompt(`Leave a voicemail for ${c.name}:`); if(!t||!t.trim()) return; addText(c.id,true,`🎙 Voicemail: ${t.trim()}`,'voicemail');
+  const P=phone(); P.extra[c.id]=`${uN()} called, you missed it, and they left you a voicemail: "${t.trim()}". When you get to it, react like you would (call back, text back, or not).`; if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; save(); renderPhone(); }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3330,8 +3375,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.44.0';
+const APP_VERSION = '0.45.0';
 const CHANGELOG = [
+ {v:'0.45.0', d:'2026-11-19', notes:['Phones behave like phones. Batteries drain (faster for people glued to their screens) and charge at home or overnight; a power bank gives you +50%. A dead phone can\'t text or call, and a character\'s dead phone means your texts wait until they charge it.', 'No signal inside Hollows, tunnels, basements and the like: your texts queue and go out when you\'re back in range, and calls won\'t connect.', 'Read receipts: Sent, Delivered, Read 14:02. Characters can leave you on read, and they remember doing it.', 'Missed calls offer to leave a voicemail, and the character reacts to it when they get to it (call back, text back, or not). Calls to a dead or out-of-range phone go straight to voicemail.']},
  {v:'0.44.0', d:'2026-11-19', notes:['Travel takes real time and money. Walking, the metro (05:30 to 00:30), buses (until 23:00) or a taxi (any time, slow and pricey at rush hour). The story plays the trip and moves the clock forward by the trip time, and fares come out of your wallet (your companions pay their own unless someone covers them).', 'Text someone to come over and they really decide: how much they trust you, what they\'re doing, how far away they are, whether they can afford the fare, and their mood. If they say yes they give an honest ETA, actually travel (you can watch them on the map), and turn up in the scene. If you\'ve left by then, they text asking where you went, and they remember it.']},
  {v:'0.43.0', d:'2026-11-19', notes:['Items and money. You and every character now carry real things and real money (Dennies in Zenless worlds, dollars elsewhere; change the name, symbol and price scale in Bag & money). Nangong can afford anything, Cissia is always broke, and nobody can pay with money they don\'t have.', 'Shops: every world gets convenience stores, pharmacies, grocery stores, cafés, clothing, florists, gift shops, liquor stores and an adult boutique, with opening hours, prices and stock that can sell out. New Eridu uses its own places (141, JC Pharmacy, Lumina Galleria, Richard Teamilk, Peace Herbal, Yum Cha Sin…). Browse them in 🗺 World → 🛍 Shops and buy when you\'re there.', 'Anyone under 18 waits outside 18+ shops and can\'t buy alcohol, cigarettes or adult items.', 'Items do things over time: melatonin makes you drowsy half an hour later, Pepto settles a stomach, coffee and energy drinks wire you up (and crash), drinks add up from tipsy to wasted with a hangover the next morning, heat patches ease cramps, aphrodisiacs work only on adults and never decide anything for anyone. Food spoils, coffee goes cold, ice cream melts.', 'The story can buy, use, give and pay: characters hand each other things, split bills, pay for taxis and buy things off-screen too. See Schedules → Bag & money for your bag, everyone\'s wallet and recent spending.']},
  {v:'0.42.1', d:'2026-11-19', notes:['Sex scenes between adults now use plain, direct words for body parts instead of euphemisms like "his length" or "her core", in the voice of each character (bold ones talk dirty, shy ones stammer). This never applies when anyone under 18 or a protected character is in the scene.']},
@@ -3663,7 +3709,7 @@ function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); i
 function openPhone(view, id){ if(!S) return; { const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked!==S.chat.length) checkDoing(la.text,true); } phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
 function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
-function phHeader(title, sub, back){ $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
+function phHeader(title, sub, back){ const pb=$('#phBatt'); if(pb&&S) pb.textContent=`${hasSignal('user')?'📶':'📵 no signal'} ${battIcon(battOf('user'))}`; $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
 let lastPhView='';
 function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; return; }
   { const k=phView+'|'+phoneOpenId; if(k!==lastPhView){ lastPhView=k; const pb=$('#phBody'); if(pb){ pb.classList.remove('phIn'); void pb.offsetWidth; pb.classList.add('phIn'); } } }
@@ -3710,8 +3756,9 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     for(const m of th){ const d=mmdd(m.t); if(d!==lastDay){ html+=`<div class="bub-t">${wdName(m.t)} ${d}</div>`; lastDay=d; } html+=`<div class="bub ${m.me?'me':'them'} ${m.kind||''}" title="${hhmm(m.t)}">${esc(subUser(m.text))}</div>`; }
     const s=contactStatus(c); let waiting='';
     if(phoneBusy.has(c.id)) waiting=`<div class="ph-typing">${esc(c.name)} is typing…</div>`;
-    else if(P.pending[c.id]) waiting=`<div class="ph-typing">Delivered${S.paused?' · the story is paused, so time isn\'t passing':s.k==='asleep'?` · ${esc(c.name)} is asleep and will see it when they wake up`:s.k==='busy'?` · ${esc(c.name)} is busy (${esc(S.chars[c.id].act)}), so it may take a few minutes`:''}</div>`;
+    else if(P.pending[c.id]) waiting=`<div class="ph-typing">${!reachable(c.id)||!reachable('user')?esc(receiptFor(c)):'Delivered'}${S.paused?' · the story is paused, so time isn\'t passing':s.k==='asleep'?` · ${esc(c.name)} is asleep and will see it when they wake up`:s.k==='busy'?` · ${esc(c.name)} is busy (${esc(S.chars[c.id].act)}), so it may take a few minutes`:''}</div>`;
     else if(P.err[c.id]) waiting=`<div class="ph-typing" style="color:var(--danger)">Couldn't get a reply: ${esc(P.err[c.id])} <a href="#" id="phRetry">Try again</a></div>`;
+    else if(receiptFor(c)) waiting=`<div class="ph-typing">${esc(receiptFor(c))}</div>`;
     B.innerHTML=`<div class="ph-msgs">${html||'<div class="bub-t">Say hi.</div>'}</div>${waiting}`; B.scrollTop=B.scrollHeight;
     const rt=$('#phRetry'); if(rt) rt.onclick=e=>{ e.preventDefault(); delete P.err[c.id]; P.pending[c.id]=S.clock; renderPhone(); };
     $('#phCallBtn').style.display=''; $('#phInvBtn').style.display='';
@@ -3781,10 +3828,11 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
 }
 function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather'})[k]; }
 function lightColor(hex){ const m=String(hex).match(/^#?([0-9a-f]{6})$/i); if(!m) return false; const n=parseInt(m[1],16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>150; }
-function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v);
+function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; if(phoneDead('user')){ notice('🪫 Your phone is dead. Charge it at home or use a power bank.',true); return; } $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v); S.user.batt=Math.max(0,battOf('user')-0.4);
   if(!S.branch&&present().some(x=>x.id===c.id)){ // they're right here: their phone buzzes in the scene
     S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${uN()} texts ${c.name} on ${phoneApp()} even though ${c.name} is right here: "${v}". Show it in the scene: ${c.name}'s phone buzzes, they notice (or don't, if they're busy), read it and react the way they would, out loud, with a look, or by texting back. For every text they send back, show them typing it and add [[TEXT: ${c.name}: message]]. Don't skip what ${c.name} is in the middle of.)`});
     S.view='me'; save(); renderPhone(); notice(`${c.name} is right next to you. Watch the story for their reaction.`); if(!busyMain) generateReply(); return; }
+  if(!hasSignal('user')){ const m=thread(c.id).slice(-1)[0]; if(m) m.queued=true; save(); renderPhone(); notice('📵 No signal here. It will send when you have signal again.'); return; }
   const P=phone(); if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; renderPhone(); }
 $('#phSend').onclick=sendText; $('#phInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } };
 $('#phBack').onclick=()=>openPhone(phView==='chat'?'msgs':'home');

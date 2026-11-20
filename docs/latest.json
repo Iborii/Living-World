@@ -1,11 +1,13 @@
 {
- "version": "0.44.0",
+ "version": "0.45.0",
  "date": "2026-11-19",
  "notes": [
-  "Travel takes real time and money. Walking, the metro (05:30 to 00:30), buses (until 23:00) or a taxi (any time, slow and pricey at rush hour). The story plays the trip and moves the clock forward by the trip time, and fares come out of your wallet (your companions pay their own unless someone covers them).",
-  "Text someone to come over and they really decide: how much they trust you, what they're doing, how far away they are, whether they can afford the fare, and their mood. If they say yes they give an honest ETA, actually travel (you can watch them on the map), and turn up in the scene. If you've left by then, they text asking where you went, and they remember it."
+  "Phones behave like phones. Batteries drain (faster for people glued to their screens) and charge at home or overnight; a power bank gives you +50%. A dead phone can't text or call, and a character's dead phone means your texts wait until they charge it.",
+  "No signal inside Hollows, tunnels, basements and the like: your texts queue and go out when you're back in range, and calls won't connect.",
+  "Read receipts: Sent, Delivered, Read 14:02. Characters can leave you on read, and they remember doing it.",
+  "Missed calls offer to leave a voicemail, and the character reacts to it when they get to it (call back, text back, or not). Calls to a dead or out-of-range phone go straight to voicemail."
  ],
  "file": "index.html",
- "sha256": "8f0bc75c27466ff35e205f0771d02fc67d4495a45b382500fc4ee53249f712fb",
+ "sha256": "61baa2da670a5de947db573cb2d1543cfe9bf993922d4ab06ea8c9d90a4671eb",
  "minShell": "0.5.0"
 }
