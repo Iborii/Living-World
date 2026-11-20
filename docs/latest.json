@@ -1,10 +1,10 @@
 {
- "version": "0.55.4",
+ "version": "0.55.5",
  "date": "2026-11-20",
  "notes": [
-  "The Sunbringer sisters now stand in a proper staircase: looking straight ahead, Lindverne is at eye level with Eldreda's chest, and Dracaene with Lindverne's. Lindverne is now average height instead of tall."
+  "Fixed: on phones, a character's profile couldn't scroll, so you got stuck and couldn't reach Edit. It scrolls now."
  ],
  "file": "index.html",
- "sha256": "f7e125f3d877cde483ca9b7e994d5e26e8692bdfa266ac6e4de0c63d817893ee",
+ "sha256": "9a2edaf1e2e8b9bb10549248acf11df975a88953f768c793d7d31b21165cb209",
  "minShell": "0.5.0"
 }

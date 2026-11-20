@@ -372,7 +372,7 @@ aside h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--
 #personaSel{width:auto;max-width:180px}
 @media (max-width:760px){#personaModal .box{grid-template-columns:1fr}}
 /* character page */
-#charModal .box{width:min(720px,94vw);padding:0;overflow:hidden}
+#charModal .box{width:min(720px,94vw);padding:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .cm-top{display:flex;gap:18px;align-items:center;padding:22px;background:var(--cbg)}
 .cm-av{width:110px;height:110px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:56px;flex:none;box-shadow:0 10px 30px -8px rgba(0,0,0,.6)}
 .cm-top h2{font-family:var(--serif);font-weight:400;font-size:30px;margin:0}
@@ -3884,8 +3884,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.55.4';
+const APP_VERSION = '0.55.5';
 const CHANGELOG = [
+ {v:'0.55.5', d:'2026-11-20', notes:['Fixed: on phones, a character\'s profile couldn\'t scroll, so you got stuck and couldn\'t reach Edit. It scrolls now.']},
  {v:'0.55.4', d:'2026-11-20', notes:['The Sunbringer sisters now stand in a proper staircase: looking straight ahead, Lindverne is at eye level with Eldreda\'s chest, and Dracaene with Lindverne\'s. Lindverne is now average height instead of tall.']},
  {v:'0.55.3', d:'2026-11-20', notes:['Dracaene puts both hands over her mouth when she is shocked or in awe.']},
  {v:'0.55.2', d:'2026-11-20', notes:['Dracaene is no longer timid. Like in the game, she is quietly confident and composed: she takes charge, talks to strangers easily and only gets flustered over specific things (praising herself by accident, being teased in public, Lindverne picking her up).']},
