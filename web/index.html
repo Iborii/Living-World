@@ -1715,6 +1715,7 @@ function stateBits(c, short){ const st=S.chars[c.id]; const n=needsOf(st); const
   for(const f of fxBits(st,short)) out.push(f);
   for(const f of condBits(c.id,short)) out.push(f);
   for(const f of illBits(c.id,short)) out.push(f);
+  if(!short&&!isConstruct(c)){ const mc=moodCarry(st); if(mc) out.push(mc); const dm=dayMood(c); if(dm) out.push(dm); }
   if(st.mood&&S.clock-st.mood.t<8*HOUR) out.push(short?st.mood.word:`feeling ${st.mood.word}${st.mood.why?` (${st.mood.why})`:''}`);
   if(!short){ const k=actKey(st.act); const reps=(st.acts||[]).filter(a=>a.k===k&&S.clock-a.t<7*24*HOUR).length; if(st.act!=='with you'&&reps>=4) out.push(`getting bored of "${st.act}" (${reps} times this week)`); }
   return out; }
@@ -2055,7 +2056,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
   s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock(); if(phonesOn()) s+=phoneLifeBlock(pres);
-  s+=sickBlock(pres);
+  s+=sickBlock(pres); s+=outageLine(); s+=habitLines(pres);
   { const ub=condBits('user'); if(ub.length) s+=`${uN().toUpperCase()}'S BODY AND CLOTHES RIGHT NOW: ${ub.join('; ')}. Describe how it looks and feels, but ${uN()}'s actions stay theirs.\n`; s+=homeLine(S.user.loc); }
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
@@ -2318,7 +2319,7 @@ function tick(){
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
   try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
-  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); sickTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
+  if(!S.paused) try{ bodyTick(dtReal*(+S.speed||1)/MIN); sickTick(dtReal*(+S.speed||1)/MIN); lifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('body',e); }
   if(!S.paused&&phonesOn()) try{ phoneLifeTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('phone',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
@@ -3037,6 +3038,74 @@ function sickBlock(pres){ const out=[]; const u=illBits('user'); if(u.length) ou
   for(const c of pres){ if(contagious(c.id)&&illOf(c.id)&&S.clock>=illOf(c.id).start) out.push(`${c.name} is contagious; close contact can spread it`); }
   return out.length?`SICKNESS: ${out.join('. ')}.\n`:''; }
 
+// ======================= everyday life: small random events, habits that form, moods that carry over =======================
+const LIFE_EVENTS=[
+ {k:'keys',w:3,text:n=>`${n} can't find their keys and turns the place upside down looking for them`,mood:'flustered',home:true},
+ {k:'spill',w:4,text:n=>`${n} spills a drink down their front`,cond:'stained: a drink',mood:'annoyed'},
+ {k:'late',w:4,text:n=>`${n}'s bus is late and they end up running behind`,mood:'stressed',out:true},
+ {k:'package',w:3,text:n=>`a package arrives for ${n}`,mood:'curious',home:true},
+ {k:'neighbor',w:2,text:n=>`${n}'s neighbor is being loud through the wall`,mood:'irritated',home:true},
+ {k:'money',w:2,text:n=>`${n} finds a little money on the ground`,money:+15,mood:'pleased',out:true},
+ {k:'fine',w:1,text:n=>`${n} gets slapped with a small fine`,money:-30,mood:'grumpy',out:true},
+ {k:'toe',w:2,text:n=>`${n} stubs their toe hard on furniture`,hurt:'stubbed toe',mood:'cranky',home:true},
+ {k:'compliment',w:3,text:n=>`a stranger compliments ${n} out of nowhere`,mood:'flattered',out:true},
+ {k:'oldfriend',w:2,text:n=>`${n} runs into someone they haven't seen in years`,mood:'nostalgic',out:true},
+ {k:'cat',w:2,text:n=>`a stray cat follows ${n} for a whole block`,mood:'charmed',out:true},
+ {k:'soldout',w:2,text:n=>`${n}'s favorite snack is sold out everywhere`,mood:'disappointed',out:true},
+ {k:'crack',w:1,text:n=>`${n} drops their phone and cracks the screen`,mood:'upset',money:-40},
+ {k:'spam',w:3,text:n=>`${n} gets three spam calls in a row`,mood:'annoyed'},
+ {k:'song',w:3,text:n=>`${n} hears a song they love playing somewhere`,mood:'happy'},
+ {k:'family',w:2,text:n=>`${n} gets a long call from family`,mood:'mixed'},
+ {k:'tripped',w:2,text:n=>`${n} trips in public and pretends it didn't happen`,mood:'embarrassed',out:true},
+ {k:'freebie',w:2,text:n=>`${n} gets a free sample from a promoter`,mood:'pleased',out:true},
+];
+const USER_EVENTS=[
+ {k:'package',home:true,text:n=>`a delivery driver leaves a package for ${n} at the door`},
+ {k:'neighbor',home:true,text:n=>`someone nearby starts drilling or blasting music`},
+ {k:'directions',out:true,text:n=>`a lost stranger stops ${n} to ask for directions`},
+ {k:'spam',text:n=>`${n}'s phone buzzes with a spam call`},
+ {k:'promoter',out:true,text:n=>`a street promoter tries hard to hand ${n} a flyer`},
+ {k:'bus',out:true,text:n=>`a bus roars past and splashes the curb`},
+ {k:'cat',out:true,text:n=>`a stray cat sits nearby and stares at ${n}`},
+];
+function pickW(list){ const tot=list.reduce((a,e)=>a+(e.w||1),0); let r=Math.random()*tot; for(const e of list){ r-=(e.w||1); if(r<=0) return e; } return list[0]; }
+function lifeTick(dMin){ if(!S||!W||dMin<=0||S.branch) return; const h=dMin/60;
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead||SLEEPY.test(st.act||'')||S.user.companions.includes(c.id)) continue; if(Math.random()>.035*h) continue;
+    const atHome=homeOf(c)&&homeKey(st.loc)===homeKey(homeOf(c)); const pool=LIFE_EVENTS.filter(e=>(!e.home||atHome)&&(!e.out||!atHome)); const e=pickW(pool); if(!e) continue;
+    if(S.lifeSeen&&S.lifeSeen[c.id+e.k]&&S.clock-S.lifeSeen[c.id+e.k]<4*DAYMS) continue; (S.lifeSeen=S.lifeSeen||{})[c.id+e.k]=S.clock;
+    const text=e.text(c.name); st.log.push({t:S.clock, text:`*Off-screen: ${text}.*`, with:[c.id], loc:st.loc, life:true}); st.changed=true;
+    if(e.mood) st.mood={word:e.mood, why:text.replace(c.name,'').trim(), t:S.clock};
+    if(e.money){ const w=walletOf(c.id); w.money=Math.max(0,w.money+Math.round(e.money*(+currency().scale||1))); }
+    if(e.cond) applyCondTag(`${c.name}: ${e.cond}`);
+    if(e.hurt){ (st.hurt=st.hurt||[]).push({what:e.hurt, sev:'minor', t:S.clock}); }
+    if(e.k==='keys'&&Math.random()<.5&&invOf(c.id).length){ const lost=invOf(c.id)[Math.floor(Math.random()*invOf(c.id).length)]; takeItem(c.id,lost.name,1); }
+    addMemory({who:[c.id], text:text.charAt(0).toUpperCase()+text.slice(1), imp:1, src:'life'}); }
+  // small things happen around you too (never anything you do: that's yours)
+  if(Math.random()<.012*h&&!busyMain){ const atHome=HOMEY.test(String(S.user.loc||'')); const pool=USER_EVENTS.filter(e=>(!e.home||atHome)&&(!e.out||!atHome)); const e=pool[Math.floor(Math.random()*pool.length)];
+    if(e&&(!S.lifeUser||S.clock-S.lifeUser>3*HOUR)){ S.lifeUser=S.clock; S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: something small happens around ${uN()}: ${e.text(uN())}. Work it into the next reply naturally; how ${uN()} reacts is up to them.)`}); } }
+  outageTick(h); habitTick(dMin); }
+// power outages hit a whole district for a few hours
+function outageTick(h){ if(S.outage&&S.clock>S.outage.until){ delete S.outage; } if(S.outage||Math.random()>.004*h) return;
+  const ds=[...new Set(W.characters.map(c=>String(homeOf(c)||'').split(',')[0].trim()).filter(Boolean))]; if(!ds.length) return; const d=ds[Math.floor(Math.random()*ds.length)];
+  S.outage={district:d, from:S.clock, until:S.clock+(1+Math.random()*3)*HOUR}; for(const c of W.characters){ const st=S.chars[c.id]; if(st&&!st.dead&&String(st.loc).startsWith(d)) st.log.push({t:S.clock, text:`*The power goes out across ${d}.*`, with:[c.id], loc:st.loc, life:true}); } }
+function outageLine(){ if(!S.outage) return ''; const here=String(S.user.loc||'').startsWith(S.outage.district); return here?`POWER OUTAGE: the power is out across ${S.outage.district} (since ${hhmm(S.outage.from)}): no lights, no AC or heat, fridges warming, shops dark or on emergency lights, phones can't charge.\n`:`(The power is out in ${S.outage.district} right now.)\n`; }
+
+// ---------- habits: routines form around what you actually do ----------
+function habitTick(dMin){ S.habits=S.habits||[]; const hr=dt(S.clock).h, day=isoDate(S.clock); const d=String(S.user.loc||'').split(',')[0].trim();
+  for(const id of S.user.companions){ const last=S.habits.slice().reverse().find(v=>v.id===id); if(last&&last.day===day&&Math.abs(last.h-hr)<2) continue; S.habits.push({id, day, h:hr, d}); }
+  if(S.habits.length>2000) S.habits.splice(0,S.habits.length-2000);
+  // a routine that didn't happen today gets noticed
+  if(S._habDay!==day&&hr>=23){ S._habDay=day; for(const r of allRoutines()){ if(r.days>=4&&!S.habits.some(v=>v.id===r.id&&v.day===day)){ const c=charById(r.id); if(!c||isDead(c)) continue; S.chars[r.id].mood={word:'a little put out', why:`${uN()} didn't come around today like they usually do`, t:S.clock}; addMemory({who:[r.id], text:`${uN()} didn't show up around ${r.h}:00 today like they usually do`, imp:1, src:'habit'}); } } } }
+function allRoutines(){ const since=S.clock-14*DAYMS; const groups={}; for(const v of (S.habits||[])){ if(parseStart(v.day,'12:00')<since) continue; const k=v.id+'|'+v.d+'|'+Math.floor(v.h/3); (groups[k]=groups[k]||{id:v.id,d:v.d,h:v.h,days:new Set()}).days.add(v.day); }
+  return Object.values(groups).map(g=>({id:g.id,d:g.d,h:g.h,days:g.days.size})).filter(g=>g.days>=3); }
+function habitLines(pres){ const rs=allRoutines().filter(r=>pres.some(c=>c.id===r.id)); if(!rs.length) return '';
+  return `ROUTINES WITH ${uN().toUpperCase()} (they've noticed): ${rs.map(r=>`${charById(r.id).name}: together around ${String(r.h).padStart(2,'0')}:00 in ${r.d} on ${r.days} of the last 14 days${r.days>=9?' (so regular it\'s become predictable, comfortable but a little routine)':r.days>=5?' (they expect it now)':' (they\'re starting to expect it)'}`).join('; ')}.\n`; }
+
+// ---------- moods that carry over and good/bad days ----------
+const STRONG_MOOD=/angry|furious|hurt|betray|upset|sad|heartbroken|devastat|crushed|humiliat|jealous|ecstatic|giddy|elated|thrilled|in love|smitten|anxious|scared|terrified|ashamed|guilty|resent/i;
+function dayMood(c){ const h=hashStr(c.id+isoDate(S.clock))%100; return h<10?'having an off day for no real reason: shorter fuse, low energy':h>91?'in an unusually good mood today':''; }
+function moodCarry(st){ if(!st.mood) return ''; const age=S.clock-st.mood.t; if(age<8*HOUR||age>40*HOUR||!STRONG_MOOD.test(st.mood.word)) return ''; return `still ${age>24*HOUR?'a little ':''}${st.mood.word} from ${age>20*HOUR?'yesterday':'earlier'}${st.mood.why?` (${st.mood.why})`:''}, fading`; }
+
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3491,8 +3560,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.47.0';
+const APP_VERSION = '0.48.0';
 const CHANGELOG = [
+ {v:'0.48.0', d:'2026-11-19', notes:['Everyday life happens to everyone. Off-screen, characters lose their keys, spill drinks on themselves, run late when the bus doesn\'t come, find money, get fined, crack their phone screens, get packages, stub their toes, run into old friends, get followed by stray cats. It changes their mood, money and clothes, they remember it, and it carries into scenes. Small things happen around you too (a package, a noisy neighbor, a lost stranger asking directions); what you do about them is up to you.', 'Power outages hit whole districts for a few hours: lights off, fridges warming, phones can\'t charge.', 'Habits form around what you actually do. Spend time with someone at the same time and place on a few days and they start expecting it; skip a day and they notice and feel a little put out. Keep it up for weeks and it becomes comfortable but predictable.', 'Moods carry over: a big fight, a heartbreak or a great night still colors the next day before it fades. Everyone has off days and unusually good days too.']},
  {v:'0.47.0', d:'2026-11-19', notes:['People get sick. Colds, the flu and stomach bugs come on gradually (a scratchy throat a day before), get worse, peak and fade over several days, and they spread: spend time near someone contagious and you, or anyone else around, might catch it a day later. Winter and getting soaked in the cold raise the odds. Afterwards people are immune for a few weeks.', 'Eating food that has gone bad can give you food poisoning a few hours later.', 'Anyone badly sick (flu, stomach bug, food poisoning) stays home in bed instead of following their schedule. Cold medicine, cough syrup and painkillers from the pharmacy help, and hangovers already hit the morning after a heavy night. Injuries keep healing day by day as before.']},
  {v:'0.46.0', d:'2026-11-19', notes:['Bodies and clothes keep their state. Walk through the rain without an umbrella and you get damp, wet, then soaked (thin fabric goes see-through) and stay that way until you dry off or change. Spills leave stains until the clothes come off, mud stays on, crying smudges makeup, training leaves people sweaty until they shower, and everyone wakes up with bed hair until they fix it. A shower leaves hair wet for a while.', 'Homes change over time: dishes stack up in the sink, mess builds day by day until someone does chores, laundry piles up with every outfit change, and groceries people bring home go in the fridge, get cooked, and spoil. When you\'re at someone\'s place the story sees all of it.']},
  {v:'0.45.0', d:'2026-11-19', notes:['Phones behave like phones. Batteries drain (faster for people glued to their screens) and charge at home or overnight; a power bank gives you +50%. A dead phone can\'t text or call, and a character\'s dead phone means your texts wait until they charge it.', 'No signal inside Hollows, tunnels, basements and the like: your texts queue and go out when you\'re back in range, and calls won\'t connect.', 'Read receipts: Sent, Delivered, Read 14:02. Characters can leave you on read, and they remember doing it.', 'Missed calls offer to leave a voicemail, and the character reacts to it when they get to it (call back, text back, or not). Calls to a dead or out-of-range phone go straight to voicemail.']},
