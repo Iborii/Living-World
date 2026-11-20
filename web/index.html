@@ -1350,11 +1350,13 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}.${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}.${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
   const out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320});
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
-  const lines=cleanLines(out,c).slice(0,4);
+  const comeM=out.match(/^\s*COMING:\s*(\d+)/mi);
+  const lines=cleanLines(out.replace(/^\s*COMING:.*$/gmi,''),c).slice(0,4);
+  if(comeM&&!S.user.companions.includes(c.id)) try{ startComing(c,+comeM[1]); }catch(e){ console.warn('coming',e); }
   for(const l of lines) addText(c.id,false,l);
   const lastMe=[...th].reverse().find(m=>m.me);
   addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
@@ -2002,6 +2004,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[OUTFIT: Name: what they're wearing now]]  when a character changes clothes
    [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
 ${ITEM_TAG_HELP}
+   [[RIDE: metro|bus|taxi|walk]]  with [[MOVE]] when the user travels to another district (pays the fare)
    [[HURT: Name: injury: minor|moderate|serious]]  when a character gets hurt (use "user" only for an injury the user themselves described)
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
    [[DIED: Name: how]]  when a character dies (see DEATH IS REAL)
@@ -2038,7 +2041,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=deathBlock();
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
-  s+=itemsMainBlock(pres);
+  s+=itemsMainBlock(pres); if(!S.branch) s+=travelBlock();
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
   for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':(()=>{ const L=S.chars[c.id].log.filter(e=>S.clock-e.t<=24*60*MIN).slice(-4); return L.length?`WHAT REALLY HAPPENED TO ${c.name.toUpperCase()} WHILE ${uN().toUpperCase()} WASN'T AROUND (true events, oldest first; ${c.name} lived through them, remembers them and still feels their effects: mood, tiredness, hunger, injuries, things they're carrying or wearing. Let them show and come up naturally, especially when ${c.name} first runs into ${uN()} or is asked what they've been up to. Never contradict them):\n${L.map(e=>`[${hhmm(e.t)}${e.with&&e.with.length>1?', with '+e.with.filter(x=>x!==c.id).map(x=>charById(x)?.name).filter(Boolean).join(', '):''}] ${e.text.replace(/\n+/g,' ').slice(0,600)}`).join('\n')}\n`:''; })()}\n`; }
@@ -2114,12 +2117,13 @@ function joinCont(a,b){ b=b.replace(/^\s*\|[^\n]*\|\s*\n/,''); // drop a repeate
   if(/\s$/.test(a)||/^[\s.,;:!?'")\]*~-]/.test(b)) return a+b;
   return a+(/[A-Za-z]$/.test(a)&&/^[a-z]/.test(b)?'':' ')+b.replace(/^\s+/,''); }
 function applyControls(text){
-  const lines=text.split('\n'); const keep=[]; let withList=null; TRUST_TAGGED=new Set();
+  const lines=text.split('\n'); const keep=[]; let withList=null, rideMode=null; S.user.lastLoc=S.user.loc; TRUST_TAGGED=new Set();
   for(const l of lines){
     const m=l.match(/^\s*\[\[(\w+):\s*([^\]]+)\]\]\s*$/);
     if(!m){ keep.push(l); continue; }
     const [_,cmd,arg]=m; const C=cmd.toUpperCase();
-    if(C==='MOVE'){ S.user.loc=arg.trim(); }
+    if(C==='MOVE'){ S.user.lastLoc=S.user.loc; S.user.loc=arg.trim(); }
+    else if(C==='RIDE'){ rideMode=arg; }
     else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)){ freshJoin(c.id); S.user.companions.push(c.id); } }
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
@@ -2134,6 +2138,7 @@ function applyControls(text){
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()) S.user.washed=S.clock; else { const c=charByName(arg); if(c) S.chars[c.id].washed=S.clock; } }
   }
   if(withList) setCompanions(withList);
+  if(rideMode) try{ applyRide(rideMode); }catch(e){}
   for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act=S.chars[id].ovr?S.chars[id].ovr.act+' (with you)':'with you'; }
   return keep.join('\n').trim();
 }
@@ -2294,6 +2299,7 @@ function tick(){
     else dtReal=1000; }
   if(!S.paused){ S.clock+=dtReal*(+S.speed||1); }
   if(S._ageDay!==Math.floor(S.clock/DAYMS)) try{ applyAges(false); }catch(e){}
+  try{ comingTick(); }catch(e){ console.warn('coming',e); }
   if(!S.paused) try{ livingTick(dtReal*(+S.speed||1)/MIN); }catch(e){ console.warn('living',e); }
   updateSchedules(); tickNeeds(); renderClock(); renderCards(); skyTint(); if(phonesOn()) processPhone(); $('#phoneBtn').style.display=phonesOn()?'':'none';
   { const n=(S.threads||[]).filter(t=>t.status==='open').length, wb=$('#worldBadge'); if(wb){ const h=n?`<span class="hub-dot" style="margin-left:4px">${n}</span>`:''; if(wb.innerHTML!==h) wb.innerHTML=h; } }
@@ -2820,6 +2826,56 @@ function renderShops(){ const B=$('#hubBody'); const here=storeHere(S.user.loc);
     S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${uN()} just bought ${it.name} for ${money(r.total)} at ${here.name}. It's in their bag now. Show the checkout naturally next time the story continues.)`}); save(); renderShops(); notice(`🛍 Bought ${it.name} (${money(r.total)}).`); });
   B.querySelectorAll('[data-shopgo]').forEach(b=>b.onclick=()=>{ const s=list.find(x=>x.id===b.dataset.shopgo); if(!s) return; closeHub(); const ta=$('#input'); if(ta){ ta.value=`*heads to ${s.name} in ${s.district}*`; ta.focus(); } }); }
 
+// ======================= travel and coming over when texted =======================
+// Getting anywhere takes real time and money: walking, the metro, buses or a taxi. Nobody teleports.
+const FAR_RX=/outer ring|hollow|blazewood|roscaelifer|waifei|desert|wasteland|countryside|mountain|island/i;
+function distKey(a,b){ return [a,b].sort().join('|'); }
+function baseMinutes(dA,dB){ if(dA===dB) return 0; const h=hashStr(distKey(dA,dB)); let m=14+(h%26); if(FAR_RX.test(dA)||FAR_RX.test(dB)) m+=35+(h%25); return m; }
+function rush(){ const h=dt(S.clock).h, wd=dt(S.clock).wd; return wd>=1&&wd<=5&&((h>=7&&h<9)||(h>=17&&h<19)); }
+function metroRunning(ms){ const d=dt(ms||S.clock); const m=d.h*60+d.mi; return m>=330||m<30; }   // 05:30 to 00:30
+function busRunning(ms){ const h=dt(ms||S.clock).h; return h>=6&&h<23; }
+const FARE={metro:3,bus:2,taxiBase:6,taxiMin:0.9};
+function routeOptions(from,to){ from=String(from||''); to=String(to||''); if(!from||!to||from===to) return {same:true,opts:[]};
+  const dA=from.split(',')[0].trim(), dB=to.split(',')[0].trim(); const sc=+currency().scale||1;
+  if(dA===dB){ const w=3+(hashStr(distKey(from,to))%9); return {sameDistrict:true, opts:[{mode:'walk',min:w,cost:0}]}; }
+  const b=baseMinutes(dA,dB); const opts=[];
+  if(b<=40) opts.push({mode:'walk',min:Math.round(b*3.2),cost:0});
+  if(!FAR_RX.test(dA+dB)||b<60){ if(metroRunning()) opts.push({mode:'metro',min:b+6,cost:Math.round(FARE.metro*sc)}); if(busRunning()) opts.push({mode:'bus',min:Math.round(b*1.4)+5,cost:Math.round(FARE.bus*sc)}); }
+  const tm=Math.round(b*0.7*(rush()?1.45:1))+4; opts.push({mode:'taxi',min:tm,cost:Math.round((FARE.taxiBase+FARE.taxiMin*tm)*sc)});
+  return {opts}; }
+function bestRoute(from,to,who){ const r=routeOptions(from,to); if(r.same) return {mode:'here',min:0,cost:0}; const o=r.opts.filter(x=>x.mode!=='walk'||x.min<=35); const w=who?walletOf(who):null; const k=w?(w.money/(+currency().scale||1)>3000?0.1:w.money/(+currency().scale||1)<40?3:1):1; // the well-off take taxis, the broke take the bus
+  return (o.length?o:r.opts).filter(x=>!w||x.cost<=w.money).sort((a,b)=>(a.min+a.cost*k)-(b.min+b.cost*k))[0]||r.opts.find(x=>x.mode==='walk')||{mode:'walk',min:90,cost:0}; }
+function travelBlock(){ const here=S.user.loc; const dHere=String(here).split(',')[0].trim();
+  const dists=[...new Set((W.locations||[]).map(l=>String(l).split(',')[0].trim()))].filter(d=>d&&d!==dHere).slice(0,8);
+  const lines=dists.map(d=>{ const r=routeOptions(here,d+', x'); return `${d}: ${r.opts.map(o=>`${o.mode} ${o.min} min${o.cost?` (${money(o.cost)})`:''}`).join(', ')}`; });
+  const night=!metroRunning();
+  return `GETTING AROUND (real travel time; nobody teleports): from ${dHere}: ${lines.join(' | ')||'everything is close by'}.${night?' The metro has stopped for the night (runs 05:30 to 00:30); buses stop at 23:00. Taxis or walking only.':' Metro runs 05:30 to 00:30, buses until 23:00.'}${rush()?' It\'s rush hour: trains are packed and taxis crawl.':''} When ${uN()} travels to another district, play the trip (the platform, the ride, traffic, the walk) and move the time stamp forward by the trip time, and add [[RIDE: metro|bus|taxi|walk]] next to the [[MOVE]] so the fare is paid. Companions travel with them and pay their own fares unless someone covers them.\n`; }
+function applyRide(arg){ const mode=String(arg||'').trim().toLowerCase().split(/\s|:/)[0]; if(!['metro','bus','taxi','walk'].includes(mode)) return; const S0=S.user; const r=routeOptions(S0.lastLoc||S0.loc, S0.loc);
+  const o=(r.opts||[]).find(x=>x.mode===mode); if(!o||!o.cost) return;
+  if(mode==='taxi') pay('user','taxi',o.cost,'taxi fare'); else { pay('user','transit',o.cost,mode+' fare'); for(const id of S.user.companions) pay(id,'transit',o.cost,mode+' fare'); } }
+
+// ---- someone you texted is coming over ----
+function comingContext(c){ const st=S.chars[c.id]; const r=bestRoute(st.loc,S.user.loc,c.id); const busy=BUSY.test(st.act||''); const tr=st.trust||0;
+  return `IF ${uN().toUpperCase()} ASKS YOU TO COME OVER / MEET UP NOW: decide like the real ${c.name}. You trust ${uN()} ${tr}/100. Right now you are: ${st.act} at ${st.loc}${busy?' (a real commitment)':''}. Getting to ${S.user.loc} would take about ${r.min} minutes by ${r.mode}${r.cost?` and cost ${money(r.cost)} (you have ${money(walletOf(c.id).money)})`:''}${!metroRunning()?'; the metro has stopped for the night':''}. Low trust, real duties, being asleep, far away, broke, or just not in the mood are all good reasons to say no or "later" (give your real reason or an excuse that fits you). If you agree to come now, after your texts write a last line: COMING: minutes (your honest ETA). If you say no or not now, don't write it.`; }
+function startComing(c, eta){ const st=S.chars[c.id]; const r=bestRoute(st.loc,S.user.loc,c.id); eta=Math.max(r.min||5, Math.min(240, Math.round(+eta||r.min||20)));
+  const now=S.clock, arrive=now+eta*MIN; const target=S.user.loc;
+  S.events=S.events||[]; const d=isoDate(now); const t0=hhmm(now), t1=hhmm(arrive);
+  if(isoDate(arrive)===d) S.events.push({id:'go'+now, who:c.id, date:d, start:t0, end:t1, loc:`on the way to ${target}`, act:`heading over to meet ${uN()} (${r.mode})`, coming:true});
+  const endM=Math.min(1439, dt(arrive).h*60+dt(arrive).mi+150);
+  S.events.push({id:'meet'+now, who:c.id, date:isoDate(arrive), start:t1, end:`${pad(Math.floor(endM/60))}:${pad(endM%60)}`, loc:target, act:`meeting ${uN()} (came over because ${uN()} texted)`, coming:true});
+  S.coming=(S.coming||[]).filter(x=>x.id!==c.id); S.coming.push({id:c.id, at:arrive, loc:target, mode:r.mode});
+  if(r.cost) pay(c.id, r.mode==='taxi'?'taxi':'transit', r.cost, r.mode+' fare');
+  delete st.ovr; updateSchedules(); save(); }
+function comingTick(){ if(!S.coming||!S.coming.length) return; const keep=[];
+  for(const x of S.coming){ const c=charById(x.id); if(!c||isDead(c)){ continue; } if(S.clock<x.at){ keep.push(x); continue; }
+    const sameSpot=String(S.user.loc).toLowerCase()===String(x.loc).toLowerCase(), sameDist=String(S.user.loc).split(',')[0].trim()===String(x.loc).split(',')[0].trim();
+    if(sameSpot||sameDist){ if(!S.user.companions.includes(c.id)){ if(typeof freshJoin==='function') freshJoin(c.id); S.user.companions.push(c.id); }
+      S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.full} has just arrived at ${x.loc} after ${uN()} texted them to come${x.mode?`, by ${x.mode}`:''}. Show them arriving in the next reply: how they look after the trip, the weather on them, why they came.)`});
+      notice(`🚶 ${c.name} just arrived.`); }
+    else if(hasPhone(c)&&isContact(c.id)) addText(c.id,false,`i'm at ${x.loc.split(',').slice(-1)[0].trim()}... where are you??`);
+    addMemory({who:[c.id], text:`Went to ${x.loc} because ${uN()} asked me to come${sameDist?'':', but they weren\'t there'}`, imp:2, src:'coming'}); }
+  S.coming=keep; }
+
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3274,8 +3330,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.43.0';
+const APP_VERSION = '0.44.0';
 const CHANGELOG = [
+ {v:'0.44.0', d:'2026-11-19', notes:['Travel takes real time and money. Walking, the metro (05:30 to 00:30), buses (until 23:00) or a taxi (any time, slow and pricey at rush hour). The story plays the trip and moves the clock forward by the trip time, and fares come out of your wallet (your companions pay their own unless someone covers them).', 'Text someone to come over and they really decide: how much they trust you, what they\'re doing, how far away they are, whether they can afford the fare, and their mood. If they say yes they give an honest ETA, actually travel (you can watch them on the map), and turn up in the scene. If you\'ve left by then, they text asking where you went, and they remember it.']},
  {v:'0.43.0', d:'2026-11-19', notes:['Items and money. You and every character now carry real things and real money (Dennies in Zenless worlds, dollars elsewhere; change the name, symbol and price scale in Bag & money). Nangong can afford anything, Cissia is always broke, and nobody can pay with money they don\'t have.', 'Shops: every world gets convenience stores, pharmacies, grocery stores, cafés, clothing, florists, gift shops, liquor stores and an adult boutique, with opening hours, prices and stock that can sell out. New Eridu uses its own places (141, JC Pharmacy, Lumina Galleria, Richard Teamilk, Peace Herbal, Yum Cha Sin…). Browse them in 🗺 World → 🛍 Shops and buy when you\'re there.', 'Anyone under 18 waits outside 18+ shops and can\'t buy alcohol, cigarettes or adult items.', 'Items do things over time: melatonin makes you drowsy half an hour later, Pepto settles a stomach, coffee and energy drinks wire you up (and crash), drinks add up from tipsy to wasted with a hangover the next morning, heat patches ease cramps, aphrodisiacs work only on adults and never decide anything for anyone. Food spoils, coffee goes cold, ice cream melts.', 'The story can buy, use, give and pay: characters hand each other things, split bills, pay for taxis and buy things off-screen too. See Schedules → Bag & money for your bag, everyone\'s wallet and recent spending.']},
  {v:'0.42.1', d:'2026-11-19', notes:['Sex scenes between adults now use plain, direct words for body parts instead of euphemisms like "his length" or "her core", in the voice of each character (bold ones talk dirty, shy ones stammer). This never applies when anyone under 18 or a protected character is in the scene.']},
  {v:'0.42.0', d:'2026-11-19', notes:['Vivian Banshee joins the Yunkui Summit story: the Mockingbird phantom thief followed "Lord Phaethon" all the way to Failume Heights, rents a room above a tea shop, works her part-time jobs around town and is far too often "just passing by" the temple stairs. Elegant and poetic with everyone else, squealing and jealous around Belle and Wise, with her precognitive tears, her secret Lord Phaethon notebook, homemade merch and Robin reporting her heart rate.', 'Cissia (New Eridu Public Security) got a full canon rework: she panics at Severian\'s name and confesses every fridge raid if you pretend to call him, bolts from or swats away any camera pointed at her, her legs give out around Zhu Yuan, her Bangboo No. 19 "Miss Cissiboo" plan, the free-sample notebook, her no-singing birthday rules, her Outer Ring nickname and much more.']},
