@@ -1,10 +1,14 @@
 {
- "version": "0.42.1",
+ "version": "0.43.0",
  "date": "2026-11-19",
  "notes": [
-  "Sex scenes between adults now use plain, direct words for body parts instead of euphemisms like \"his length\" or \"her core\", in the voice of each character (bold ones talk dirty, shy ones stammer). This never applies when anyone under 18 or a protected character is in the scene."
+  "Items and money. You and every character now carry real things and real money (Dennies in Zenless worlds, dollars elsewhere; change the name, symbol and price scale in Bag & money). Nangong can afford anything, Cissia is always broke, and nobody can pay with money they don't have.",
+  "Shops: every world gets convenience stores, pharmacies, grocery stores, caf\u00e9s, clothing, florists, gift shops, liquor stores and an adult boutique, with opening hours, prices and stock that can sell out. New Eridu uses its own places (141, JC Pharmacy, Lumina Galleria, Richard Teamilk, Peace Herbal, Yum Cha Sin\u2026). Browse them in \ud83d\uddfa World \u2192 \ud83d\udecd Shops and buy when you're there.",
+  "Anyone under 18 waits outside 18+ shops and can't buy alcohol, cigarettes or adult items.",
+  "Items do things over time: melatonin makes you drowsy half an hour later, Pepto settles a stomach, coffee and energy drinks wire you up (and crash), drinks add up from tipsy to wasted with a hangover the next morning, heat patches ease cramps, aphrodisiacs work only on adults and never decide anything for anyone. Food spoils, coffee goes cold, ice cream melts.",
+  "The story can buy, use, give and pay: characters hand each other things, split bills, pay for taxis and buy things off-screen too. See Schedules \u2192 Bag & money for your bag, everyone's wallet and recent spending."
  ],
  "file": "index.html",
- "sha256": "bcf0c425b2f64e98cef778605189a2da827905741e049c8d392343106d720e70",
+ "sha256": "0e4bf4eb88442d3a2eeb86091ad62fa1bf5a44d78c80fa7becb2eaa5d5d87576",
  "minShell": "0.5.0"
 }

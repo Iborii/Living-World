@@ -848,7 +848,7 @@ button:hover{background:#262b36}
 
 <div class="modal" id="evModal"><div class="box">
   <div class="lb-head"><h2 style="margin:0;font-size:18px">Events</h2>
-    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button><button data-ev="wear">Clothes &amp; bag</button><button data-ev="tl">Timeline</button></div>
+    <div class="lb-tabs"><button data-ev="sched" class="on">Schedules</button><button data-ev="events">Upcoming events</button><button data-ev="cycles">Cycles</button><button data-ev="rel">Relationships</button><button data-ev="wear">Clothes</button><button data-ev="bag">Bag &amp; money</button><button data-ev="tl">Timeline</button></div>
     <span class="small" id="evNow"></span><button class="ghost" id="evClose" style="margin-left:auto">Close</button></div>
   <div class="ev-body" id="evBody"></div>
 </div></div>
@@ -1702,6 +1702,7 @@ function stateBits(c, short){ const st=S.chars[c.id]; const n=needsOf(st); const
     if(up>=20) out.push(short?'exhausted':`running on fumes (awake about ${Math.round(up)} hours)`); else if(up>=16) out.push(short?'exhausted':`exhausted (awake about ${Math.round(up)} hours)`); else if(up>=13||(hr>=0&&hr<5&&up>=4)) out.push('tired'); }
   if(n.stress>=85) out.push('frazzled'); else if(n.stress>=60) out.push('stressed');
   for(const x of injuriesOf(st)) out.push((short?'🩹 ':'hurt: ')+injuryText(x,short));
+  for(const f of fxBits(st,short)) out.push(f);
   if(st.mood&&S.clock-st.mood.t<8*HOUR) out.push(short?st.mood.word:`feeling ${st.mood.word}${st.mood.why?` (${st.mood.why})`:''}`);
   if(!short){ const k=actKey(st.act); const reps=(st.acts||[]).filter(a=>a.k===k&&S.clock-a.t<7*24*HOUR).length; if(st.act!=='with you'&&reps>=4) out.push(`getting bored of "${st.act}" (${reps} times this week)`); }
   return out; }
@@ -2000,7 +2001,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[DOING: Name: what they're doing now]]  when a main character in the scene is doing something different from their "doing" line (fell asleep, woke up, went to shower, started cooking, on a call, crying in bed…); it shows on their phone status
    [[OUTFIT: Name: what they're wearing now]]  when a character changes clothes
    [[BUY: Name: item: casual|work|sleep|workout|formal]] / [[RETURN: Name: item]]  clothes bought or returned (wrong size, didn't like it)
-   [[GET: item]] / [[LOSE: item]]  when the user picks up, receives, uses up or loses something they carry
+${ITEM_TAG_HELP}
    [[HURT: Name: injury: minor|moderate|serious]]  when a character gets hurt (use "user" only for an injury the user themselves described)
    [[HEAL: Name: injury]]  when an injury is properly treated or has clearly healed
    [[DIED: Name: how]]  when a character dies (see DEATH IS REAL)
@@ -2037,7 +2038,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   s+=deathBlock();
   s+=storyBlock();
   for(const c of pres){ s+=`${c.name.toUpperCase()} RIGHT NOW: doing: ${String(S.chars[c.id].act||'').replace(/\s*\(with you\)$/,'')||'with the user'}; ${stateLine(c)}\n${outfitLine(c)}`; }
-  if((S.user.bag||[]).length) s+=`THE USER IS CARRYING: ${S.user.bag.join(', ')}\n`;
+  s+=itemsMainBlock(pres);
   if(injuriesOf(S.user).length) s+=`THE USER'S INJURIES (as they described them): ${S.user.hurt.map(x=>injuryText(x)).join('; ')}\n`;
   s+='Hunger, tiredness, stress, mood and boredom are real: they show in faces, tempers, choices and conversation. Characters eat, nap, snap, sulk and get bored like real people.\n\n';
   for(const c of pres){ s+=`WHAT ${c.name.toUpperCase()} REMEMBERS (things that actually happened to them in this story; they know only these, plus what they can see now):\n${memLines(c.id,ctx,12)||'(nothing yet)'}\n${S.branch?'':(()=>{ const L=S.chars[c.id].log.filter(e=>S.clock-e.t<=24*60*MIN).slice(-4); return L.length?`WHAT REALLY HAPPENED TO ${c.name.toUpperCase()} WHILE ${uN().toUpperCase()} WASN'T AROUND (true events, oldest first; ${c.name} lived through them, remembers them and still feels their effects: mood, tiredness, hunger, injuries, things they're carrying or wearing. Let them show and come up naturally, especially when ${c.name} first runs into ${uN()} or is asked what they've been up to. Never contradict them):\n${L.map(e=>`[${hhmm(e.t)}${e.with&&e.with.length>1?', with '+e.with.filter(x=>x!==c.id).map(x=>charById(x)?.name).filter(Boolean).join(', '):''}] ${e.text.replace(/\n+/g,' ').slice(0,600)}`).join('\n')}\n`:''; })()}\n`; }
@@ -2125,7 +2126,8 @@ function applyControls(text){
     else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
     else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ TRUST_TAGGED.add(c.id); const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
     else if(C==='BOND'){ applyBond(arg); }
-    else if(['ATE','MOOD','OUTFIT','BUY','RETURN','GET','LOSE','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
+    else if(['BUY_ITEM','USE','GIVE','PAY','GET','LOSE'].includes(C)){ applyItemTag(C,arg); }
+    else if(['ATE','MOOD','OUTFIT','BUY','RETURN','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
     else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
@@ -2196,19 +2198,19 @@ PLACE: ${st0.loc}
 CHARACTERS HERE: ${cs.map(c=>c.full).join(', ')}
 DOING: ${cs.map(c=>`${c.name}: ${S.chars[c.id].act}`).join('; ')}
 STATE: ${cs.map(c=>`${c.name}: ${stateLine(c)}${S.chars[c.id].outfit?`; wearing ${S.chars[c.id].outfit.name}${S.chars[c.id].outfit.desc?` (${S.chars[c.id].outfit.desc})`:''}`:''}`).join(' | ')}
-${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${livingBeatBlock(ids)}${userBits}
+${(()=>{ const b=bodyLines(cs); return b?`BODY (show naturally, never as a status; non-sexual):\n${b}\n`:''; })()}${relLines(cs)}${raceLoreBlock(cs,'',true)}${livingBeatBlock(ids)}${itemsBeatBlock(cs)}${userBits}
 Continue naturally from their recent moments; show the passage of those minutes briefly without skipping big events. 90 to 170 words${cs.length>1?', and let them interact':''}. Small things are fine: ordinary life, boredom, errands, little accidents, texting each other, background strangers.
 After the scene, write on its own line: MEMORY: one short sentence worth remembering for ${cs.map(c=>c.name).join(' / ')} (or MEMORY: none).${cs.length>1?`
-Optional lines when they apply: DOING: Name: what they're doing when the scene ends, if it isn't what their schedule says (fell asleep early, still out, in the bath…) · ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.id==='phoenix'&&!x.undyingReason?'Phoenix (she dies and revives; add DIED for her and the app revives her)':zzzBuiltin(x)&&!x.undyingReason?x.name+' (retreats to rest instead)':x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
+Optional lines when they apply: DOING: Name: what they're doing when the scene ends, if it isn't what their schedule says (fell asleep early, still out, in the bath…) · ATE: Name (they really ate) · MOOD: Name: feeling: why · OUTFIT: Name: what they changed into · BUY: Name: clothing item: kind · BOUGHT: Name: item: quantity (something from a shop; they pay for it) · USE: Name: item (took or used something they carry) · SPENT: Name: amount: on what (food out, tickets, fares) · HURT: Name: injury: minor|moderate|serious${deathsAllowed()?' · DIED: Name: how (only if they truly die; '+(cs.filter(x=>!canDie(x)).map(x=>x.id==='phoenix'&&!x.undyingReason?'Phoenix (she dies and revives; add DIED for her and the app revives her)':zzzBuiltin(x)&&!x.undyingReason?x.name+' (retreats to rest instead)':x.undyingReason?`${x.name}, because ${x.undyingReason}`:x.name).join('; ')||'nobody')+' cannot die)':''}.
 If this moment really changes how two of them feel about each other, add a line: BOND: Name / Name +N: short reason (N from -5 to +5; most moments change nothing).`:''}
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:800});
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
-    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
+    memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*(BOUGHT|USE|SPENT):\s*([^\n]+)$/gim)) applyItemTag(lm[1].toUpperCase(), lm[2], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
   gossipFromBeat(out, ids);
-  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|HURT|DIED|GOSSIP):.*$/gim,'').trim();
+  story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|BOUGHT|USE|SPENT|HURT|DIED|GOSSIP):.*$/gim,'').trim();
   const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
@@ -2415,11 +2417,12 @@ const HUB={open:false,tab:'map',sel:null,hover:null,lay:null,walkers:[],raf:0,t0
 function openHub(tab){ livingInit(); HUB.tab=tab||HUB.tab; HUB.open=true; HUB.lay=null; $('#hubModal').classList.add('on'); hubRender();
   if(canAI()){ const ds=[...new Set([S.user.loc,...W.characters.map(c=>S.chars[c.id].loc)].map(districtOf))].filter(d=>!S.locals[d]).slice(0,4); (async()=>{ for(const d of ds) await genLocals(d); })(); } }
 function closeHub(){ HUB.open=false; cancelAnimationFrame(HUB.raf); $('#hubModal').classList.remove('on'); }
-function hubRender(){ const tabs=[['map','🗺 Map'],['talk','🗣 Word on the street'],['threads','📜 Threads'],['dir','🎬 Director']];
+function hubRender(){ const tabs=[['map','🗺 Map'],['shops','🛍 Shops'],['talk','🗣 Word on the street'],['threads','📜 Threads'],['dir','🎬 Director']];
   $('#hubTabs').innerHTML=tabs.map(([k,l])=>`<button class="${HUB.tab===k?'on':''}" data-hub="${k}">${l}${k==='threads'&&S.threads.some(t=>t.status==='open')?` <span class="hub-dot">${S.threads.filter(t=>t.status==='open').length}</span>`:''}</button>`).join('');
   document.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{ HUB.tab=b.dataset.hub; hubRender(); });
   const body=$('#hubBody'); cancelAnimationFrame(HUB.raf);
   if(HUB.tab==='map'){ body.innerHTML=`<div class="hub-map"><canvas id="hubCanvas"></canvas><div class="hub-legend small">Live: everyone moves on their own schedule. Tap a place to see who's there, peek at what's happening, or go.</div></div><div class="hub-side" id="hubSide"></div>`; mapSetup(); mapSide(); HUB.raf=requestAnimationFrame(mapLoop); }
+  else if(HUB.tab==='shops') renderShops();
   else if(HUB.tab==='talk') renderTalk(body);
   else if(HUB.tab==='threads') renderThreads(body);
   else renderDirector(body); }
@@ -2553,6 +2556,269 @@ function renderDirector(body){ const cs=W.characters.filter(c=>!isDead(c)); cons
   $('#dcGo').onclick=()=>{ const a=$('#dcA').value,b=$('#dcB').value; if(!pair(a,b)) return; dirCreate({type:'coincidence',a,b,loc:$('#dcLoc').value,when:$('#dcWhen').value,text:$('#dcNote').value.trim()}); notice('🎬 Coincidence arranged.'); renderDirector(body); };
   $('#diGo').onclick=()=>{ const t=$('#diText').value.trim(); if(!t) return; dirCreate({type:'idea',a:$('#diA').value,text:t}); notice('🎬 Idea planted.'); renderDirector(body); };
   $('#drGo').onclick=()=>{ const t=$('#drText').value.trim(); if(!t) return; dirCreate({type:'rumor',a:$('#drA').value,text:t}); notice('🎬 Rumor whispered.'); renderDirector(body); }; }
+
+// ======================= items, stores and money =======================
+// Everyone carries real things and real money. Items do things over time (melatonin makes you drowsy half an hour later),
+// food spoils, stores have hours and stock, and minors wait outside 18+ shops.
+const ITEMS=[
+ // pharmacy
+ {id:'melatonin',name:'Melatonin gummies',cat:'medicine',price:8,uses:30,fx:'melatonin'},
+ {id:'pepto',name:'Pepto-Bismol',cat:'medicine',price:7,uses:12,fx:'pepto'},
+ {id:'ibuprofen',name:'Ibuprofen',cat:'medicine',price:6,uses:24,fx:'painkiller'},
+ {id:'acetaminophen',name:'Acetaminophen',cat:'medicine',price:6,uses:24,fx:'painkiller'},
+ {id:'allergy',name:'Allergy pills',cat:'medicine',price:9,uses:20,fx:'antihist'},
+ {id:'coughsyrup',name:'Cough syrup',cat:'medicine',price:9,uses:8,fx:'coughsyrup'},
+ {id:'coldmeds',name:'Cold & flu capsules',cat:'medicine',price:10,uses:12,fx:'coldmeds'},
+ {id:'antacid',name:'Antacid chews',cat:'medicine',price:5,uses:20,fx:'pepto'},
+ {id:'bandages',name:'Bandages',cat:'medicine',price:5,uses:10,fx:'bandage'},
+ {id:'firstaid',name:'First aid kit',cat:'medicine',price:22,uses:6,fx:'bandage'},
+ {id:'eyedrops',name:'Eye drops',cat:'medicine',price:7,uses:30,fx:'eyedrops'},
+ {id:'pads',name:'Pads',cat:'period',price:7,uses:16,fx:'period'},
+ {id:'tampons',name:'Tampons',cat:'period',price:8,uses:18,fx:'period'},
+ {id:'heatpatch',name:'Heat patches',cat:'period',price:6,uses:5,fx:'heatpatch'},
+ {id:'pregtest',name:'Pregnancy test',cat:'medicine',price:12,uses:1,fx:'pregtest'},
+ {id:'condoms',name:'Condoms',cat:'adult',price:10,uses:12,adult:true,fx:'condom'},
+ {id:'lube',name:'Lube',cat:'adult',price:11,uses:20,adult:true},
+ // food and drink
+ {id:'coffee',name:'Coffee',cat:'drink',price:4,uses:1,fx:'caffeine',spoil:3,warm:true},
+ {id:'energydrink',name:'Energy drink',cat:'drink',price:3,uses:1,fx:'energy'},
+ {id:'water',name:'Bottled water',cat:'drink',price:1,uses:1,fx:'water'},
+ {id:'milktea',name:'Milk tea',cat:'drink',price:5,uses:1,fx:'drink',spoil:6},
+ {id:'juice',name:'Juice box',cat:'drink',price:2,uses:1,fx:'drink'},
+ {id:'noodles',name:'Instant noodles',cat:'food',price:2,uses:1,fx:'food'},
+ {id:'sandwich',name:'Sandwich',cat:'food',price:6,uses:1,fx:'food',spoil:24},
+ {id:'onigiri',name:'Rice ball',cat:'food',price:3,uses:1,fx:'food',spoil:24},
+ {id:'bento',name:'Bento box',cat:'food',price:9,uses:1,fx:'food',spoil:12},
+ {id:'chips',name:'Potato chips',cat:'snack',price:2,uses:1,fx:'snack'},
+ {id:'chocolate',name:'Chocolate bar',cat:'snack',price:2,uses:1,fx:'snack'},
+ {id:'candy',name:'Candy',cat:'snack',price:2,uses:5,fx:'snack'},
+ {id:'eggtart',name:'Egg tart',cat:'snack',price:3,uses:1,fx:'snack',spoil:24},
+ {id:'icecream',name:'Ice cream',cat:'snack',price:4,uses:1,fx:'snack',melt:1},
+ {id:'fruit',name:'Fruit',cat:'food',price:3,uses:1,fx:'snack',spoil:120},
+ {id:'eggs',name:'Eggs (dozen)',cat:'grocery',price:4,uses:12,spoil:336},
+ {id:'milk',name:'Milk',cat:'grocery',price:3,uses:6,spoil:120},
+ {id:'rice',name:'Rice (bag)',cat:'grocery',price:9,uses:20},
+ {id:'meat',name:'Meat',cat:'grocery',price:12,uses:3,spoil:72},
+ {id:'vegetables',name:'Vegetables',cat:'grocery',price:5,uses:4,spoil:120},
+ {id:'bread',name:'Bread',cat:'grocery',price:3,uses:8,spoil:96},
+ // alcohol and smoking (18+)
+ {id:'beer',name:'Beer',cat:'alcohol',price:3,uses:1,adult:true,fx:'alcohol'},
+ {id:'soju',name:'Soju',cat:'alcohol',price:5,uses:4,adult:true,fx:'alcohol'},
+ {id:'wine',name:'Bottle of wine',cat:'alcohol',price:14,uses:5,adult:true,fx:'alcohol'},
+ {id:'whiskey',name:'Whiskey',cat:'alcohol',price:30,uses:15,adult:true,fx:'alcohol'},
+ {id:'cigarettes',name:'Cigarettes',cat:'smoking',price:9,uses:20,adult:true,fx:'nicotine'},
+ // adult boutique (18+)
+ {id:'aphrodisiac',name:'Aphrodisiac drops',cat:'adult',price:35,uses:4,adult:true,fx:'aphro'},
+ {id:'massageoil',name:'Massage oil',cat:'adult',price:16,uses:10,adult:true},
+ {id:'toy',name:'Vibrator',cat:'adult',price:45,uses:0,adult:true},
+ {id:'lingerie',name:'Lingerie set',cat:'adult',price:38,uses:0,adult:true,wear:'sleep'},
+ // toiletries
+ {id:'deodorant',name:'Deodorant',cat:'toiletry',price:5,uses:40},
+ {id:'shampoo',name:'Shampoo',cat:'toiletry',price:7,uses:30},
+ {id:'toothbrush',name:'Toothbrush',cat:'toiletry',price:3,uses:0},
+ {id:'toothpaste',name:'Toothpaste',cat:'toiletry',price:3,uses:40},
+ {id:'razor',name:'Razors',cat:'toiletry',price:8,uses:10},
+ {id:'makeup',name:'Makeup kit',cat:'toiletry',price:24,uses:60},
+ {id:'perfume',name:'Perfume',cat:'gift',price:45,uses:80},
+ {id:'sunscreen',name:'Sunscreen',cat:'toiletry',price:8,uses:20},
+ {id:'handwarmers',name:'Hand warmers',cat:'misc',price:4,uses:4,fx:'warm'},
+ // misc and gifts
+ {id:'umbrella',name:'Umbrella',cat:'misc',price:12,uses:0},
+ {id:'charger',name:'Phone charger',cat:'misc',price:15,uses:0},
+ {id:'powerbank',name:'Power bank',cat:'misc',price:25,uses:0},
+ {id:'batteries',name:'Batteries',cat:'misc',price:5,uses:4},
+ {id:'lighter',name:'Lighter',cat:'misc',price:2,uses:0},
+ {id:'flowers',name:'Bouquet of flowers',cat:'gift',price:18,uses:0,spoil:144},
+ {id:'giftchoc',name:'Box of chocolates',cat:'gift',price:15,uses:12,fx:'snack'},
+ {id:'plushie',name:'Plushie',cat:'gift',price:14,uses:0},
+ {id:'notebook',name:'Notebook',cat:'misc',price:3,uses:0},
+ {id:'pen',name:'Pen',cat:'misc',price:1,uses:0},
+ // clothes (go into the wardrobe of whoever buys them)
+ {id:'hoodie',name:'Hoodie',cat:'clothes',price:35,uses:0,wear:'casual'},
+ {id:'tshirt',name:'T-shirt',cat:'clothes',price:15,uses:0,wear:'casual'},
+ {id:'jeans',name:'Jeans',cat:'clothes',price:40,uses:0,wear:'casual'},
+ {id:'dress',name:'Dress',cat:'clothes',price:55,uses:0,wear:'formal'},
+ {id:'pajamas',name:'Pajamas',cat:'clothes',price:25,uses:0,wear:'sleep'},
+ {id:'swimsuit',name:'Swimsuit',cat:'clothes',price:30,uses:0,wear:'casual'},
+ {id:'jacket',name:'Winter jacket',cat:'clothes',price:70,uses:0,wear:'casual'},
+ {id:'socks',name:'Socks',cat:'clothes',price:6,uses:0},
+ {id:'gymclothes',name:'Gym clothes',cat:'clothes',price:30,uses:0,wear:'workout'},
+];
+const ITEM_BY_ID=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+// what an item does, and when (minutes after use)
+const FX={
+ melatonin:{delay:30,dur:300,text:'drowsy from melatonin: heavy eyelids, yawning, wants to lie down',short:'drowsy (melatonin)'},
+ pepto:{delay:15,dur:240,text:'stomach settling after something for an upset stomach (Pepto can turn the tongue dark for a while)',short:'stomach settling'},
+ painkiller:{delay:30,dur:360,text:'pain dulled by painkillers',short:'painkillers'},
+ antihist:{delay:45,dur:360,text:'a little drowsy and dry-mouthed from allergy pills',short:'drowsy (allergy pills)'},
+ coughsyrup:{delay:20,dur:300,text:'cough quieted, groggy and slow from cough syrup',short:'groggy (cough syrup)'},
+ coldmeds:{delay:30,dur:360,text:'cold symptoms muffled by cold medicine, a bit spacey',short:'cold meds'},
+ eyedrops:{delay:0,dur:30,text:'blinking after eye drops',short:'eye drops'},
+ heatpatch:{delay:5,dur:480,text:'a heat patch soothing cramps',short:'heat patch'},
+ caffeine:{delay:10,dur:240,text:'wired on caffeine: alert, a bit fidgety',short:'caffeinated'},
+ energy:{delay:10,dur:300,text:'buzzing on an energy drink: jittery, talking fast, a crash coming later',short:'energy-drink buzz'},
+ nicotine:{delay:0,dur:40,text:'just had a cigarette (smells of smoke)',short:'smells of smoke'},
+ warm:{delay:0,dur:360,text:'hands toasty from hand warmers',short:'hand warmers'},
+ aphro:{delay:20,dur:180,adult:true,text:'warm, flushed and noticeably more aroused than usual from an aphrodisiac: skin sensitive, thoughts drifting. It heightens feelings but never decides for them: they still choose what they do and can say no',short:'flushed (aphrodisiac)'},
+};
+const FX_ALC=['','tipsy','buzzed','drunk','very drunk','wasted'];
+
+// ---------- money ----------
+function currency(){ const c=(S&&S.currency)||(W&&W.currency); if(c&&c.many) return c; return (W&&isZZZ(W))?{one:'Denny',many:'Dennies',sym:'',scale:1}:{one:'dollar',many:'dollars',sym:'$',scale:1}; }
+function money(n){ const c=currency(); n=Math.round(+n||0); return c.sym?`${n<0?'-':''}${c.sym}${Math.abs(n).toLocaleString()}`:`${n.toLocaleString()} ${Math.abs(n)===1?c.one:c.many}`; }
+const priceOf=it=>Math.max(1,Math.round((it.price||1)*(+currency().scale||1)));
+const BUILTIN_MONEY={nangong:9000,aria:40,sunna:90,cecilia:600,cissia:30,severian:2400,jane:700,zhuyuan:900,qingyi:200,seth:350,yixuan:300,fufu:25,shunguang:120,belle:260,wise:300,yinhu:1400,vivian:160,phoenix:120,dialyn:300,anby:60,billy:15,nicole:5,nekomata:80,velina:3000,claret:180,roxy:90};
+function walletOf(who){ if(who==='user'){ if(S.user.money==null) S.user.money=Math.round(250*(+currency().scale||1)); return S.user; }
+  const st=S.chars[who]; if(!st) return null; if(st.money==null){ const c=charById(who); st.money=Math.round((c&&c.money!=null?c.money:BUILTIN_MONEY[who]!=null?BUILTIN_MONEY[who]:120)*(+currency().scale||1)); } return st; }
+function moneyWord(n){ const s=+currency().scale||1; n=n/s; return n<20?'broke':n<80?'tight on money':n>3000?'well off':''; }
+
+// ---------- inventories ----------
+const slugItem=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function findItem(name){ const q=slugItem(name); if(!q) return null; if(ITEM_BY_ID[q]) return ITEM_BY_ID[q];
+  return ITEMS.find(i=>slugItem(i.name)===q)||ITEMS.find(i=>q.includes(slugItem(i.name))||slugItem(i.name).includes(q))||ITEMS.find(i=>q.split(' ').includes(i.id))||null; }
+function invOf(who){ const st=who==='user'?S.user:S.chars[who]; if(!st) return []; if(!st.inv){ st.inv=[]; if(who==='user'&&Array.isArray(S.user.bag)){ for(const b of S.user.bag) st.inv.push({id:'x',name:String(b).slice(0,80),n:1,t:S.clock}); } } return st.inv; }
+function addItem(who, nameOrItem, n=1, t){ const inv=invOf(who); const it=typeof nameOrItem==='object'?nameOrItem:findItem(nameOrItem); const name=it?it.name:String(nameOrItem).trim().slice(0,80); if(!name) return null;
+  let e=inv.find(x=>x.name.toLowerCase()===name.toLowerCase()&&!isSpoiled(x)); if(e&&(!it||!it.spoil)){ e.n+=n; return e; }
+  e={id:it?it.id:'x', name, n, t:t||S.clock, left:it&&it.uses?it.uses:0}; inv.push(e); return e; }
+function takeItem(who, name, n=1){ const inv=invOf(who); const q=slugItem(name); const i=inv.findIndex(x=>slugItem(x.name)===q)>=0?inv.findIndex(x=>slugItem(x.name)===q):inv.findIndex(x=>slugItem(x.name).includes(q)||q.includes(slugItem(x.name))); if(i<0) return null;
+  const e=inv[i]; const got={...e,n:Math.min(n,e.n)}; e.n-=n; if(e.n<=0) inv.splice(i,1); return got; }
+function isSpoiled(e){ const it=ITEM_BY_ID[e.id]; if(!it) return false; const h=(S.clock-e.t)/HOUR; return (it.spoil&&h>it.spoil)||(it.melt&&h>it.melt); }
+function itemLabel(e){ const it=ITEM_BY_ID[e.id]; const h=(S.clock-e.t)/HOUR; let s=e.name+(e.n>1?` ×${e.n}`:''); if(it&&it.uses>1&&e.left) s+=` (${e.left} left)`;
+  if(it&&it.melt&&h>it.melt) s+=' (melted)'; else if(it&&it.spoil&&h>it.spoil) s+=it.cat==='drink'?' (gone cold and stale)':' (spoiled)'; else if(it&&it.warm&&h>0.5) s+=' (gone cold)'; return s; }
+function invLine(who){ const inv=invOf(who); return inv.length?inv.map(itemLabel).join(', '):'nothing much'; }
+
+// ---------- effects ----------
+function fxList(st){ st.fx=(st.fx||[]).filter(f=>S.clock<f.until); return st.fx; }
+function addFx(st, key, n){ const f=FX[key]; if(!f) return; const now=S.clock; fxList(st);
+  const ex=st.fx.find(x=>x.k===key); if(ex){ ex.until=Math.max(ex.until, now+(f.delay+f.dur)*MIN); return; }
+  st.fx.push({k:key, from:now+f.delay*MIN, until:now+(f.delay+f.dur)*MIN}); }
+function drink(st, who){ st.alc=(st.alc||[]).filter(t=>S.clock-t<3*HOUR); st.alc.push(S.clock); const lvl=st.alc.length; st.alcPeak={n:Math.max(lvl,(st.alcPeak&&S.clock-st.alcPeak.t<10*HOUR)?st.alcPeak.n:0), t:S.clock};
+  if(lvl>=3){ const d=dt(S.clock); const morning=parseStart(isoDate(S.clock+(d.h>=6?DAYMS:0)),'07:00'); st.hangover={from:morning, until:morning+8*HOUR, sev:lvl>=5?'brutal':lvl>=4?'bad':'mild'}; } }
+function fxBits(st, short){ const out=[]; for(const f of fxList(st)){ if(S.clock<f.from) continue; const d=FX[f.k]; out.push(short?d.short:d.text); }
+  const alc=(st.alc||[]).filter(t=>S.clock-t<3*HOUR).length; if(alc) out.push(short?FX_ALC[Math.min(5,alc)]:`${FX_ALC[Math.min(5,alc)]} (${alc} drink${alc>1?'s':''} in the last few hours)`);
+  if(st.hangover&&S.clock>=st.hangover.from&&S.clock<st.hangover.until) out.push(short?'hungover':`${st.hangover.sev} hangover: headache, dry mouth, light hurts, queasy`);
+  return out; }
+
+// using an item: effect + side effects (eating, period, injuries)
+function useItem(who, name){ const st=who==='user'?S.user:S.chars[who]; if(!st) return null; const inv=invOf(who); const q=slugItem(name);
+  let e=inv.find(x=>slugItem(x.name)===q)||inv.find(x=>slugItem(x.name).includes(q)||q.includes(slugItem(x.name)));
+  const it=e?ITEM_BY_ID[e.id]:findItem(name); const c=who==='user'?null:charById(who);
+  if(it&&it.fx==='aphro'&&c&&(c.minor||c.protect)) return null; // never for anyone under 18
+  if(it&&it.adult&&(it.cat==='alcohol'||it.cat==='smoking')&&c&&c.minor) return null;
+  if(e){ if(it&&it.uses>1){ e.left=(e.left||it.uses)-1; if(e.left<=0){ e.n--; e.left=it.uses; if(e.n<=0) inv.splice(inv.indexOf(e),1); } } else if(!it||it.uses===1){ e.n--; if(e.n<=0) inv.splice(inv.indexOf(e),1); } }
+  if(!it) return e||null; const fx=it.fx;
+  if(fx==='food'){ if(who==='user') S.user.lastAte=S.clock; else needsOf(st).lastAte=S.clock; }
+  else if(fx==='snack'){ const n=who==='user'?S.user:needsOf(st); n.lastAte=Math.max(n.lastAte||0, S.clock-2.5*HOUR); }
+  else if(fx==='alcohol') drink(st, who);
+  else if(fx==='period'){ st.periodCare=S.clock; }
+  else if(fx==='bandage'){ const h=(st.hurt||[]).find(x=>x.sev==='minor'&&!x.dressed); if(h) h.dressed=S.clock; }
+  else if(FX[fx]) addFx(st, fx);
+  return e||{name:it.name}; }
+
+// ---------- stores ----------
+const STORE_STOCK={
+ convenience:['water','coffee','energydrink','juice','milktea','noodles','sandwich','onigiri','bento','chips','chocolate','candy','icecream','eggs','milk','bread','beer','soju','cigarettes','condoms','pads','tampons','ibuprofen','batteries','charger','umbrella','lighter','handwarmers','toothbrush','toothpaste','deodorant'],
+ pharmacy:['melatonin','pepto','antacid','ibuprofen','acetaminophen','allergy','coughsyrup','coldmeds','bandages','firstaid','eyedrops','pads','tampons','heatpatch','pregtest','condoms','lube','deodorant','shampoo','razor','makeup','sunscreen','handwarmers','toothbrush','toothpaste','water'],
+ liquor:['beer','soju','wine','whiskey','cigarettes','lighter','chips'],
+ adult:['condoms','lube','aphrodisiac','massageoil','toy','lingerie'],
+ clothing:['hoodie','tshirt','jeans','dress','pajamas','swimsuit','jacket','socks','gymclothes','lingerie'],
+ grocery:['eggs','milk','rice','meat','vegetables','bread','fruit','icecream','chocolate','chips','juice','water','beer','wine'],
+ cafe:['coffee','milktea','eggtart','sandwich','juice'],
+ florist:['flowers'],
+ gift:['plushie','giftchoc','perfume','notebook','pen','candy'],
+};
+const STORE_HOURS={convenience:['00:00','24:00'],pharmacy:['08:00','22:00'],liquor:['11:00','23:00'],adult:['12:00','23:00'],clothing:['10:00','21:00'],grocery:['07:00','22:00'],cafe:['07:00','21:00'],florist:['09:00','19:00'],gift:['10:00','20:00']};
+const STORE_ICON={convenience:'🏪',pharmacy:'💊',liquor:'🍾',adult:'🔞',clothing:'👗',grocery:'🥬',cafe:'☕',florist:'💐',gift:'🎁'};
+// canon or setting-appropriate shops for New Eridu districts; anything else gets generic ones
+const ZZZ_SHOPS={
+ 'Sixth Street':[['141 Convenience Store','convenience'],['Sixth Street Pharmacy','pharmacy'],['Waterfall Soup','cafe']],
+ 'Lumina Square':[['JC Pharmacy','pharmacy'],['Lumina Galleria','clothing'],['Richard Teamilk','cafe'],['Dew Gardening','florist'],['Lumina Square 24/7','convenience'],['Velvet Night (18+)','adult'],['Lumina Bottle Shop (18+)','liquor'],['Lumina Gift Corner','gift']],
+ 'Failume Heights':[['Peace Herbal','pharmacy'],['Yum Cha Sin','cafe'],['Failume Market','grocery'],['Failume 24/7','convenience']],
+ 'Janus Quarter':[['Janus Quarter Market','grocery'],['Janus 24/7','convenience'],['Janus Quarter Pharmacy','pharmacy']],
+ 'Port Elpis':[['Port Elpis Mart','convenience'],['Harbor Liquor (18+)','liquor']],
+};
+function storesOf(){ if(!W) return []; if(W._stores&&W._stores.k===W.id) return W._stores.list; let list=[];
+  if(Array.isArray(W.stores)&&W.stores.length) list=W.stores.map(s=>({...s}));
+  else { const dists=[...new Set((W.locations||[]).concat(W.characters.flatMap(c=>(c.schedule||[]).map(x=>x.loc))).map(l=>String(l).split(',')[0].trim()).filter(d=>d&&d.length<40&&!/hollow/i.test(d)))];
+    const counts={}; for(const c of W.characters) for(const x of (c.schedule||[])){ const d=String(x.loc).split(',')[0].trim(); counts[d]=(counts[d]||0)+1; }
+    dists.sort((a,b)=>(counts[b]||0)-(counts[a]||0));
+    const zzz=isZZZ(W);
+    dists.forEach((d,i)=>{ const canon=zzz&&ZZZ_SHOPS[d]; if(canon){ for(const [n,k] of canon) list.push({name:n,kind:k,district:d}); return; }
+      list.push({name:`${d} Corner Store`,kind:'convenience',district:d}); if(i<4) list.push({name:`${d} Pharmacy`,kind:'pharmacy',district:d});
+      if(i===0){ list.push({name:`${d} Market`,kind:'grocery',district:d},{name:`${d} Café`,kind:'cafe',district:d},{name:`${d} Outfitters`,kind:'clothing',district:d},{name:`${d} Bottle Shop (18+)`,kind:'liquor',district:d},{name:'Velvet Night (18+)',kind:'adult',district:d}); }
+      if(i===1) list.push({name:`${d} Flowers & Gifts`,kind:'florist',district:d}); });
+    if(zzz&&!list.some(s=>s.kind==='adult')&&list.length){ const d=list[0].district; list.push({name:'Velvet Night (18+)',kind:'adult',district:d},{name:`${d} Bottle Shop (18+)`,kind:'liquor',district:d}); } }
+  list=list.map((s,i)=>{ const h=STORE_HOURS[s.kind]||['09:00','21:00']; return {id:s.id||('st'+i), name:s.name, kind:s.kind, district:s.district||String(s.loc||'').split(',')[0].trim(), loc:s.loc||`${s.district}, ${s.name}`, open:s.open||h[0], close:s.close||h[1], adult:s.adult!=null?s.adult:(s.kind==='adult'||s.kind==='liquor'), stock:s.stock||STORE_STOCK[s.kind]||[]}; });
+  W._stores={k:W.id,list}; return list; }
+function storeOpen(s){ const m=dt(S.clock).h*60+dt(S.clock).mi; const a=toMin(s.open), b=toMin(s.close); return a<=b?(m>=a&&m<b):(m>=a||m<b); }
+function stockLeft(s,id){ S.stock=S.stock||{}; const day=isoDate(S.clock); const k=s.id+'|'+id; const e=S.stock[k]; if(!e||e.day!==day){ const base=3+(hashStr(k+day)%9); S.stock[k]={day,n:(hashStr(k+day)%23===0)?0:base}; } return S.stock[k].n; }
+function storeHere(loc){ loc=String(loc||S.user.loc||''); const L=loc.toLowerCase(); return storesOf().find(s=>L.includes(s.name.toLowerCase())||L===s.loc.toLowerCase())||null; }
+// buying: from a store (price + stock) or a plain purchase the story describes
+function buy(who, name, qty=1, price){ qty=Math.max(1,Math.min(99,Math.round(+qty||1))); const w=walletOf(who); if(!w) return {ok:false,why:'nobody'}; const c=who==='user'?null:charById(who);
+  const it=findItem(name); const st=storeHere(who==='user'?S.user.loc:S.chars[who].loc)||storeHere(S.user.loc);
+  if(it&&it.adult&&c&&c.minor) return {ok:false,why:'under 18'};
+  let each=price!=null&&!isNaN(+price)?Math.round(+price):(it?priceOf(it):null); if(each==null) return {ok:false,why:'unknown price'};
+  if(st&&it&&st.stock.includes(it.id)){ const left=stockLeft(st,it.id); if(left<qty) return {ok:false,why:left?`only ${left} left`:'sold out'}; S.stock[st.id+'|'+it.id].n-=qty; }
+  const total=each*qty; if(w.money<total) return {ok:false,why:`not enough money (has ${money(w.money)}, needs ${money(total)})`};
+  w.money-=total; if(it&&it.cat==='clothes'||it&&it.wear){ const kind=it.wear||'casual'; if(c){ for(let i=0;i<qty;i++) wardrobeOf(c).push({name:it.name,kind,desc:'',bought:S.clock}); } else addItem('user',it,qty); }
+  else addItem(who, it||name, qty);
+  (S.ledger=S.ledger||[]).push({t:S.clock, who, what:(it?it.name:name)+(qty>1?' ×'+qty:''), amt:-total, where:st?st.name:''}); if(S.ledger.length>300) S.ledger.splice(0,S.ledger.length-300);
+  return {ok:true,total,item:it?it.name:name}; }
+function pay(from, to, amt, why){ amt=Math.max(0,Math.round(+amt||0)); const a=walletOf(from); if(!a||!amt) return false; if(a.money<amt) amt=a.money; a.money-=amt; const b=(to==='user'||S.chars[to])?walletOf(to):null; if(b) b.money+=amt;
+  (S.ledger=S.ledger||[]).push({t:S.clock, who:from, what:why||'paid', amt:-amt, to}); return true; }
+function whoId(name){ const a=String(name||'').trim().toLowerCase(); if(!a) return null; if(a==='user'||a==='you'||a===(persona().name||'').toLowerCase()) return 'user'; const c=charByName(name); return c?c.id:null; }
+
+// ---------- story tags ----------
+function applyItemTag(C, arg, only){ const p=arg.split(':').map(x=>x.trim()); const ok=id=>id&&(id==='user'||!only||only.includes(id));
+  if(C==='BUY_ITEM'||C==='BOUGHT'){ const w=whoId(p[0]); if(!ok(w)||!p[1]) return true; const r=buy(w,p[1],p[2]||1,p[3]); if(!r.ok&&w==='user'&&r.why) notice(`Couldn't buy ${p[1]}: ${r.why}.`); return true; }
+  if(C==='USE'){ const w=whoId(p[0]); if(ok(w)&&p[1]) useItem(w,p.slice(1).join(':')); return true; }
+  if(C==='GIVE'){ const a=whoId(p[0]), b=whoId(p[1]); if(!a||!b||!p[2]||(!ok(a)&&!ok(b))) return true; const it=findItem(p[2]); const bc=b==='user'?null:charById(b);
+    if(it&&it.adult&&bc&&(bc.minor||bc.protect)) return true; const got=takeItem(a,p[2],+p[3]||1); if(got||a==='user'){ addItem(b, got&&got.id!=='x'?ITEM_BY_ID[got.id]||got.name:p[2], got?got.n:1, got&&got.t); } return true; }
+  if(C==='PAY'||C==='SPENT'){ const a=whoId(p[0]); if(!ok(a)) return true; if(C==='SPENT'){ pay(a,'shop',parseFloat(p[1])||0,p.slice(2).join(':')||'spent'); return true; } const b=whoId(p[1]); pay(a,b||p[1],parseFloat(p[2])||0,p.slice(3).join(':')); return true; }
+  if(C==='GET'){ if(arg.trim()) addItem('user', arg.trim()); return true; }
+  if(C==='LOSE'){ takeItem('user', arg.trim(), 1); return true; }
+  return false; }
+
+// ---------- prompt blocks ----------
+function itemsMainBlock(pres){ const out=[]; const cur=currency();
+  out.push(`MONEY AND BELONGINGS (exact; nobody can pay with money they don't have, and nobody has things that aren't listed unless they plausibly own them at home). Currency: ${cur.many}${cur.sym?` (${cur.sym})`:''}.`);
+  out.push(`- ${uN()}: ${money(walletOf('user').money)}; carrying: ${invLine('user')}`);
+  for(const c of pres){ const w=walletOf(c.id); const mw=moneyWord(w.money); out.push(`- ${c.name}: ${money(w.money)}${mw?` (${mw})`:''}; carrying: ${invLine(c.id)}`); }
+  const fxU=fxBits(S.user); if(fxU.length) out.push(`- ${uN()} is feeling: ${fxU.join('; ')} (describe it as sensations; ${uN()}'s actions stay theirs)`);
+  const st=storeHere(S.user.loc);
+  if(st){ const open=storeOpen(st); const minors=pres.filter(c=>c.minor);
+    out.push(`STORE HERE: ${st.name} (${st.kind}${st.adult?', 18+ only: staff check ID':''}), ${open?`open until ${st.close==='24:00'?'all night':st.close}`:`CLOSED (opens ${st.open})`}.${open?` On the shelves (price each): ${st.stock.map(id=>{ const it=ITEM_BY_ID[id]; const n=stockLeft(st,id); return it?`${it.name} ${money(priceOf(it))}${n?'':' (sold out)'}`:''; }).filter(Boolean).join(', ')}. Clerks, other shoppers, music and the smell of the place are part of the scene.`:''}`);
+    if(st.adult&&minors.length) out.push(`${minors.map(c=>c.name).join(' and ')} ${minors.length>1?'are':'is'} under 18 and wait${minors.length>1?'':'s'} outside the entrance; they can't come in or be shown anything inside.`);
+    else if(minors.length) out.push(`Anyone under 18 can't buy alcohol, cigarettes or adult items here.`); }
+  const d=String(S.user.loc||'').split(',')[0].trim(); const near=storesOf().filter(s=>s.district===d&&s!==st);
+  if(near.length) out.push(`SHOPS NEARBY: ${near.map(s=>`${s.name} (${s.kind}, ${storeOpen(s)?'open':'closed'})`).join('; ')}.`);
+  return out.join('\n')+'\n'; }
+function itemsBeatBlock(cs){ return `MONEY & THINGS: ${cs.map(c=>`${c.name} has ${money(walletOf(c.id).money)}${moneyWord(walletOf(c.id).money)?` (${moneyWord(walletOf(c.id).money)})`:''}, carrying ${invLine(c.id)}`).join('; ')}.\n`; }
+const ITEM_TAG_HELP=`   [[BUY_ITEM: Buyer: item: quantity]]  when the user or a character actually buys something (the price comes from the store list; for anything else add ": price"). Use "user" for ${'the user'}
+   [[USE: Name: item]] or [[USE: user: item]]  when someone takes, eats, drinks, applies or uses something they carry (melatonin, a beer, a pad, painkillers). Its effect starts by itself at the right time
+   [[GIVE: From: To: item]]  when something changes hands (a gift, a loan, handing over a drink)
+   [[PAY: From: To: amount: why]]  when money changes hands (splitting a bill, paying someone back, a taxi: To can be "taxi" or "shop")
+   [[GET: item]] / [[LOSE: item]]  when the user picks up, finds, or loses something that wasn't bought`;
+
+// ---------- bag & shops UI ----------
+function renderBag(B){ const cur=currency(); const inv=invOf('user'); const w=walletOf('user');
+  const cs=W.characters.filter(c=>!isDead(c));
+  B.innerHTML=`<div class="ev-card"><h4>👛 Your money: ${esc(money(w.money))}</h4><div class="small">Money changes when you buy, pay, get paid or lend. Currency in this world: ${esc(cur.many)} <a href="#" id="curEdit">change</a></div></div>
+   <div class="ev-card"><h4>🎒 What you're carrying</h4>${inv.length?inv.map((e,i)=>`<div class="ev-row" style="grid-template-columns:1fr auto auto;align-items:center"><span>${esc(itemLabel(e))}</span><button class="ghost" data-iuse="${i}">Use</button><button class="ghost" data-idrop="${i}" title="Throw away">✕</button></div>`).join(''):'<div class="small">Nothing. Buy things in shops (🗺 World → Shops) or pick them up in the story.</div>'}</div>
+   <div class="ev-card"><h4>Everyone else</h4>${cs.map(c=>`<div class="ev-row" style="grid-template-columns:auto 1fr"><span><span class="ev-dot" style="background:${c.color}"></span> <b>${esc(c.name)}</b> ${esc(money(walletOf(c.id).money))}</span><span class="small">${esc(invLine(c.id))}${fxBits(S.chars[c.id],true).length?' · '+esc(fxBits(S.chars[c.id],true).join(', ')):''}</span></div>`).join('')}</div>
+   ${(S.ledger||[]).length?`<div class="ev-card"><h4>Recent spending</h4>${S.ledger.slice(-12).reverse().map(l=>`<div class="small">${wdName(l.t).slice(0,3)} ${hhmm(l.t)} · ${esc(l.who==='user'?'You':charById(l.who)?.name||l.who)}: ${esc(l.what)} ${esc(money(-l.amt))}${l.where?' at '+esc(l.where):''}</div>`).join('')}</div>`:''}`;
+  B.querySelectorAll('[data-iuse]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.iuse]; if(!e) return; const ta=$('#input'); if(ta){ ta.value=(ta.value?ta.value+' ':'')+`*uses the ${e.name.toLowerCase()}*`; ta.focus(); } $('#evModal').classList.remove('on'); });
+  B.querySelectorAll('[data-idrop]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.idrop]; if(!e||!confirm(`Throw away ${e.name}?`)) return; inv.splice(+b.dataset.idrop,1); save(); renderBag(B); });
+  const ce=$('#curEdit'); if(ce) ce.onclick=ev=>{ ev.preventDefault(); const one=prompt('Currency name (one):',cur.one); if(!one) return; const many=prompt('Plural:',cur.many)||one+'s'; const sym=prompt('Symbol (leave empty to write the word):',cur.sym||'')||''; const sc=parseFloat(prompt('Price scale (1 = normal prices, 100 = everything costs 100×):',cur.scale||1))||1;
+    const old=+cur.scale||1; S.currency={one,many,sym,scale:sc}; if(sc!==old){ const r=sc/old; S.user.money=Math.round((S.user.money||0)*r); for(const id in S.chars) if(S.chars[id].money!=null) S.chars[id].money=Math.round(S.chars[id].money*r); } save(); renderBag(B); }; }
+function renderShops(){ const B=$('#hubBody'); const here=storeHere(S.user.loc); const list=storesOf(); const w=walletOf('user'); const minors=present().filter(c=>c.minor&&S.user.companions.includes(c.id));
+  const card=s=>{ const open=storeOpen(s); const isHere=here===s; return `<div class="ev-card"><h4>${STORE_ICON[s.kind]||'🛍'} ${esc(s.name)} <span class="small" style="font-weight:400">${esc(s.district)} · ${open?`open${s.close==='24:00'?' 24/7':' until '+s.close}`:'closed, opens '+s.open}</span></h4>
+    ${isHere&&open?(s.adult&&minors.length?`<div class="small" style="margin-bottom:6px">${esc(minors.map(c=>c.name).join(' and '))} wait${minors.length>1?'':'s'} outside.</div>`:'')+s.stock.map(id=>{ const it=ITEM_BY_ID[id]; if(!it) return ''; const n=stockLeft(s,id); return `<div class="ev-row" style="grid-template-columns:1fr auto auto;align-items:center"><span>${esc(it.name)}${it.adult?' <span class="small">18+</span>':''}</span><span class="small">${n?esc(money(priceOf(it))):'sold out'}</span><button ${n&&w.money>=priceOf(it)?'':'disabled'} data-buy="${s.id}|${id}">Buy</button></div>`; }).join('')
+      :`<div class="small">${s.stock.slice(0,8).map(id=>ITEM_BY_ID[id]?.name).filter(Boolean).join(', ')}${s.stock.length>8?'…':''}</div><div class="rowbtns"><button data-shopgo="${s.id}">🚶 Go here</button></div>`}</div>`; };
+  B.innerHTML=`<div class="hub-pad"><div class="hub-rep" style="margin-bottom:12px">👛 <b>${esc(money(w.money))}</b> <span class="small">· ${here?`You're at ${esc(here.name)}.`:'Go to a shop to buy things.'}</span></div>${here?card(here):''}<div class="dir-grid">${list.filter(s=>s!==here).map(card).join('')}</div></div>`;
+  B.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const [sid,id]=b.dataset.buy.split('|'); const it=ITEM_BY_ID[id]; const r=buy('user',it.name,1); if(!r.ok){ notice(`Couldn't buy ${it.name}: ${r.why}.`); return; }
+    S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${uN()} just bought ${it.name} for ${money(r.total)} at ${here.name}. It's in their bag now. Show the checkout naturally next time the story continues.)`}); save(); renderShops(); notice(`🛍 Bought ${it.name} (${money(r.total)}).`); });
+  B.querySelectorAll('[data-shopgo]').forEach(b=>b.onclick=()=>{ const s=list.find(x=>x.id===b.dataset.shopgo); if(!s) return; closeHub(); const ta=$('#input'); if(ta){ ta.value=`*heads to ${s.name} in ${s.district}*`; ta.focus(); } }); }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3008,8 +3274,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.42.1';
+const APP_VERSION = '0.43.0';
 const CHANGELOG = [
+ {v:'0.43.0', d:'2026-11-19', notes:['Items and money. You and every character now carry real things and real money (Dennies in Zenless worlds, dollars elsewhere; change the name, symbol and price scale in Bag & money). Nangong can afford anything, Cissia is always broke, and nobody can pay with money they don\'t have.', 'Shops: every world gets convenience stores, pharmacies, grocery stores, cafés, clothing, florists, gift shops, liquor stores and an adult boutique, with opening hours, prices and stock that can sell out. New Eridu uses its own places (141, JC Pharmacy, Lumina Galleria, Richard Teamilk, Peace Herbal, Yum Cha Sin…). Browse them in 🗺 World → 🛍 Shops and buy when you\'re there.', 'Anyone under 18 waits outside 18+ shops and can\'t buy alcohol, cigarettes or adult items.', 'Items do things over time: melatonin makes you drowsy half an hour later, Pepto settles a stomach, coffee and energy drinks wire you up (and crash), drinks add up from tipsy to wasted with a hangover the next morning, heat patches ease cramps, aphrodisiacs work only on adults and never decide anything for anyone. Food spoils, coffee goes cold, ice cream melts.', 'The story can buy, use, give and pay: characters hand each other things, split bills, pay for taxis and buy things off-screen too. See Schedules → Bag & money for your bag, everyone\'s wallet and recent spending.']},
  {v:'0.42.1', d:'2026-11-19', notes:['Sex scenes between adults now use plain, direct words for body parts instead of euphemisms like "his length" or "her core", in the voice of each character (bold ones talk dirty, shy ones stammer). This never applies when anyone under 18 or a protected character is in the scene.']},
  {v:'0.42.0', d:'2026-11-19', notes:['Vivian Banshee joins the Yunkui Summit story: the Mockingbird phantom thief followed "Lord Phaethon" all the way to Failume Heights, rents a room above a tea shop, works her part-time jobs around town and is far too often "just passing by" the temple stairs. Elegant and poetic with everyone else, squealing and jealous around Belle and Wise, with her precognitive tears, her secret Lord Phaethon notebook, homemade merch and Robin reporting her heart rate.', 'Cissia (New Eridu Public Security) got a full canon rework: she panics at Severian\'s name and confesses every fridge raid if you pretend to call him, bolts from or swats away any camera pointed at her, her legs give out around Zhu Yuan, her Bangboo No. 19 "Miss Cissiboo" plan, the free-sample notebook, her no-singing birthday rules, her Outer Ring nickname and much more.']},
  {v:'0.41.0', d:'2026-11-19', notes:['Obsidian vault (Settings → 📓 Obsidian vault): pick your vault folder and the app keeps a permanent record of every story there as Markdown. Each character gets a note with all their memories (by day), their relationships and how they feel about you. Every in-app day gets a journal note with your scenes, what happened elsewhere, gossip and who came to you, plus a Story so far note. Names are linked, so Obsidian\'s graph view shows your whole cast.', 'The vault is a record only: the app never reads it back, so editing a note doesn\'t change what happened. Works in the desktop app and in Chrome or Edge on a computer.', 'Old memories are no longer lost: once a story passes 1,500 memories, the oldest move to an archive, and characters still recall them when something in the scene brings them up.']},
@@ -3548,18 +3815,16 @@ function renderEvents(){
       (items.length?items.map(x=>`<div class="tl-item"><div class="tw">${wdName(x.t).slice(0,3)} ${mmdd(x.t)}<br>${hhmm(x.t)}</div><div class="tt"><b>${esc(x.title)}</b>${x.text?`<span class="small">${esc(x.text)}</span><br>`:''}<span class="small">${esc(x.who)}</span></div></div>`).join(''):'<div class="small">Nothing yet. Pin a message with 📍 to add it.</div>');
   }
   B.querySelectorAll('[data-revive]').forEach(x=>x.onclick=()=>{ const c=charById(x.dataset.revive); if(!confirm(`Undo ${c.full}'s death? They'll be back in the story as if it never happened (memories of it stay unless you rewind).`)) return; delete S.chars[c.id].dead; updateSchedules(); save(); renderEvents(); renderCards(); });
+  if(evTab==='bag'){ renderBag(B); return; }
   if(evTab==='wear'){
     const kinds=k=>OUTFIT_KINDS.map(x=>`<option ${x===k?'selected':''}>${x}</option>`).join('');
     B.innerHTML=`<div class="small" style="margin-bottom:10px;line-height:1.5">What everyone owns and has on. Characters change by themselves when their day changes (work, sleep, the gym), and the story can buy, return and swap clothes. You can edit any of it here.</div>
-      <div class="ev-card"><h4>🎒 Your bag</h4><div>${(S.user.bag||[]).map((x,i)=>`<span class="pill" style="margin:2px">${esc(x)} <a href="#" data-bagdel="${i}">✕</a></span>`).join('')||'<span class="small">Empty.</span>'}</div>
-        <div style="display:flex;gap:6px;margin-top:8px"><input id="bagNew" placeholder="Add something you carry"><button id="bagAdd">Add</button></div></div>`+
+`+
       cs.map(c=>{ const st=S.chars[c.id]; const wr=wardrobeOf(c); return `<div class="ev-card"><h4><span class="ev-dot" style="background:${c.color}"></span>${esc(c.full)} <span class="small" style="font-weight:400">${st.outfit?'wearing '+esc(st.outfit.name):''}</span></h4>
         ${wr.length?'':`<div class="small">No wardrobe yet. ${wardrobeBusy.has(c.id)?'Making one from their sheet…':`<a href="#" data-gen="${c.id}">Make one from their sheet</a>`}</div>`}
         ${wr.map((o,i)=>`<div class="wr-row"><input value="${esc(o.name)}" data-wn="${c.id}|${i}"><select data-wk="${c.id}|${i}">${kinds(o.kind)}</select><input class="wd" value="${esc(o.desc||'')}" data-wd="${c.id}|${i}"><button class="ghost" data-wx="${c.id}|${i}" title="Remove">✕</button></div>`).join('')}
         <div class="rowbtns"><button data-wadd="${c.id}">+ Add outfit</button>${wr.length?`<select data-wear="${c.id}"><option value="">Change what they're wearing…</option>${wr.map((o,i)=>`<option value="${i}">${esc(o.name)}</option>`).join('')}</select>`:''}</div></div>`; }).join('');
     const ref=(s)=>{ const [id,i]=s.split('|'); return {c:charById(id), wr:wardrobeOf(charById(id)), i:+i}; };
-    $('#bagAdd').onclick=()=>{ const v=$('#bagNew').value.trim(); if(!v) return; S.user.bag.push(v); save(); renderEvents(); };
-    B.querySelectorAll('[data-bagdel]').forEach(a=>a.onclick=e=>{ e.preventDefault(); S.user.bag.splice(+a.dataset.bagdel,1); save(); renderEvents(); });
     B.querySelectorAll('[data-gen]').forEach(a=>a.onclick=e=>{ e.preventDefault(); genWardrobe(charById(a.dataset.gen)).then(()=>renderEvents()); renderEvents(); });
     B.querySelectorAll('[data-wn]').forEach(x=>x.onchange=()=>{ const r=ref(x.dataset.wn); r.wr[r.i].name=x.value.trim()||r.wr[r.i].name; save(); });
     B.querySelectorAll('[data-wk]').forEach(x=>x.onchange=()=>{ const r=ref(x.dataset.wk); r.wr[r.i].kind=x.value; save(); });
