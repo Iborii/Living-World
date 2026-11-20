@@ -1,12 +1,12 @@
 {
- "version": "0.50.0",
+ "version": "0.51.0",
  "date": "2026-11-19",
  "notes": [
-  "Jobs and bills. Characters earn for the hours they actually work and get paid every Friday evening; rent is due on the 1st and phone bills on the 15th. Whoever comes up short gets stressed about it, remembers it, and may text you (if they trust you) to vent or ask to borrow money. Set your own job, pay and rent in Bag & money, and the story can pay you for work you do.",
-  "Debts are remembered: lend someone money and they (and you) know who owes whom until it's paid back.",
-  "Gift tastes. Every character has real loves, likes and things they can't stand, from canon for the Zenless cast (Cissia and eggs, Yinhu and coupons, Fufu and broccoli\u2026) and from their sheet for everyone else. A good gift raises trust and they remember it; a bad one gets an honest reaction and, a day or two later, quietly re-gifted to a friend or shoved in a drawer. The same gift over and over gets less exciting, and big reactions get gossiped about. Use the Give button in your bag."
+  "Body physics for adult women: busts bounce and settle when someone runs, jumps, laughs or flops onto the couch (more with a bigger bust or no bra, held still by a sports bra or tight top), hips and butts sway and jiggle on stairs, thighs shift when sitting. It shows up naturally alongside hair and cloth movement, and never for anyone under 18 or protected.",
+  "Phone notifications: a banner slides down like a real phone for new contacts, texts (with a preview), people arriving, paydays and bills. Tap it to jump to the chat; the latest ones also sit on your phone's home screen.",
+  "Characters can now give you their number in any way the story plays it: swapping numbers, writing it on your hand, or grabbing your phone and typing it in themselves. If they save themselves under a joke name (\"Your Favorite Angel \ud83d\udda4\"), that's the name in your contacts. If the story forgets to register it, the app catches it from the text."
  ],
  "file": "index.html",
- "sha256": "0f9d5f7d3387e197d0901009bf3b3f1de2db39023dffc00297eb3a2682236035",
+ "sha256": "20c0867d5b2dd73574a18b94b3c2b4daaacf3ae645d7eccbf0f2275f678496b3",
  "minShell": "0.5.0"
 }

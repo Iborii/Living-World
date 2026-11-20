@@ -710,6 +710,12 @@ button:hover{background:#262b36}
 }
 @media (max-width:359px){ .tools .hl{display:none} button.tool{font-size:15px;padding:6px 11px} }
 
+/* ---- phone notifications ---- */
+#notifBanner{position:fixed;top:10px;left:50%;transform:translate(-50%,-140%);z-index:120;display:flex;gap:10px;align-items:flex-start;width:min(380px,calc(100vw - 32px));padding:11px 13px;border-radius:16px;background:rgba(30,32,40,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.45);cursor:pointer;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);color:#eee}
+#notifBanner.on{transform:translate(-50%,0)}
+.nb-ic{font-size:22px;line-height:1;margin-top:2px}.nb-tx{min-width:0;flex:1}.nb-top{display:flex;justify-content:space-between;font-size:11px;opacity:.65}.nb-top b{font-weight:600}.nb-ti{font-weight:600;font-size:14px;margin-top:1px}.nb-bd{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph-notifs{margin:10px 14px 12px;display:flex;flex-direction:column;gap:6px}.ph-nt{display:flex;gap:9px;padding:8px 10px;border-radius:12px;background:rgba(20,22,28,.72);backdrop-filter:blur(8px);cursor:pointer}.ph-nt>span{font-size:18px}
+@media (prefers-reduced-motion: reduce){ #notifBanner{transition:none} }
 /* ---- living world hub ---- */
 #hubModal .box.hub-box{width:min(1180px,97vw);height:min(820px,94vh);max-height:94vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
 .hub-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -838,6 +844,7 @@ button:hover{background:#262b36}
   <div id="auBody"></div>
 </div></div>
 
+<div id="notifBanner" role="status" aria-live="polite"></div>
 <div class="modal" id="hubModal"><div class="box hub-box"><div class="hub-head"><div id="hubTabs" class="hub-tabs"></div><button class="ghost" id="hubClose" title="Close">✕</button></div><div id="hubBody" class="hub-body"></div></div></div>
 <div class="modal" id="phoneModal"><div class="box">
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
@@ -1287,9 +1294,10 @@ function phone(){ if(!S.phone) S.phone={}; const P=S.phone; P.threads=P.threads|
     const start=(W.opening&&W.opening.contacts)||(W.opening&&W.opening.companions)||[]; P.contacts=[...new Set([...Object.keys(P.threads).filter(id=>P.threads[id].length), ...start])]; }
   return P; }
 const isContact=id=>phone().contacts.includes(id);
-function addContact(id, how){ const P=phone(); if(P.contacts.includes(id)) return false; const c=charById(id); if(!c) return false; P.contacts.push(id);
-  addText(id,true,how==='swap'?'📇 You swapped numbers':'📇 Added to your contacts','call');
-  addMemory({who:[id], text:`${c.name} and ${uN()} swapped phone numbers`, imp:2, src:'phone'}); notice(`📇 ${c.name} is now in your contacts.`); save(); return true; }
+function addContact(id, how, nick){ const P=phone(); P.nick=P.nick||{}; const c=charById(id); if(!c) return false; if(nick&&String(nick).trim()) P.nick[id]=String(nick).trim().slice(0,40); if(P.contacts.includes(id)) return false; P.contacts.push(id);
+  addText(id,true,how==='gave'?`📇 ${c.name} put their number in your phone${P.nick[id]?` (saved as "${P.nick[id]}")`:''}`:how==='swap'?'📇 You swapped numbers':'📇 Added to your contacts','call');
+  addMemory({who:[id], text:how==='gave'?`Put my number in ${uN()}'s phone${P.nick[id]?` and saved myself as "${P.nick[id]}"`:''}`:`${c.name} and ${uN()} swapped phone numbers`, imp:2, src:'phone'});
+  pushNotif({icon:'📇', app:'Contacts', title:'New contact added', body:P.nick[id]?`"${P.nick[id]}" (${c.full})`:c.full, open:{view:'chat',id}}); save(); return true; }
 function contactPic(c){ const P=S&&S.phone; return (P&&P.photos&&P.photos[c.id])||c.phoneImg||c.img||''; }
 function thread(id){ const P=phone(); return P.threads[id]||(P.threads[id]=[]); }
 function phoneOn(){ return $('#phoneModal').classList.contains('on'); }
@@ -1368,7 +1376,7 @@ Write ${c.name}'s reply as real phone texts: their own texting style (slang, pun
   const lastMe=[...th].reverse().find(m=>m.me);
   addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
   if(lines.length){ const st=S.chars[c.id]; st.log.push({t:S.clock, text:`*${c.name} pauses ${String(st.act||'what they were doing').replace(/\s*\(with you\)$/,'')} to pull out their phone and text ${pn} back.* "${lines.join(' / ').slice(0,300)}"`, with:[c.id], loc:st.loc}); st.changed=true; }
-  if(!phoneOn()||phoneOpenId!==c.id) notice(`📱 New text from ${c.name}`);
+  if(!phoneOn()||phoneOpenId!==c.id) pushNotif({icon:'💬', app:phoneApp(), title:contactName(c), body:lines.join(' · '), open:{view:'chat',id:c.id}});
   return decision?decision.toUpperCase():null;
 }
 // ---- invitations (like Knock Knock invites) ----
@@ -1555,6 +1563,9 @@ const SHY_RX=/\b(shy|timid|bashful|reserved|introvert|easily flustered|socially 
 // explicit wording for sex scenes between adults; never shown when anyone under 18 or protected is in the scene
 function adultScenesLine(){ try{ if(present().some(c=>c.minor||c.protect)) return ''; }catch(e){ return ''; }
   return `ADULT SCENES (adults only): when a sexual or intimate scene happens between consenting adults, write it explicitly and plainly; don't hide behind euphemisms or fade to black. Name body parts directly: penis, cock, dick, balls, vagina, pussy, clit, breasts, tits, nipples, ass. Pick the word that fits the speaker and the moment: crude or bold characters talk dirty, shy ones stammer the word or avoid it out loud, clinical ones say "penis" and "vagina", and narration uses a plain direct word. Never swap them for "his length", "his member", "her core", "her sex", "her folds", "her heat" or "down there". ${uN()}'s actions and choices stay theirs; each character's consent, personality and the pacing of how often things happen still apply.\n`; }
+// soft-body physics for adult women in the scene; never anyone under 18 or protected
+function bodyPhysicsLine(){ let cs=[]; try{ cs=present().filter(c=>genderOf(c)==='Female'&&!c.minor&&!c.protect); }catch(e){ return ''; } if(!cs.length) return '';
+  return `BODY PHYSICS (${cs.map(c=>c.name).join(', ')}; adults only): bodies move like real bodies, as part of the same imagery as hair, cloth and fur. Breasts bounce and sway when a woman runs, jumps, hurries down stairs, laughs hard, flops onto a couch or gets jostled, settle a beat after she stops, and shift when she stretches, bends over or turns fast; the bigger the bust the more motion. A good bra, sports bra or tight top holds things still; no bra, a loose top or a swimsuit doesn't. Hips and butt sway when she walks and jiggle on stairs or a jog; thighs press and shift when she sits or crosses her legs; soft bellies and arms move a little too. Show it naturally where the movement happens (a sentence, not every line), the way anyone nearby would notice it; it isn't sexual by itself, and characters may notice, catch themselves, or get self-conscious about it. Never for anyone under 18.\n`; }
 function comfortLine(a,b,score){ if(isDead(a)||isDead(b)) return '';
   const txt=c=>(c.brief||'')+' '+(c.tags||[]).join(' '); const shy=[a,b].filter(c=>SHY_RX.test(txt(c))), bold=[a,b].every(c=>BOLD_RX.test(txt(c)))&&!shy.length;
   const mixed=genderOf(a)&&genderOf(b)&&genderOf(a)!==genderOf(b);
@@ -2010,7 +2021,7 @@ ${S.branch?'':`   [[JOIN: Name]]  when a main character starts following or stay
    [[WITH: Name, Name]] or [[WITH: nobody]]  REQUIRED in every reply, as the last control line: exactly which main characters are physically with the user at the end of this reply. Leave out anyone who stayed behind, went home, was never there, or is only on the phone. If the user goes off with one person (a date, a walk), everyone else is left out
 `}   [[TRUST: Name +N]] or [[TRUST: Name -N]]  whenever the user's words or actions this turn matter to a character: kindness, help, keeping or breaking a promise, rudeness, lying, flirting they did or didn't want. Usually 1 to 3, up to 8 for something big. Most replies with a real interaction should have at least one
    [[WASH: Name]] or [[WASH: user]]  when someone showers or bathes
-   [[NUMBER: Name]]  when a character and the user swap phone numbers
+   [[NUMBER: Name]]  whenever a character's number ends up in the user's phone in ANY way: swapping numbers, writing it on their hand or a napkin, grabbing the user's phone and typing it in themselves (even as a joke), or the user taking it. If they saved themselves under a funny name, add it: [[NUMBER: Name: saved as "Your Favorite Angel"]]
    [[TEXT: Name: message]]  when a character in the scene actually sends the user a phone text (one tag per text). Show them typing it in the story first
    [[ATE: Name]] or [[ATE: user]]  when someone actually eats a meal or a real snack
    [[MOOD: Name: feeling: why]]  when something clearly changes how a character feels (angry, hurt, giddy, sulking…)
@@ -2048,9 +2059,9 @@ Calm or stoic characters can stay clipped and quiet; everyone else should sound 
 USER'S LOCATION: ${S.user.loc}
 CHARACTERS IN THE SCENE: ${pres.length?pres.map(c=>c.full).join(', '):'none of the main cast (only strangers and background people)'}
 TRUST TOWARD THE USER: ${trustLine()}${phonesOn()?`
-PHONE CONTACTS: The user has the numbers of ${phone().contacts.map(id=>charById(id)?.name).filter(Boolean).join(', ')||'nobody yet'}. Everyone else can't text or call the user (and the user can't text them) until they swap numbers in the story; when someone gives their number or takes the user's, add [[NUMBER: Name]].`:''}
+PHONE CONTACTS: The user has the numbers of ${phone().contacts.map(id=>charById(id)?.name).filter(Boolean).join(', ')||'nobody yet'}. Everyone else can't text or call the user (and the user can't text them) until they swap numbers in the story; when someone gives their number, types it into the user's phone themselves, or takes the user's, add [[NUMBER: Name]] (with ": saved as \"name\"" if they saved themselves under a joke name). It's a normal thing to happen in the story.`:''}
 LAST WASHED: ${washedLine()}
-${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${livingMainBlock()}${adultScenesLine()}AVAILABILITY: an activity is not automatically "busy." If what someone is doing is casual (scrolling their phone, gaming, eating, tea, chilling, walking around, shopping, watching or listening to something, winding down), they are on free time: they can answer texts right away, chat, drop it to hang out, or wander over. Only real commitments (a work shift, class, mission or patrol, rehearsal, recording, a live show or stream, a commission, a fight) keep them from it, and even then a short reply on a break is normal.
+${pres.length>1?relLines(pres):''}${!phonesOn()?'PHONES: There are no phones in this world; nobody texts, calls or posts online. People meet, send messages by hand, or visit.\n':W.characters.some(c=>c.phone===false)?`NO PHONE: ${W.characters.filter(c=>c.phone===false).map(c=>c.name).join(', ')} ${W.characters.filter(c=>c.phone===false).length>1?'have':'has'} no phone.\n`:''}${phonesOn()?(()=>{ const p=plansBlock(); return p?`PLANS WITH THE USER (made by phone; characters keep them unless something real gets in the way):\n${p}\n`:''; })()+(()=>{ const t=recentTextsBlock(); return t?`RECENT PHONE ACTIVITY (${phoneApp()} texts, calls and ${feedApp()} posts, last 12 hours; the people involved know about these):\n${t}\n`:''; })():''}${(()=>{ const b=bodyLines(pres); return b?`BODY RIGHT NOW (realism: show it through small natural details like cramps, a pad or tampon change, a hot water bottle, mood, cravings or tiredness; never announce it like a status, and keep it non-sexual):\n${b}\n`:''; })()}${livingMainBlock()}${adultScenesLine()}${bodyPhysicsLine()}AVAILABILITY: an activity is not automatically "busy." If what someone is doing is casual (scrolling their phone, gaming, eating, tea, chilling, walking around, shopping, watching or listening to something, winding down), they are on free time: they can answer texts right away, chat, drop it to hang out, or wander over. Only real commitments (a work shift, class, mission or patrol, rehearsal, recording, a live show or stream, a commission, a fight) keep them from it, and even then a short reply on a break is normal.
 ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next two days; people may mention or attend them):\n${e}\n`:''; })()}SEASON: ${weather(S.clock).season} (people dress, eat and spend their free time for the season and today's weather)\n${(()=>{ const hl=holidayLines(); return hl?`HOLIDAYS:\n${hl}\n`:''; })()}
 `;
   s+=`NEXT EVENTS for people here: ${nextEventsFor(pres)||'none'}.\n\n`;
@@ -2134,8 +2145,9 @@ function joinCont(a,b){ b=b.replace(/^\s*\|[^\n]*\|\s*\n/,''); // drop a repeate
   for(let n=Math.min(80,a.length,b.length); n>=12; n--) if(a.endsWith(b.slice(0,n))) return a+b.slice(n); // it repeated the last few words
   if(/\s$/.test(a)||/^[\s.,;:!?'")\]*~-]/.test(b)) return a+b;
   return a+(/[A-Za-z]$/.test(a)&&/^[a-z]/.test(b)?'':' ')+b.replace(/^\s+/,''); }
+let numberTagged=false;
 function applyControls(text){
-  const lines=text.split('\n'); const keep=[]; let withList=null, rideMode=null; S.user.lastLoc=S.user.loc; TRUST_TAGGED=new Set();
+  const lines=text.split('\n'); const keep=[]; let withList=null, rideMode=null; numberTagged=false; S.user.lastLoc=S.user.loc; TRUST_TAGGED=new Set();
   for(const l of lines){
     const m=l.match(/^\s*\[\[(\w+):\s*([^\]]+)\]\]\s*$/);
     if(!m){ keep.push(l); continue; }
@@ -2152,13 +2164,14 @@ function applyControls(text){
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
     else if(C==='DIED'){ const p=arg.split(':'); const c=charByName(p[0]); if(c) killChar(c, p.slice(1).join(':').trim()); }
     else if(C==='TEXT'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); const t=arg.slice(i+1).trim(); if(c&&t&&hasPhone(c)&&isContact(c.id)) addText(c.id,false,t); } }
-    else if(C==='NUMBER'){ const c=charByName(arg); if(c&&hasPhone(c)) addContact(c.id,'swap'); }
+    else if(C==='NUMBER'){ const p2=arg.split(':').map(x=>x.trim()); const c=charByName(p2[0]); const nick=(p2.slice(1).join(':').match(/["“']([^"”']{1,40})["”']/)||[])[1]||p2.slice(1).join(':').replace(/^saved as\s*/i,'').trim(); if(c&&hasPhone(c)){ numberTagged=true; addContact(c.id, /saved|put|typed/i.test(arg)||nick?'gave':'swap', nick); } }
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()){ S.user.washed=S.clock; onWash('user'); } else { const c=charByName(arg); if(c){ S.chars[c.id].washed=S.clock; onWash(c.id); } } }
     else if(C==='CONDITION'){ applyCondTag(arg); }
     else if(C==='SICK'){ const p2=arg.split(':').map(x=>x.trim()); const w=whoId(p2[0]); const k=(p2[1]||'cold').toLowerCase(); const kind=/flu/.test(k)?'flu':/stomach|vomit|bug/.test(k)?'stomach':/poison/.test(k)?'foodpoison':'cold'; if(w){ catchIll(w,kind,p2.slice(2).join(':')); const st=w==='user'?S.user:S.chars[w]; if(st&&st.ill) st.ill.start=S.clock; } }
   }
   if(withList) setCompanions(withList);
   if(rideMode) try{ applyRide(rideMode); }catch(e){}
+  if(!numberTagged) try{ detectNumbers(keep.join('\n'), present()); }catch(e){}
   for(const id of S.user.companions){ S.chars[id].loc=S.user.loc; S.chars[id].act=S.chars[id].ovr?S.chars[id].ovr.act+' (with you)':'with you'; }
   return keep.join('\n').trim();
 }
@@ -2241,7 +2254,7 @@ Rarely (about one moment in six), if a character would post about this moment on
   }
   try{ directorAfterBeat(ids, entry); }catch(e){}
   if(memory&&!/^none\.?$/i.test(memory.trim())) addMemory({who:ids, text:memory, t:now, src:'offscreen', imp:2});
-  if(textTo){ const c=charByName(textTo.from); if(c&&ids.includes(c.id)&&hasPhone(c)&&isContact(c.id)){ S.chat.push({role:'text',from:c.name,text:textTo.text,t:now}); addText(c.id,false,textTo.text); notice(`📱 New text from ${c.name}`); } }
+  if(textTo){ const c=charByName(textTo.from); if(c&&ids.includes(c.id)&&hasPhone(c)&&isContact(c.id)){ S.chat.push({role:'text',from:c.name,text:textTo.text,t:now}); addText(c.id,false,textTo.text); pushNotif({icon:'💬', app:phoneApp(), title:contactName(c), body:textTo.text, open:{view:'chat',id:c.id}}); } }
   render(); save();
 }
 async function compressMemory(id){ return;
@@ -2839,7 +2852,7 @@ function renderBag(B){ const cur=currency(); const inv=invOf('user'); const w=wa
    <div class="ev-card"><h4>🎒 What you're carrying</h4>${inv.length?inv.map((e,i)=>`<div class="ev-row" style="grid-template-columns:1fr auto auto auto;align-items:center"><span>${esc(itemLabel(e))}</span><button class="ghost" data-iuse="${i}">Use</button><button class="ghost" data-igive="${i}">Give</button><button class="ghost" data-idrop="${i}" title="Throw away">✕</button></div>`).join(''):'<div class="small">Nothing. Buy things in shops (🗺 World → Shops) or pick them up in the story.</div>'}</div>
    <div class="ev-card"><h4>Everyone else</h4>${cs.map(c=>`<div class="ev-row" style="grid-template-columns:auto 1fr"><span><span class="ev-dot" style="background:${c.color}"></span> <b>${esc(c.name)}</b> ${esc(money(walletOf(c.id).money))}</span><span class="small">${esc(invLine(c.id))}${fxBits(S.chars[c.id],true).length?' · '+esc(fxBits(S.chars[c.id],true).join(', ')):''}</span></div>`).join('')}</div>
    <div class="ev-card"><h4>💼 Work and bills</h4><div class="small" style="margin-bottom:6px">Characters get paid every Friday evening for the hours they work, pay rent on the 1st and their phone bill on the 15th, and ask friends for help when they come up short. Set yours here.</div><div class="dir-grid"><input id="jobName" placeholder="Your job (optional)" value="${esc(S.user.job?.name||'')}"><input id="jobWage" type="number" placeholder="Pay per hour" value="${S.user.job?.wage||''}"><input id="jobRent" type="number" placeholder="Your rent per month (0 = none)" value="${S.user.rent||''}"></div><div class="rowbtns"><button id="jobSave">Save</button></div>${S.user.overdue?`<div class="small" style="color:var(--danger)">You're ${esc(money(S.user.overdue))} behind on bills.</div>`:''}${(S.debts||[]).filter(d=>d.left>0).map(d=>`<div class="small">${esc(d.from==='user'?'You':charById(d.from)?.name||d.from)} owe${d.from==='user'?'':'s'} ${esc(d.to==='user'?'you':charById(d.to)?.name||d.to)} ${esc(money(d.left))}</div>`).join('')}</div>
-   ${(S.ledger||[]).length?`<div class="ev-card"><h4>Recent spending</h4>${S.ledger.slice(-12).reverse().map(l=>`<div class="small">${wdName(l.t).slice(0,3)} ${hhmm(l.t)} · ${esc(l.who==='user'?'You':charById(l.who)?.name||l.who)}: ${esc(l.what)} ${esc(money(-l.amt))}${l.where?' at '+esc(l.where):''}</div>`).join('')}</div>`:''}`;
+   ${(S.ledger||[]).length?`<div class="ev-card"><h4>Recent spending</h4>${S.ledger.slice(-12).reverse().map(l=>`<div class="small">${wdName(l.t).slice(0,3)} ${hhmm(l.t)} · ${esc(l.who==='user'?'You':charById(l.who)?.name||l.who)}: ${esc(l.what)} ${l.amt>0?'+'+esc(money(l.amt)):esc(money(-l.amt))}${l.where?' at '+esc(l.where):''}</div>`).join('')}</div>`:''}`;
   B.querySelectorAll('[data-iuse]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.iuse]; if(!e) return; const ta=$('#input'); if(ta){ ta.value=(ta.value?ta.value+' ':'')+`*uses the ${e.name.toLowerCase()}*`; ta.focus(); } $('#evModal').classList.remove('on'); });
   B.querySelectorAll('[data-igive]').forEach(b=>b.onclick=()=>{ const e=inv[+b.dataset.igive]; if(!e) return; const ta=$('#input'); if(ta){ ta.value=(ta.value?ta.value+' ':'')+`*holds out the ${e.name.toLowerCase()}* "This is for you."`; ta.focus(); } $('#evModal').classList.remove('on'); });
   { const js=$('#jobSave'); if(js) js.onclick=()=>{ const n=$('#jobName').value.trim(), w=+$('#jobWage').value||0; S.user.job=n?{name:n,wage:w}:null; S.user.rent=+$('#jobRent').value||0; save(); notice('Saved.'); renderBag(B); }; }
@@ -2900,7 +2913,7 @@ function comingTick(){ if(!S.coming||!S.coming.length) return; const keep=[];
     const sameSpot=String(S.user.loc).toLowerCase()===String(x.loc).toLowerCase(), sameDist=String(S.user.loc).split(',')[0].trim()===String(x.loc).split(',')[0].trim();
     if(sameSpot||sameDist){ if(!S.user.companions.includes(c.id)){ if(typeof freshJoin==='function') freshJoin(c.id); S.user.companions.push(c.id); }
       S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.full} has just arrived at ${x.loc} after ${uN()} texted them to come${x.mode?`, by ${x.mode}`:''}. Show them arriving in the next reply: how they look after the trip, the weather on them, why they came.)`});
-      notice(`🚶 ${c.name} just arrived.`); }
+      pushNotif({icon:'🚶', app:phoneApp(), title:contactName(c), body:`I'm here!`, open:{view:'chat',id:c.id}}); }
     else if(hasPhone(c)&&isContact(c.id)) addText(c.id,false,`i'm at ${x.loc.split(',').slice(-1)[0].trim()}... where are you??`);
     addMemory({who:[c.id], text:`Went to ${x.loc} because ${uN()} asked me to come${sameDist?'':', but they weren\'t there'}`, imp:2, src:'coming'}); }
   S.coming=keep; }
@@ -3177,13 +3190,13 @@ function econTick(dMin){ if(!S||!W||dMin<=0) return; const h=dMin/60, sc=+curren
   const d=dt(S.clock), day=isoDate(S.clock);
   // payday: Friday evening
   if(d.wd===5&&d.h>=18&&S._payday!==day){ S._payday=day; for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead||!(st.earned>0)) continue; const amt=Math.round(st.earned); walletOf(c.id).money+=amt; st.earned=0; st.log.push({t:S.clock, text:`*Payday: ${c.name} gets paid ${money(amt)}.*`, with:[c.id], loc:st.loc, life:true}); }
-    if(S.user.job&&S.user.job.wage){ const amt=Math.round((S.user.workedH||0)*S.user.job.wage*sc); if(amt>0){ walletOf('user').money+=amt; S.user.workedH=0; notice(`💵 Payday: ${money(amt)} from ${S.user.job.name}.`); } } }
+    if(S.user.job&&S.user.job.wage){ const amt=Math.round((S.user.workedH||0)*S.user.job.wage*sc); if(amt>0){ walletOf('user').money+=amt; S.user.workedH=0; pushNotif({icon:'💵', app:'Bank', title:'Payday', body:`${money(amt)} from ${S.user.job.name}`}); } } }
   // bills: rent on the 1st, phone on the 15th
   if(S._billDay!==day){ S._billDay=day;
     if(d.d===1){ for(const c of W.characters){ const r=Math.round(rentOf(c)*sc); if(r) chargeBill(c.id, r, 'rent'); } if(S.user.rent) chargeBill('user', Math.round(S.user.rent*sc), 'rent'); }
     if(d.d===15){ for(const c of W.characters) if(c.phone!==false&&!c.minor) chargeBill(c.id, Math.round(40*sc), 'phone bill'); if(phonesOn()) chargeBill('user', Math.round((S.user.phoneBill!=null?S.user.phoneBill:40)*sc), 'phone bill'); } }
   regiftTick(); }
-function chargeBill(who, amt, what){ const w=walletOf(who); if(!w) return; if(w.money>=amt){ w.money-=amt; (S.ledger=S.ledger||[]).push({t:S.clock, who, what, amt:-amt}); if(who==='user') notice(`🧾 ${what[0].toUpperCase()+what.slice(1)} paid: ${money(amt)}.`); return; }
+function chargeBill(who, amt, what){ const w=walletOf(who); if(!w) return; if(w.money>=amt){ w.money-=amt; (S.ledger=S.ledger||[]).push({t:S.clock, who, what, amt:-amt}); if(who==='user') pushNotif({icon:'🧾', app:'Bank', title:`${what[0].toUpperCase()+what.slice(1)} paid`, body:money(amt)}); return; }
   const short=amt-w.money; w.money=0; (S.ledger=S.ledger||[]).push({t:S.clock, who, what:what+' (partly)', amt:-(amt-short)});
   if(who==='user'){ S.user.overdue=(S.user.overdue||0)+short; notice(`🧾 Couldn't cover the ${what}: ${money(short)} overdue.`,true); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${uN()}'s ${what} came due and they're ${money(short)} short. It's a real worry now.)`}); return; }
   const c=charById(who); const st=S.chars[who]; st.overdue=(st.overdue||0)+short; st.mood={word:'stressed about money',why:`${money(short)} short on ${what}`,t:S.clock};
@@ -3239,6 +3252,21 @@ function regiftTick(){ if(!S.regift||!S.regift.length) return; const keep=[]; fo
   S.regift=keep; }
 function tasteLines(pres){ const L=pres.map(c=>{ const t=tastesOf(c); return t?`${c.name}: loves ${t.loves.slice(0,6).join(', ')}; likes ${t.likes.slice(0,5).join(', ')}; can't stand ${t.dislikes.slice(0,4).join(', ')}`:''; }).filter(Boolean);
   return L.length?`GIFT TASTES (how a gift or treat lands; react honestly, and the same gift again and again gets less exciting): ${L.join(' | ')}.\n`:''; }
+
+// ======================= phone notifications =======================
+// A banner slides down like a real phone notification (new contact, texts, missed calls, voicemail, payday, bills, arrivals),
+// and the latest ones stay on the phone's lock screen.
+function pushNotif(n){ if(!S) return; S.notifs=S.notifs||[]; const x={icon:n.icon||'🔔', app:n.app||'', title:String(n.title||'').slice(0,80), body:String(n.body||'').slice(0,160), t:S.clock, open:n.open||null}; S.notifs.push(x); if(S.notifs.length>40) S.notifs.splice(0,S.notifs.length-40);
+  const b=$('#notifBanner'); if(!b) return; b.innerHTML=`<span class="nb-ic">${x.icon}</span><div class="nb-tx"><div class="nb-top"><b>${esc(x.app||'Phone')}</b><span>now</span></div><div class="nb-ti">${esc(x.title)}</div>${x.body?`<div class="nb-bd">${esc(x.body)}</div>`:''}</div>`;
+  b.onclick=()=>{ b.classList.remove('on'); if(x.open&&phonesOn()) openPhone(x.open.view, x.open.id); };
+  b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); clearTimeout(pushNotif.t); pushNotif.t=setTimeout(()=>b.classList.remove('on'), 4800); }
+function notifListHTML(){ const L=(S.notifs||[]).slice(-6).reverse(); if(!L.length) return ''; return `<div class="ph-notifs">${L.map((x,i)=>`<div class="ph-nt" data-nt="${(S.notifs.length-1)-i}"><span>${x.icon}</span><div style="min-width:0;flex:1"><div class="nb-top"><b>${esc(x.app||'Phone')}</b><span>${hhmm(x.t)}</span></div><div class="nb-ti">${esc(x.title)}</div>${x.body?`<div class="nb-bd">${esc(x.body)}</div>`:''}</div></div>`).join('')}</div>`; }
+// what the user sees for a contact: the name they were saved under, if a character saved themselves as something
+function contactName(c){ const nk=phone().nick&&phone().nick[c.id]; return nk||c.full; }
+// fallback: a character obviously put their number in the user's phone but the story forgot the tag
+const NUM_RX=/\b(put|puts|putting|type[sd]?|typing|punch(es|ed|ing)?|enter(s|ed|ing)?|add(s|ed|ing)?|save[sd]?|saving|program(s|med)?|key(s|ed)? in|scrawl(s|ed)?|writes?|wrote|jot(s|ted)?|gives?|gave|giving|slips?|slipped|hands?|handed)\b[^.!?\n]{0,60}\b(number|contact|digits)\b|\bswap(s|ped|ping)? numbers\b|\bexchang(e|es|ed|ing) numbers\b/i;
+function detectNumbers(text, pres){ if(!phonesOn()) return; const t=String(text||''); if(!NUM_RX.test(t)) return;
+  for(const c of pres){ if(isContact(c.id)||!hasPhone(c)) continue; const re=new RegExp(`${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^.!?\\n]{0,120}(?:${NUM_RX.source})|(?:${NUM_RX.source})[^.!?\\n]{0,80}${c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'i'); if(re.test(t)){ const nick=(t.match(new RegExp(`(?:saved|save[sd]?|named|label(?:l)?ed|under)\\s+(?:herself|himself|themself|themselves|it|her number|his number)?\\s*(?:as|under)\\s+["“']([^"”'\\n]{1,40})["”']`,'i'))||[])[1]; addContact(c.id,'gave',nick); } } }
 
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3694,8 +3722,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.50.0';
+const APP_VERSION = '0.51.0';
 const CHANGELOG = [
+ {v:'0.51.0', d:'2026-11-19', notes:['Body physics for adult women: busts bounce and settle when someone runs, jumps, laughs or flops onto the couch (more with a bigger bust or no bra, held still by a sports bra or tight top), hips and butts sway and jiggle on stairs, thighs shift when sitting. It shows up naturally alongside hair and cloth movement, and never for anyone under 18 or protected.', 'Phone notifications: a banner slides down like a real phone for new contacts, texts (with a preview), people arriving, paydays and bills. Tap it to jump to the chat; the latest ones also sit on your phone\'s home screen.', 'Characters can now give you their number in any way the story plays it: swapping numbers, writing it on your hand, or grabbing your phone and typing it in themselves. If they save themselves under a joke name ("Your Favorite Angel 🖤"), that\'s the name in your contacts. If the story forgets to register it, the app catches it from the text.']},
  {v:'0.50.0', d:'2026-11-19', notes:['Jobs and bills. Characters earn for the hours they actually work and get paid every Friday evening; rent is due on the 1st and phone bills on the 15th. Whoever comes up short gets stressed about it, remembers it, and may text you (if they trust you) to vent or ask to borrow money. Set your own job, pay and rent in Bag & money, and the story can pay you for work you do.', 'Debts are remembered: lend someone money and they (and you) know who owes whom until it\'s paid back.', 'Gift tastes. Every character has real loves, likes and things they can\'t stand, from canon for the Zenless cast (Cissia and eggs, Yinhu and coupons, Fufu and broccoli…) and from their sheet for everyone else. A good gift raises trust and they remember it; a bad one gets an honest reaction and, a day or two later, quietly re-gifted to a friend or shoved in a drawer. The same gift over and over gets less exciting, and big reactions get gossiped about. Use the Give button in your bag.']},
  {v:'0.49.0', d:'2026-11-19', notes:['Ambient sound, made inside the app: rain that\'s muffled when you\'re indoors, wind and gusts (stronger in a storm or a Hollow), thunder, the low hum of the city, crowd murmur in cafés, arcades and stations, music thumping through the wall at the livehouse, the metro rumbling, and crickets on warm nights. Your phone buzzes when a text comes in. It starts after your first click. Turn it off or change the volume in Settings.']},
  {v:'0.48.0', d:'2026-11-19', notes:['Everyday life happens to everyone. Off-screen, characters lose their keys, spill drinks on themselves, run late when the bus doesn\'t come, find money, get fined, crack their phone screens, get packages, stub their toes, run into old friends, get followed by stray cats. It changes their mood, money and clothes, they remember it, and it carries into scenes. Small things happen around you too (a package, a noisy neighbor, a lost stranger asking directions); what you do about them is up to you.', 'Power outages hit whole districts for a few hours: lights off, fridges warming, phones can\'t charge.', 'Habits form around what you actually do. Spend time with someone at the same time and place on a few days and they start expecting it; skip a day and they notice and feel a little put out. Keep it up for weeks and it becomes comfortable but predictable.', 'Moods carry over: a big fight, a heartbreak or a great night still colors the next day before it fades. Everyone has off days and unusually good days too.']},
@@ -4044,7 +4073,8 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     const unr=Object.values(P.threads).reduce((n,t)=>n+t.filter(m=>!m.me&&!m.read).length,0), mc=P.calls.filter(c=>c.missed&&!c.out&&!c.seen).length, fu=P.feed.filter(f=>!f.seen).length;
     const app=(k,ic,l,badge)=>`<button class="ph-app" data-app="${k}"><span class="ic">${ic}</span>${badge?`<span class="bd">${badge}</span>`:''}<span class="lb">${l}</span></button>`;
     B.innerHTML=`<div class="ph-home" style="${PC.wall?`background:${PC.wall.startsWith('data:')?`url(${PC.wall}) center/cover`:PC.wall}`:''}"><div class="ph-clock">${hhmm(S.clock)}</div><div class="ph-date">${wdName(S.clock)}, ${mmdd(S.clock)} · ${esc(weather(S.clock).desc)}, ${weather(S.clock).temp}°F</div>
-      <div class="ph-grid">${PHONE_APPS.filter(([k])=>!(PC.hidden||[]).includes(k)).map(([k,ic])=>app(k,ic,esc(appLabel(k)),k==='msgs'?unr:k==='calls'?mc:k==='feed'?fu:'')).join('')}${app('set','⚙️','Settings','')}</div></div>`;
+      ${notifListHTML()}<div class="ph-grid">${PHONE_APPS.filter(([k])=>!(PC.hidden||[]).includes(k)).map(([k,ic])=>app(k,ic,esc(appLabel(k)),k==='msgs'?unr:k==='calls'?mc:k==='feed'?fu:'')).join('')}${app('set','⚙️','Settings','')}</div></div>`;
+    B.querySelectorAll('[data-nt]').forEach(d=>d.onclick=()=>{ const x=(S.notifs||[])[+d.dataset.nt]; if(x&&x.open) openPhone(x.open.view,x.open.id); });
     B.querySelectorAll('[data-app]').forEach(b=>b.onclick=()=>{ const a=b.dataset.app; if(a==='cal'){ $('#phoneModal').classList.remove('on'); evTab='events'; openEvents(); return; } openPhone(a); });
   }
   else if(phView==='set'){ phHeader('Phone settings',esc(W.title.split(':')[0]),true); const pc={...PC};
@@ -4068,12 +4098,12 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
     const here=everyone.filter(c=>!isContact(c.id)&&present().includes(c));
     const addRow=`<div class="ph-addc">${here.length?`<div class="small" style="margin-bottom:6px">With you right now:</div>${here.map(c=>`<div class="ph-item" style="padding:6px 0;border:0;cursor:default">${avHTML(c,34,false)}<div style="flex:1"><b>${esc(c.full)}</b></div><button class="primary" data-swap="${c.id}">Swap numbers</button></div>`).join('')}`:`<div class="small">You only have the numbers of people you've swapped with. Swap numbers with someone when you're with them, or they may give you theirs in the story.</div>`}</div>`;
     B.innerHTML=addRow+(sorted.length?'':'<div class="small" style="padding:12px 16px">No contacts yet.</div>')+sorted.map(c=>{ const th=P.threads[c.id]||[]; const last=th.slice(-1)[0]; const un=th.filter(m=>!m.me&&!m.read).length;
-      return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(c.full)}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
+      return `<div class="ph-item" data-c="${c.id}">${avHTML(c)}<div style="min-width:0;flex:1"><div class="nm">${esc(contactName(c))}</div><div class="stl">${statusPill(c)}</div><div class="lm">${last?(last.me?'You: ':'')+esc(last.text):'<i>No messages yet</i>'}</div></div>${un?`<span class="ph-unread">${un}</span>`:last?`<span class="small">${hhmm(last.t)}</span>`:''}</div>`; }).join('');
     B.querySelectorAll('[data-c]').forEach(d=>d.onclick=()=>openPhone('chat',d.dataset.c));
     B.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>{ addContact(b.dataset.swap,'swap'); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(${uN()} and ${charById(b.dataset.swap).name} swap phone numbers just now. Show it briefly in the next reply if it fits.)`}); renderPhone(); });
   }
   else if(phView==='chat'){ const c=charById(phoneOpenId); if(!c){ phView='msgs'; return renderPhone(); } const th=thread(c.id); th.forEach(m=>m.read=true);
-    phHeader(esc(c.full), statusPill(c), true); $('#phSendRow').style.display='';
+    phHeader(esc(contactName(c)), (phone().nick&&phone().nick[c.id]?esc(c.full)+' · ':'')+statusPill(c), true); $('#phSendRow').style.display='';
     const av=$('#phAv'); const pic=contactPic(c); av.style.display='flex'; av.style.background=avatarBg(c.color,pic); av.textContent=pic?'':c.name[0]; av.title='Tap to set a contact photo'; av.style.cursor='pointer';
     av.onclick=()=>{ const f=$('#phPhotoFile'); f.onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return; P.photos[c.id]=await shrinkImage(file,256); save(); renderPhone(); }; f.click(); };
     let lastDay='', html='';
