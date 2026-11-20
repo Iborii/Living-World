@@ -1,10 +1,10 @@
 {
- "version": "0.75.2",
+ "version": "0.76.0",
  "date": "2026-11-20",
  "notes": [
-  "Dialogue has life again. Lines had gone flat (only commas and periods) while the action lines next to them showed the feeling. Now the size of a reaction still stays in proportion, but every spoken line carries the speaker's feeling in its own words and punctuation: ! for warmth or surprise, ? for questions, ... for hesitating, \"Hehe\", \"Hm?\", \"Oops!\". Dracaene especially: composed, but warm and bright when she talks, not a monotone."
+  "Owner build only: Sigrid de L'Azur joins Roscaelifer, researched with Google AI Mode and the wiki. The fifth-generation Deputy Director of the Airspace Patrol and Lindverne's adjutant, a Horse Thiren knight (ears that swivel, a tail that swishes), formal and earnest (\"Glory guides us onward!\"), secretly worried she doesn't live up to her own legend. She always keeps an eye on Lindverne: two steps behind on patrol, the next table over at lunch, turning up at Boom Scones with the paperwork. Off duty she knits, bakes, sneaks pancakes at Roarin' Brekkies, gets lost following GPS, and has a loud, goofy laugh she's mortified by. Birthday April 23."
  ],
  "file": "index.html",
- "sha256": "7864081dab139ee46dcc44ed14c08a2c813a62b01b9fcec6e41f5d436c0dab2e",
+ "sha256": "86266d0681363c70875c5abebc0aa02e5c92c8a7ce2367da0fb098af88a6ce09",
  "minShell": "0.5.0"
 }
