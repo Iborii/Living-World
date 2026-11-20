@@ -1,11 +1,10 @@
 {
- "version": "0.42.0",
+ "version": "0.42.1",
  "date": "2026-11-19",
  "notes": [
-  "Vivian Banshee joins the Yunkui Summit story: the Mockingbird phantom thief followed \"Lord Phaethon\" all the way to Failume Heights, rents a room above a tea shop, works her part-time jobs around town and is far too often \"just passing by\" the temple stairs. Elegant and poetic with everyone else, squealing and jealous around Belle and Wise, with her precognitive tears, her secret Lord Phaethon notebook, homemade merch and Robin reporting her heart rate.",
-  "Cissia (New Eridu Public Security) got a full canon rework: she panics at Severian's name and confesses every fridge raid if you pretend to call him, bolts from or swats away any camera pointed at her, her legs give out around Zhu Yuan, her Bangboo No. 19 \"Miss Cissiboo\" plan, the free-sample notebook, her no-singing birthday rules, her Outer Ring nickname and much more."
+  "Sex scenes between adults now use plain, direct words for body parts instead of euphemisms like \"his length\" or \"her core\", in the voice of each character (bold ones talk dirty, shy ones stammer). This never applies when anyone under 18 or a protected character is in the scene."
  ],
  "file": "index.html",
- "sha256": "d4d603aeac923d32bbb245f4e6fcef3e108b42fa60a3017c96e3a63d67381844",
+ "sha256": "bcf0c425b2f64e98cef778605189a2da827905741e049c8d392343106d720e70",
  "minShell": "0.5.0"
 }
