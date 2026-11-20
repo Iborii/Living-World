@@ -1,10 +1,11 @@
 {
- "version": "0.51.2",
- "date": "2026-11-19",
+ "version": "0.51.3",
+ "date": "2026-11-20",
  "notes": [
-  "Characters can pass along someone else's number (Norma giving you Velina's): it goes into your contacts as Velina, marked as from Norma. Norma remembers giving it to you; Velina doesn't know you have it until you text her. Giving several numbers at once now works too."
+  "Reactions are in proportion now. Everyday remarks get everyday responses (a small smile, a dry \"huh\", a plain answer); small things no longer make everyone burst out laughing, shout, or get too flustered to speak. Calm characters stay calm, not everyone cracks jokes, and big emotions are saved for moments that earn them.",
+  "Lindverne now scoops Dracaene up like in the new Sunbringer promo: onto her hip, onto her shoulders in a crowd, or out of her office chair when she works too late. Partly teasing, partly a protective big sister keeping her littlest sister close; Dracaene protests that she's the Director of the CCD and secretly doesn't mind."
  ],
  "file": "index.html",
- "sha256": "9fd3134e8808655b3c6653f68db983168cf21772a357064152572e2cd7dbb097",
+ "sha256": "c87bc8740fcf1d7c214126666847ff815def8e59968cd72cc7138214d3b0cd22",
  "minShell": "0.5.0"
 }
