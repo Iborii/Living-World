@@ -1,12 +1,11 @@
 {
- "version": "0.41.0",
+ "version": "0.42.0",
  "date": "2026-11-19",
  "notes": [
-  "Obsidian vault (Settings \u2192 \ud83d\udcd3 Obsidian vault): pick your vault folder and the app keeps a permanent record of every story there as Markdown. Each character gets a note with all their memories (by day), their relationships and how they feel about you. Every in-app day gets a journal note with your scenes, what happened elsewhere, gossip and who came to you, plus a Story so far note. Names are linked, so Obsidian's graph view shows your whole cast.",
-  "The vault is a record only: the app never reads it back, so editing a note doesn't change what happened. Works in the desktop app and in Chrome or Edge on a computer.",
-  "Old memories are no longer lost: once a story passes 1,500 memories, the oldest move to an archive, and characters still recall them when something in the scene brings them up."
+  "Vivian Banshee joins the Yunkui Summit story: the Mockingbird phantom thief followed \"Lord Phaethon\" all the way to Failume Heights, rents a room above a tea shop, works her part-time jobs around town and is far too often \"just passing by\" the temple stairs. Elegant and poetic with everyone else, squealing and jealous around Belle and Wise, with her precognitive tears, her secret Lord Phaethon notebook, homemade merch and Robin reporting her heart rate.",
+  "Cissia (New Eridu Public Security) got a full canon rework: she panics at Severian's name and confesses every fridge raid if you pretend to call him, bolts from or swats away any camera pointed at her, her legs give out around Zhu Yuan, her Bangboo No. 19 \"Miss Cissiboo\" plan, the free-sample notebook, her no-singing birthday rules, her Outer Ring nickname and much more."
  ],
  "file": "index.html",
- "sha256": "4ba5d8888a8d054e895782e01e693c9d0bdf48d254c68d02f0ac93e440904852",
+ "sha256": "d4d603aeac923d32bbb245f4e6fcef3e108b42fa60a3017c96e3a63d67381844",
  "minShell": "0.5.0"
 }
