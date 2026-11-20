@@ -1446,7 +1446,8 @@ function processPhone(){ const P=phone();
     if(S.clock>=t0-10*MIN&&S.clock<=t0+45*MIN&&here){ v.status='met'; addMemory({who:[v.id], text:`${uN()} kept their invitation and met ${c.name} at ${v.loc} (${v.what})`, imp:2, src:'invite'}); save(); }
     else if(S.clock>t0+45*MIN){ v.status='stood-up'; S.events=S.events.filter(e=>e.invite!==v.vid); updateSchedules(); S.chars[v.id].trust=Math.max(0,S.chars[v.id].trust-2);
       addMemory({who:[v.id], text:`${uN()} invited ${c.name} to ${v.loc} at ${v.start} (${v.what}) and never showed up; ${c.name} waited`, imp:3, src:'invite'});
-      P.extra[v.id]=`${uN()} invited you to ${v.loc} at ${v.start} (${v.what}). You went and waited, and ${uN()} never showed up. Text them about it, in character (hurt, annoyed, worried or teasing, whatever fits you).`; P.pending[v.id]=S.clock+2*MIN; save(); } }
+      if(isContact(v.id)&&hasPhone(c)){ P.extra[v.id]=`${v.verbal?`You and ${uN()} made plans`:`${uN()} invited you`}: ${v.what} at ${v.loc}, ${v.start}. You went and waited, and ${uN()} never showed up. Text them about it, in character (hurt, annoyed, worried or teasing, whatever fits you).`; P.pending[v.id]=S.clock+2*MIN; }
+      else S.chars[v.id].mood={word:'stood up', why:`${uN()} never showed up for ${v.what}`, t:S.clock}; save(); } }
   // feed comments waiting for an answer
   for(const f of P.feed){ if(f.replyAt&&S.clock>=f.replyAt&&!phoneBusy.has('feed:'+f.id)){ delete f.replyAt; feedReact(f).catch(e=>notice('Feed update failed: '+e.message,true)); } }
 }
@@ -3762,6 +3763,56 @@ toolTab('jokes','😂 Jokes',body=>{ const J=(S.jokes||[]).slice().reverse(); co
   $('#jkAdd').onclick=()=>{ const w=$('#jkWho').value.trim()||'user', t=$('#jkText').value.trim(); if(!t) return; jokeAdd($('#jkKind').value, `${w}: ${t}`); save(); renderTools(); };
   body.querySelectorAll('[data-jd]').forEach(b=>b.onclick=()=>{ S.jokes=S.jokes.filter(j=>j.id!==b.dataset.jd); save(); renderTools(); }); });
 // <<< jokes
+// >>> plans
+// ======================= plans and promises made in the story =======================
+function parseWhen(str){ const s=String(str||'').trim().toLowerCase(); const now=dt(S.clock); const tm=s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/g); let hh=null, mi=0;
+  const tt=s.match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?|\b(\d{1,2})\s*(am|pm)\b/); if(tt){ hh=+(tt[1]||tt[4]); mi=+(tt[2]||0); const ap=tt[3]||tt[5]; if(ap==='pm'&&hh<12) hh+=12; if(ap==='am'&&hh===12) hh=0; }
+  else if(/noon/.test(s)) hh=12; else if(/morning/.test(s)) hh=9; else if(/afternoon/.test(s)) hh=15; else if(/evening|tonight/.test(s)) hh=19; else if(/night/.test(s)) hh=21;
+  if(hh==null) hh=18; let day=Date.UTC(now.y,now.mo-1,now.d);
+  const iso=s.match(/(\d{4})-(\d{2})-(\d{2})/), md=s.match(/\b(\d{1,2})\/(\d{1,2})\b/), wd=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].findIndex(w=>s.includes(w));
+  if(iso) day=Date.UTC(+iso[1],+iso[2]-1,+iso[3]); else if(md){ day=Date.UTC(now.y,+md[1]-1,+md[2]); if(day<Date.UTC(now.y,now.mo-1,now.d)) day=Date.UTC(now.y+1,+md[1]-1,+md[2]); }
+  else if(/tomorrow/.test(s)) day+=DAYMS; else if(/day after tomorrow/.test(s)) day+=2*DAYMS; else if(wd>=0){ let add=(wd-now.wd+7)%7; if(add===0&&!/today|tonight/.test(s)) add=7; if(/next week/.test(s)) add+=7; day+=add*DAYMS; }
+  let t=day+hh*HOUR+mi*MIN; if(t<S.clock-30*MIN&&!iso&&!md&&wd<0&&!/tomorrow/.test(s)) t+=DAYMS; return t; }
+function addVerbalPlan(arg){ const p=arg.split(':').map(x=>x.trim()); if(p.length<3) return;
+  // Name(s): what: when (may contain ':' in times): place
+  const names=p[0]; const what=p[1]; const rest=p.slice(2).join(':'); const lastColon=rest.lastIndexOf(':'); let when=rest, loc='';
+  const m=rest.match(/^(.*?\d{1,2}:\d{2}\s*(?:am|pm)?|.*?\b(?:today|tonight|tomorrow|morning|noon|afternoon|evening|night|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b[^:]*)\s*:\s*(.+)$/i);
+  if(m){ when=m[1]; loc=m[2]; } else if(lastColon>0){ when=rest.slice(0,lastColon); loc=rest.slice(lastColon+1).trim(); }
+  const t=parseWhen(when); const d=new Date(t); const date=isoDate(t), start=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  const ids=names.split(/,|&|\band\b/).map(x=>(charByName(x.trim())||{}).id).filter(Boolean); const P=phone();
+  for(const id of ids){ const c=charById(id); if(P.invites.some(v=>v.id===id&&v.date===date&&v.start===start&&v.status==='accepted')) continue;
+    const vid='v'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); const L=loc||S.user.loc;
+    P.invites.push({id, vid, what:what||'hanging out', loc:L, date, start, status:'accepted', verbal:true, sentDay:isoDate(S.clock), sentAt:S.clock});
+    const end=Math.min(1439,toMin(start)+120); S.events.push({id:'e'+vid, who:id, date, start, end:`${pad(Math.floor(end/60))}:${pad(end%60)}`, loc:L, act:`meeting ${uN()}: ${what}`, invite:vid});
+    addMemory({who:[id], text:`Made plans with ${uN()}: ${what} at ${L}, ${wdName(t)} ${mmdd(t)} at ${start}`, imp:2, src:'plan'}); }
+  if(ids.length){ updateSchedules(); notice(`📅 Plans made with ${ids.map(i=>charById(i).name).join(' and ')}: ${what}, ${wdName(t)} ${start}.`); } }
+function addPromise(arg){ const m=arg.match(/^\s*(.+?)\s+to\s+(.+?)\s*:\s*(.+)$/i); if(!m) return; const who=x=>/^(user|you|me)$/i.test(x.trim())||x.trim().toLowerCase()===(persona().name||'').toLowerCase()?'user':(charByName(x.trim())||{}).id;
+  const from=who(m[1]), to=who(m[2]); if(!from||!to||from===to) return; S.promises=S.promises||[]; const text=m[3].trim().slice(0,200); if(S.promises.some(p=>p.from===from&&p.to===to&&p.text===text)) return;
+  const due=/\b(by|before|on|until)\b/i.test(text)?parseWhen(text.replace(/^.*\b(by|before|on|until)\b/i,'')):null;
+  S.promises.push({id:'p'+Date.now().toString(36), from, to, text, t:S.clock, due, status:'open'});
+  const nm=w=>w==='user'?uN():charById(w).name; notice(`🤝 ${nm(from)} promised ${nm(to)}: ${text}`); const cid=from==='user'?to:from; addMemory({who:[cid], text:`${nm(from)} promised ${nm(to)}: ${text}`, imp:2, src:'promise'}); }
+CONTROL_HOOKS.PLAN=addVerbalPlan; CONTROL_HOOKS.PROMISE=addPromise;
+function promiseTick(){ if(!S||!W||SCREEN!=='world') return; for(const p of (S.promises||[])){ if(p.status!=='open'||!p.due||p.overdue||S.clock<p.due+2*HOUR) continue; p.overdue=true;
+  const cid=p.from==='user'?p.to:p.from; const c=charById(cid); if(!c) continue; if(p.from==='user') addMemory({who:[cid], text:`${uN()} promised "${p.text}" and it's overdue`, imp:2, src:'promise'}); } }
+setInterval(()=>{ try{ promiseTick(); }catch(e){} }, 30000);
+PROMPT_HOOKS.push(pres=>{ const ids=new Set(pres.map(c=>c.id)); const nm=w=>w==='user'?uN():(charById(w)||{}).name;
+  const open=(S.promises||[]).filter(p=>p.status==='open'&&(ids.has(p.from)||ids.has(p.to)));
+  let s=`\nPLANS AND PROMISES: when ${uN()} and someone actually agree on plans in the scene (a time and what), add at the very end: [[PLAN: Name: what: when (e.g. Friday 18:00 or tomorrow 9am): place]]. When someone makes a real promise (to pay back, to bring something, to keep a secret, to show up), add: [[PROMISE: Name to Name: what they promised]] (use "user" for ${uN()}). Never invent agreements ${uN()} didn't make.\n`;
+  if(open.length) s+=`Open promises (people remember; if one is overdue or broken, the person it was made to notices and may bring it up, in character):\n${open.map(p=>`- ${nm(p.from)} promised ${nm(p.to)}: ${p.text}${p.overdue?' (OVERDUE)':''}`).join('\n')}\n`;
+  return s; });
+toolTab('plans','🤝 Plans',body=>{ const P=phone(); const nm=w=>w==='user'?'You':(charById(w)||{}).name||'?';
+  const up=P.invites.filter(v=>['accepted','waiting'].includes(v.status)).sort((a,b)=>parseStart(a.date,a.start)-parseStart(b.date,b.start));
+  const past=P.invites.filter(v=>['met','stood-up'].includes(v.status)).slice(-8).reverse(); const pr=(S.promises||[]).slice().reverse();
+  body.innerHTML=`<p class="small" style="margin-top:0">Plans you make out loud in the story are tracked here, just like phone invites: the other person shows up, and if you don't, they notice. Promises are remembered too.</p>
+  <h3 style="margin:14px 0 8px">Coming up</h3>${up.length?up.map(v=>{ const c=charById(v.id); const t=parseStart(v.date,v.start); return `<div class="sr-row" style="cursor:default"><div class="sr-m">${v.status==='waiting'?'⏳ waiting for an answer':'✅ agreed'}${v.verbal?' · made in person':' · phone invite'}</div><b>${esc(c?c.name:'?')}</b>: ${esc(v.what)} · ${wdName(t)} ${mmdd(t)} at ${v.start} · ${esc(v.loc)}</div>`; }).join(''):'<div class="small">No plans right now.</div>'}
+  ${past.length?`<h3 style="margin:16px 0 8px">Recently</h3>${past.map(v=>{ const c=charById(v.id); return `<div class="small" style="padding:3px 0">${v.status==='met'?'🙌 Met':'💔 Stood up'} ${esc(c?c.name:'?')}: ${esc(v.what)} (${mmdd(parseStart(v.date,'12:00'))})</div>`; }).join('')}`:''}
+  <h3 style="margin:16px 0 8px">Promises</h3>${pr.length?pr.map(p=>`<div class="sr-row" style="cursor:default"><div class="sr-m">${p.status==='open'?(p.overdue?'⚠️ overdue':'open'):p.status==='kept'?'✅ kept':'💔 broken'} · made ${mmdd(p.t)}</div><b>${esc(nm(p.from))}</b> → ${esc(nm(p.to))}: ${esc(p.text)}
+    ${p.status==='open'?`<div class="rowbtns" style="margin-top:6px"><button class="ghost small" data-pk="${p.id}|kept">Kept</button><button class="ghost small" data-pk="${p.id}|broken">Broken</button><button class="ghost small" data-pk="${p.id}|drop">Remove</button></div>`:''}</div>`).join(''):'<div class="small">No promises yet.</div>'}`;
+  body.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{ const [id,st]=b.dataset.pk.split('|'); const p=S.promises.find(x=>x.id===id); if(!p) return;
+    if(st==='drop'){ S.promises=S.promises.filter(x=>x!==p); } else { p.status=st; const cid=p.from==='user'?p.to:p.from; const c=charById(cid);
+      if(c&&p.from==='user'){ const st2=S.chars[cid]; if(st==='kept'){ st2.trust=Math.min(100,st2.trust+2); addMemory({who:[cid],text:`${uN()} kept their promise: ${p.text}`,imp:2,src:'promise'}); } else { st2.trust=Math.max(0,st2.trust-4); addMemory({who:[cid],text:`${uN()} broke their promise: ${p.text}`,imp:3,src:'promise'}); st2.mood={word:'let down',why:`${uN()} broke a promise`,t:S.clock}; } } }
+    save(); renderTools(); }); });
+// <<< plans
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4231,8 +4282,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.67.0';
+const APP_VERSION = '0.68.0';
 const CHANGELOG = [
+ {v:'0.68.0', d:'2026-11-20', notes:['Plans and promises. Plans you make out loud in the story ("tomorrow at six, the arcade") are now tracked just like phone invites: the other person puts it in their schedule and shows up, and if you don\'t, they notice and may text you about it. Promises are remembered too ("I\'ll pay you back by Friday"); overdue or broken ones get brought up. 🧰 Tools → 🤝 Plans shows what\'s coming up, how past plans went, and your promises, which you can mark as kept or broken.']},
  {v:'0.67.0', d:'2026-11-20', notes:['Text reactions. Tap someone\'s text to react with ❤️ 😂 😮 😢 😡 or 👍, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone.']},
  {v:'0.66.0', d:'2026-11-20', notes:['Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). 🧰 Tools → 😂 Jokes lists them, and you can add or remove your own.']},
  {v:'0.65.0', d:'2026-11-20', notes:['🧰 Tools → 📔 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked 🔒 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself.']},

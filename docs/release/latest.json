@@ -1,10 +1,10 @@
 {
- "version": "0.67.0",
+ "version": "0.68.0",
  "date": "2026-11-20",
  "notes": [
-  "Text reactions. Tap someone's text to react with \u2764\ufe0f \ud83d\ude02 \ud83d\ude2e \ud83d\ude22 \ud83d\ude21 or \ud83d\udc4d, and they see it. They react to your texts too, sometimes with a reaction instead of a reply, like on a real phone."
+  "Plans and promises. Plans you make out loud in the story (\"tomorrow at six, the arcade\") are now tracked just like phone invites: the other person puts it in their schedule and shows up, and if you don't, they notice and may text you about it. Promises are remembered too (\"I'll pay you back by Friday\"); overdue or broken ones get brought up. \ud83e\uddf0 Tools \u2192 \ud83e\udd1d Plans shows what's coming up, how past plans went, and your promises, which you can mark as kept or broken."
  ],
  "file": "index.html",
- "sha256": "0e36aac5724af748913005178abc59804dd25bcab5f4c648c9c460a6d27b9949",
+ "sha256": "449bb61f123b459fdb4a01d66969175abbf13f0f026f06cc2be560770efe9ca2",
  "minShell": "0.5.0"
 }
