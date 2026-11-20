@@ -723,6 +723,18 @@ body:not(.chats-ui) #chatsFab{display:none}
 #chatsScrim{position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s}
 body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 @media (max-width:760px){ #hubModal .box.hub-box,#worldModal .box{padding-top:env(safe-area-inset-top)!important} #notifBanner{top:calc(10px + env(safe-area-inset-top))} }
+/* >>> tools */
+#toolsModal .box.tools-box{width:min(820px,96vw);height:min(760px,92vh);max-height:92vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.tools-head{display:flex;align-items:center;gap:10px;padding:14px 18px 8px}.tools-head h2{margin:0;font-family:var(--serif);font-weight:400;font-size:24px}.tools-head button{margin-left:auto}
+.tools-tabs{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;border-bottom:1px solid var(--line);flex:none}
+.tools-tabs button{white-space:nowrap;font-size:13px;padding:6px 11px}.tools-tabs button.on{background:var(--accent);color:#1a1408;border-color:var(--accent)}
+.tools-body{flex:1;overflow:auto;padding:14px 18px 22px;-webkit-overflow-scrolling:touch}
+.sr-row{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.sr-row:hover{border-color:var(--accent);background:rgba(255,255,255,.03)}.sr-row .sr-m{font-size:12px;color:var(--muted);margin-bottom:3px}
+.sr-row mark{background:rgba(232,180,90,.35);color:inherit;border-radius:3px;padding:0 2px}
+.msg.flash{animation:msgFlash 1.8s ease}@keyframes msgFlash{0%,40%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+@media (max-width:760px){ #toolsModal .box.tools-box{padding-top:env(safe-area-inset-top)!important} }
+/* <<< tools */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -983,6 +995,13 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
   </div>
 </div></div>
 
+<!-- >>> tools -->
+<div class="modal" id="toolsModal"><div class="box tools-box">
+  <div class="tools-head"><h2>Story tools</h2><button class="ghost" id="toolsClose">Close</button></div>
+  <div class="tools-tabs" id="toolsTabs"></div>
+  <div class="tools-body" id="toolsBody"></div>
+</div></div>
+<!-- <<< tools -->
 <div id="app" style="display:none">
   <header>
     <div class="hgrp hnavgrp">
@@ -3416,6 +3435,41 @@ function openChats(){ renderChatsPanel(); document.body.classList.add('chats-ope
 function closeChats(){ document.body.classList.remove('chats-open'); $('#chatsPanel').setAttribute('aria-hidden','true'); }
 function toggleChats(){ document.body.classList.contains('chats-open')?closeChats():openChats(); }
 
+// >>> tools
+// ======================= Story tools: one window for search, notes, album and more =======================
+const TOOLS={tabs:[], cur:null};
+function toolTab(id,label,render){ if(!TOOLS.tabs.some(t=>t.id===id)) TOOLS.tabs.push({id,label,render}); }
+function openTools(tab){ if(!S||!W) return; TOOLS.cur=tab||TOOLS.cur||TOOLS.tabs[0].id; $('#toolsModal').classList.add('on'); renderTools(); }
+function closeTools(){ $('#toolsModal').classList.remove('on'); }
+function renderTools(){ $('#toolsTabs').innerHTML=TOOLS.tabs.map(t=>`<button class="ghost${t.id===TOOLS.cur?' on':''}" data-tt="${t.id}">${t.label}</button>`).join('');
+  $('#toolsTabs').querySelectorAll('[data-tt]').forEach(b=>b.onclick=()=>{ TOOLS.cur=b.dataset.tt; renderTools(); });
+  const t=TOOLS.tabs.find(x=>x.id===TOOLS.cur)||TOOLS.tabs[0]; const body=$('#toolsBody'); body.scrollTop=0; t.render(body); }
+// jump to a message in the story, loading older messages if needed
+function jumpToMsg(ix){ closeTools(); if(SCREEN!=='world') return; S.view='me'; const vis=S.chat.filter(m=>!(m.role==='user'&&m.hidden)); const pos=vis.indexOf(S.chat[ix]); if(pos>=0) S.showN=Math.max(S.showN||120, vis.length-pos+5);
+  render(); setTimeout(()=>{ const el=document.querySelector(`#feed [data-i="${ix}"]`); if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } },60); }
+function plainMsg(m){ return subUser(String(m.text||'')).replace(/^\|[^\n]*\|\s*/,'').replace(/\[\[[^\]]*\]\]/g,'').replace(/[*_]/g,''); }
+
+// ---------- 1. search ----------
+let SR_Q='';
+toolTab('search','🔎 Search',body=>{
+  body.innerHTML=`<input id="srQ" placeholder="Search this story: a word, a name, a place…" value="${esc(SR_Q)}" style="width:100%"><div class="small" id="srN" style="margin:8px 0"></div><div id="srList"></div>`;
+  const run=()=>{ const q=$('#srQ').value.trim(); SR_Q=q; const L=$('#srList'); if(q.length<2){ $('#srN').textContent='Type at least two letters. Every message is searched, including the oldest ones.'; L.innerHTML=''; return; }
+    const words=q.toLowerCase().split(/\s+/).filter(Boolean); const res=[];
+    S.chat.forEach((m,i)=>{ if(m.role==='user'&&m.hidden) return; const t=plainMsg(m); const lo=t.toLowerCase(); if(!words.every(w=>lo.includes(w))) return; res.push({i,m,t,lo}); });
+    $('#srN').textContent=res.length?`${res.length} message${res.length>1?'s':''} found, newest first. Tap one to jump to it.`:'Nothing found.';
+    const rx=new RegExp('('+words.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
+    L.innerHTML=res.reverse().slice(0,200).map(({i,m,t,lo})=>{ const at=Math.max(0,lo.indexOf(words[0])-90); let snip=(at>0?'…':'')+t.slice(at,at+260)+(at+260<t.length?'…':'');
+      const who=m.role==='user'?(m.pname||'You'):m.role==='text'?`📱 ${m.from}`:'Story';
+      return `<div class="sr-row" data-j="${i}"><div class="sr-m">${esc(who)} · ${mmdd(m.t)} ${hhmm(m.t)}</div>${esc(snip).replace(rx,'<mark>$1</mark>')}</div>`; }).join('');
+    L.querySelectorAll('[data-j]').forEach(r=>r.onclick=()=>jumpToMsg(+r.dataset.j)); };
+  const inp=$('#srQ'); inp.oninput=run; run(); setTimeout(()=>inp.focus(),50); });
+
+function toolsInit(){ if($('#toolsBtn')) return; const pb=$('#phoneBtn'); if(!pb) return; const b=document.createElement('button'); b.className='ghost'; b.id='toolsBtn'; b.title='Search, notes, album, backups and more';
+  b.innerHTML='<span class="hi">🧰</span><span class="hl">Tools</span>'; pb.after(b); b.onclick=()=>openTools();
+  $('#toolsClose').onclick=closeTools; $('#toolsModal').addEventListener('click',e=>{ if(e.target.id==='toolsModal') closeTools(); });
+  document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'&&SCREEN==='world'&&!document.querySelector('.modal.on')){ e.preventDefault(); openTools('search'); } }); }
+toolsInit();
+// <<< tools
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3885,8 +3939,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.55.6';
+const APP_VERSION = '0.56.0';
 const CHANGELOG = [
+ {v:'0.56.0', d:'2026-11-20', notes:['New 🧰 Tools button in a story, with 🔎 Search: find any word, name or place across the whole story, even the oldest messages. Tap a result to jump straight to it (it lights up). On a computer, Ctrl+F opens it too.']},
  {v:'0.55.6', d:'2026-11-20', notes:['Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications.']},
  {v:'0.55.5', d:'2026-11-20', notes:['Fixed: on phones, a character\'s profile couldn\'t scroll, so you got stuck and couldn\'t reach Edit. It scrolls now.']},
  {v:'0.55.4', d:'2026-11-20', notes:['The Sunbringer sisters now stand in a proper staircase: looking straight ahead, Lindverne is at eye level with Eldreda\'s chest, and Dracaene with Lindverne\'s. Lindverne is now average height instead of tall.']},

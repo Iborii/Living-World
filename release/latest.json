@@ -1,10 +1,10 @@
 {
- "version": "0.55.6",
+ "version": "0.56.0",
  "date": "2026-11-20",
  "notes": [
-  "Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications."
+  "New \ud83e\uddf0 Tools button in a story, with \ud83d\udd0e Search: find any word, name or place across the whole story, even the oldest messages. Tap a result to jump straight to it (it lights up). On a computer, Ctrl+F opens it too."
  ],
  "file": "index.html",
- "sha256": "5378cbe6cd7fc4f23a4df5889c27ef7b373650965acaae637121149f13aab434",
+ "sha256": "021b6bc8bd4b696fba543e8aa29e7f651d9a033e402dba503165dbd19f3ca88a",
  "minShell": "0.5.0"
 }
