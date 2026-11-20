@@ -738,6 +738,8 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 :root{--rd-fs:17.5px} @media (max-width:760px){ :root{--rd-fs:16.5px} }
 @media (min-width:761px){ .tools-tabs{flex-wrap:wrap;overflow:visible} }
 #toolsBody input[type=checkbox]{width:auto;margin:0;flex:none}
+body:has(.modal.on) #chatsFab{display:none}
+@media (max-width:760px){ .hnavgrp{gap:0!important} .hnavgrp button{padding:4px 5px!important} }
 /* <<< tools */
 /* >>> phone2 */
 .bub.photo{padding:4px;background:transparent!important;border:0!important;max-width:78%}
@@ -3663,7 +3665,7 @@ const FIRSTS={met:['👋','First met'],text:['💬','First text'],call:['📞','
   t50:['🤝','Became friends'],t75:['💛','Grew close'],t90:['✨','Trusts you completely'],photo:['📷','First photo'],sleepover:['🛏️','First time staying over'],meal:['🍜','First meal together']};
 function addFirst(id,k,snip,ix){ if(!S||!id||!FIRSTS[k]) return; S.firsts=S.firsts||{}; const F=S.firsts[id]=S.firsts[id]||{}; if(F[k]) return false;
   const c=charById(id); if(!c) return; if(k==='kiss'&&(c.minor||c.protect)) return; F[k]={t:S.clock, snip:String(snip||'').replace(/\s+/g,' ').trim().slice(0,220), ix:ix==null?-1:ix}; return true; }
-function firstSnip(text, name){ const t=plainMsg({text}); const sents=t.split(/(?<=[.!?…"])\s+/); const hit=sents.find(x=>x.includes(name)); return (hit||sents[0]||'').slice(0,220); }
+function firstSnip(text, name){ const t=plainMsg({text}); const sents=t.split(/(?<!\b(?:Mr|Ms|Mrs|Dr|St|Mt|Lt|Sgt|vs))(?<=[.!?…"])\s+/); const hit=sents.find(x=>x.includes(name)); return (hit||sents[0]||'').slice(0,220); }
 REPLY_HOOKS.push(msg=>{ const ix=S.chat.indexOf(msg); const t=msg.text||''; const pres=present(); S._tr=S._tr||{};
   for(const c of pres){ const nm=c.name; const near=new RegExp(`${nm}[^.!?\\n]{0,140}`, 'i'); const seg=(t.match(new RegExp(`[^.!?\\n]*${nm}[^.!?\\n]*[.!?]?`,'gi'))||[]).join(' ');
     if(new RegExp(`\\b${nm}\\b`).test(t)) addFirst(c.id,'met',firstSnip(t,nm),ix);
@@ -3690,7 +3692,7 @@ toolTab('album','📸 Album',body=>{ const F=S.firsts||{}; const pins=(S.pins||[
   body.innerHTML=h; body.querySelectorAll('[data-j]').forEach(r=>r.onclick=()=>jumpToMsg(+r.dataset.j)); });
 
 function metScan(){ S.firsts=S.firsts||{}; for(const c of W.characters){ if(S.firsts[c.id]&&S.firsts[c.id].met) continue; const sp=new RegExp(`^\\s*${c.name}:`,'m');
-    let ix=S.chat.findIndex(m=>m.role==='assistant'&&sp.test(m.text||'')); if(ix<0) continue; addFirst(c.id,'met',firstSnip(S.chat[ix].text,c.name),ix); S.firsts[c.id].met.t=S.chat[ix].t; } }
+    let ix=S.chat.findIndex(m=>m.role==='assistant'&&sp.test(m.text||'')); if(ix<0) continue; const ln=(plainMsg(S.chat[ix]).split('\n').find(l=>sp.test(l))||'').trim(); addFirst(c.id,'met',ln?ln.slice(0,220):firstSnip(S.chat[ix].text,c.name),ix); S.firsts[c.id].met.t=S.chat[ix].t; } }
 function trInit(){ if(!S||!W) return; try{ metScan(); }catch(e){} S._tr=S._tr||{}; for(const c of W.characters){ const st=S.chars[c.id]; if(st&&S._tr[c.id]==null) S._tr[c.id]=st.trust; } }
 SCREEN_HOOKS.push(n=>{ if(n==='world') try{ trInit(); }catch(e){} });
 // <<< album
@@ -4506,8 +4508,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.75.0';
+const APP_VERSION = '0.75.1';
 const CHANGELOG = [
+ {v:'0.75.1', d:'2026-11-20', notes:['Phone polish for the new features: the 🧰 Tools button no longer overlaps the clock, the round 💬 Chats button hides while a window is open, and Album moments quote the full line (no more cutting off at "Ms.").']},
  {v:'0.75.0', d:'2026-11-20', notes:['Weather alerts. When a thunderstorm, heavy rain or snow is on the way (or it\'s dangerously hot or bitterly cold), your phone gets a weather alert, and the 🌦️ Weather app shows it at the top. Everyone else got the alert too, so people may mention it, change plans, grab an umbrella or head inside early.']},
  {v:'0.74.0', d:'2026-11-20', notes:['Do Not Disturb. A new 🌙 Focus app on the phone: turn on Do Not Disturb now, or every night between times you choose. Texts and notifications still arrive, but with no banner and no buzz, and a 🌙 shows on the Phone button. Nobody knows you\'re on silent, so if you take hours to answer, they notice ("finally. where were you").']},
  {v:'0.73.0', d:'2026-11-20', notes:['Fair dice and games. New 🎲 Dice button under the message box, or type the commands anywhere in a message: /roll 3d6+2, /d20, /flip, /card 5, /rps paper, /pick tea or coffee, /8ball. The result is truly random, shows right in your message, and the story has to go with it. When something in a scene comes down to luck for the characters (a dice game, a coin toss, a raffle), the story now uses real random rolls too instead of picking whatever it likes.']},
