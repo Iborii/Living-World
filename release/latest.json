@@ -1,10 +1,10 @@
 {
- "version": "0.65.0",
+ "version": "0.66.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udcd4 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked \ud83d\udd12 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself."
+  "Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). \ud83e\uddf0 Tools \u2192 \ud83d\ude02 Jokes lists them, and you can add or remove your own."
  ],
  "file": "index.html",
- "sha256": "7c058ab55725687e79006dd2fbcac0d2492da57f94a1375ad1d0fd60fd8d3341",
+ "sha256": "9bfcf116bee184248dc8bbdc3b0aa343dcdccd801b259e0736e8321459e2bc25",
  "minShell": "0.5.0"
 }

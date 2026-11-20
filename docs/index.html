@@ -2281,6 +2281,7 @@ function applyControls(text){
     else if(C==='WASH'){ const a=arg.trim().toLowerCase(); if(a==='user'||a===(persona().name||'').toLowerCase()){ S.user.washed=S.clock; onWash('user'); } else { const c=charByName(arg); if(c){ S.chars[c.id].washed=S.clock; onWash(c.id); } } }
     else if(C==='CONDITION'){ applyCondTag(arg); }
     else if(C==='SICK'){ const p2=arg.split(':').map(x=>x.trim()); const w=whoId(p2[0]); const k=(p2[1]||'cold').toLowerCase(); const kind=/flu/.test(k)?'flu':/stomach|vomit|bug/.test(k)?'stomach':/poison/.test(k)?'foodpoison':'cold'; if(w){ catchIll(w,kind,p2.slice(2).join(':')); const st=w==='user'?S.user:S.chars[w]; if(st&&st.ill) st.ill.start=S.clock; } }
+    else if(window.CONTROL_HOOKS&&CONTROL_HOOKS[C]){ try{ CONTROL_HOOKS[C](arg); }catch(e){ console.warn('tag',C,e); } }
   }
   if(withList) setCompanions(withList);
   if(rideMode) try{ applyRide(rideMode); }catch(e){}
@@ -3723,6 +3724,29 @@ toolTab('diary','📔 Diaries',body=>{ const cs=W.characters.filter(c=>!isDead(c
   const wb=$('#dWrite'); if(wb) wb.onclick=async()=>{ DIARY_BUSY=true; renderTools(); const todo=days.filter(d=>!D[d]).slice(-3);
     try{ for(const d of todo){ const t=await writeDiary(c,d); if(t) D[d]=t; } save(); }catch(e){ notice('Could not read the diary: '+e.message,true); } DIARY_BUSY=false; if(TOOLS.cur==='diary'&&$('#toolsModal').classList.contains('on')) renderTools(); }; });
 // <<< diary
+// >>> jokes
+// ======================= inside jokes and nicknames that stick =======================
+var CONTROL_HOOKS=window.CONTROL_HOOKS=window.CONTROL_HOOKS||{};
+function jokeAdd(kind, arg){ const i=arg.indexOf(':'); if(i<1) return; const names=arg.slice(0,i); const text=arg.slice(i+1).trim().replace(/^"|"$/g,''); if(!text) return;
+  const ids=names.replace(/\bcalls\b/i,',').split(/,|&|\band\b/).map(x=>x.trim()).map(x=>/^(user|you|me)$/i.test(x)||x.toLowerCase()===(persona().name||'').toLowerCase()?'user':(charByName(x)||{}).id).filter(Boolean); if(!ids.length) return;
+  let txt=text; if(kind==='nick'&&/\bcalls\b/i.test(names)) txt=`${names.trim().replace(/\b(user|you|me)\b/i,'{{user}}')} "${text}"`;
+  S.jokes=S.jokes||[]; const key=text.toLowerCase().slice(0,60); if(S.jokes.some(j=>j.kind===kind&&j.text.toLowerCase().slice(0,60)===key)) return;
+  S.jokes.push({id:'j'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), kind, who:ids, text:txt.slice(0,200), t:S.clock}); if(S.jokes.length>60) S.jokes.splice(0,S.jokes.length-60);
+  notice(kind==='nick'?`🏷️ New nickname: ${subUser(txt)}`:`😂 New inside joke: ${text}`); }
+CONTROL_HOOKS.JOKE=a=>jokeAdd('joke',a); CONTROL_HOOKS.RUNNING_JOKE=a=>jokeAdd('joke',a); CONTROL_HOOKS.NICKNAME=a=>jokeAdd('nick',a);
+PROMPT_HOOKS.push(pres=>{ const ids=new Set(['user',...pres.map(c=>c.id)]); const mine=(S.jokes||[]).filter(j=>j.who.some(w=>ids.has(w)&&w!=='user')||j.who.every(w=>w==='user'));
+  const ageD=j=>(S.clock-j.t)/DAYMS;
+  let s=`\nINSIDE JOKES AND NICKNAMES: when a real running joke or a nickname is born in the scene (something people will keep bringing back, not every funny line), add a line at the very end: [[JOKE: Name, Name: short description of the joke]] or [[NICKNAME: Name calls Name: "the nickname"]] (use "user" for ${uN()}). Rare: a few per week of story at most.\n`;
+  if(mine.length) s+=`Already shared (bring one back now and then as a callback, the way friends do; never every reply, and old ones get used less as they wear thin):\n${mine.slice(-14).map(j=>`- ${j.kind==='nick'?'Nickname':'Joke'} (${j.who.map(w=>w==='user'?uN():(charById(w)||{}).name).filter(Boolean).join(', ')}): ${j.text}${ageD(j)>21?' (old by now)':''}`).join('\n')}\n`;
+  return s; });
+toolTab('jokes','😂 Jokes',body=>{ const J=(S.jokes||[]).slice().reverse(); const nm=w=>w==='user'?uN():(charById(w)||{}).name||'?';
+  body.innerHTML=`<p class="small" style="margin-top:0">Running jokes and nicknames that stuck. The story adds them when they're born, and characters bring them back now and then. You can add or remove them too.</p>
+  <div class="grid2"><div><label>Kind</label><select id="jkKind"><option value="joke">Inside joke</option><option value="nick">Nickname</option></select></div><div><label>Who's in on it</label><input id="jkWho" placeholder="e.g. Nangong, user"></div></div>
+  <label>What it is</label><div class="rowbtns"><input id="jkText" placeholder='e.g. Nangong calls user "Manager-crybaby"' style="flex:1"><button class="ghost" id="jkAdd">Add</button></div>
+  <div style="margin-top:14px">${J.length?J.map(j=>`<div class="sr-row" style="cursor:default;display:flex;gap:10px;align-items:flex-start"><div style="flex:1"><div class="sr-m">${j.kind==='nick'?'🏷️ Nickname':'😂 Inside joke'} · ${esc(j.who.map(nm).join(', '))} · since ${mmdd(j.t)}</div>${esc(subUser(j.text))}</div><button class="ghost small" data-jd="${j.id}">Remove</button></div>`).join(''):'<div class="small">None yet.</div>'}</div>`;
+  $('#jkAdd').onclick=()=>{ const w=$('#jkWho').value.trim()||'user', t=$('#jkText').value.trim(); if(!t) return; jokeAdd($('#jkKind').value, `${w}: ${t}`); save(); renderTools(); };
+  body.querySelectorAll('[data-jd]').forEach(b=>b.onclick=()=>{ S.jokes=S.jokes.filter(j=>j.id!==b.dataset.jd); save(); renderTools(); }); });
+// <<< jokes
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4192,8 +4216,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.65.0';
+const APP_VERSION = '0.66.0';
 const CHANGELOG = [
+ {v:'0.66.0', d:'2026-11-20', notes:['Inside jokes and nicknames that stick. When a real running joke or nickname is born in a scene, the story remembers it, and characters bring it back now and then as a callback (not every reply; old ones get used less as they wear thin). 🧰 Tools → 😂 Jokes lists them, and you can add or remove your own.']},
  {v:'0.65.0', d:'2026-11-20', notes:['🧰 Tools → 📔 Diaries: characters keep a private diary, written in their own voice from what really happened to them that day, including what they honestly think of you. Each one stays locked 🔒 until that person trusts you a lot (75+). If someone actually shows you their diary in the story, you can unlock it yourself.']},
  {v:'0.64.0', d:'2026-11-20', notes:['Dreams. Characters dream when they sleep, shaped by what happened to them lately (or by worries and bad moods, which make for restless nights), and some mornings they wake up remembering one. They might bring it up ("I had the weirdest dream…") or keep it to themselves. Their dreams show up in their off-screen story too.']},
  {v:'0.63.0', d:'2026-11-20', notes:['Birthdays for everyone. Every Zenless Zone Zero character now has their canon birthday (from the official agent calendar), and it\'s on the calendar. A few days before, close friends quietly plan something, whisper about it, or ask you to help keep it a surprise; on the day, people who know wish them happy birthday. Your phone reminds you the day before for people you know. 🧰 Tools → 🎂 Birthdays: see who\'s next, set your own birthday (people who trust you will remember it), and give a birthday to characters who don\'t have a canon one.']},
