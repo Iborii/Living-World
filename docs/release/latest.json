@@ -1,10 +1,10 @@
 {
- "version": "0.57.0",
+ "version": "0.58.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udcdd Notes: write your own rules and facts for a story (like \"Aria doesn't know my name yet\") and the AI follows them every reply. Also: the reminder about emotional dialogue now asks for emotion in proportion, so calm moments stay calm."
+  "\ud83e\uddf0 Tools \u2192 \ud83d\udd20 Reading: change the story's text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it."
  ],
  "file": "index.html",
- "sha256": "f8149bc07bad82441126ed4c3558eeb8f66c4d12a8779c74d8e48cf999f8c881",
+ "sha256": "87b40196c4b4f1bba55871a003e42ca80256996fe234ffd89aa5ffdf79b59647",
  "minShell": "0.5.0"
 }

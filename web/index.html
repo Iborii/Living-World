@@ -724,6 +724,7 @@ body:not(.chats-ui) #chatsFab{display:none}
 body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 @media (max-width:760px){ #hubModal .box.hub-box,#worldModal .box{padding-top:env(safe-area-inset-top)!important} #notifBanner{top:calc(10px + env(safe-area-inset-top))} }
 /* >>> tools */
+#toolsModal{z-index:40}
 #toolsModal .box.tools-box{width:min(820px,96vw);height:min(760px,92vh);max-height:92vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
 .tools-head{display:flex;align-items:center;gap:10px;padding:14px 18px 8px}.tools-head h2{margin:0;font-family:var(--serif);font-weight:400;font-size:24px}.tools-head button{margin-left:auto}
 .tools-tabs{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;border-bottom:1px solid var(--line);flex:none}
@@ -734,6 +735,7 @@ body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
 .sr-row mark{background:rgba(232,180,90,.35);color:inherit;border-radius:3px;padding:0 2px}
 .msg.flash{animation:msgFlash 1.8s ease}@keyframes msgFlash{0%,40%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
 @media (max-width:760px){ #toolsModal .box.tools-box{padding-top:env(safe-area-inset-top)!important} }
+:root{--rd-fs:17.5px} @media (max-width:760px){ :root{--rd-fs:16.5px} }
 /* <<< tools */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
@@ -3480,6 +3482,28 @@ toolTab('notes','📝 Notes',body=>{
   <div class="rowbtns" style="margin-top:8px"><button class="primary" id="ntSave">Save notes</button><span class="small" id="ntMsg" style="align-self:center"></span></div>`;
   $('#ntSave').onclick=()=>{ S.notes=$('#ntText').value.slice(0,4000); save(); $('#ntMsg').textContent=S.notes.trim()?'Saved. The AI follows these from the next reply on.':'Notes cleared.'; };
   $('#ntText').oninput=()=>{ $('#ntMsg').textContent=$('#ntText').value.length>4000?'Too long: only the first 4,000 characters are kept.':'Not saved yet.'; }; });
+
+// ---------- 3. reading settings ----------
+const READ_DEF={size:100, lh:100, width:100, font:'serif'};
+function readCfg(){ return {...READ_DEF, ...((typeof CFG!=="undefined"&&CFG&&CFG.reading)||{})}; }
+function applyReading(){ const r=readCfg(); const st=$('#readingStyle')||Object.assign(document.head.appendChild(document.createElement('style')),{id:'readingStyle'});
+  const fam=r.font==='sans'?'var(--font)':r.font==='dys'?'Verdana,Tahoma,sans-serif':'var(--serif)';
+  st.textContent=(r.size===100&&r.lh===100&&r.width===100&&r.font==='serif')?'':`#feed .msg{font-size:calc(var(--rd-fs,17.5px) * ${r.size/100})!important;line-height:${(1.75*r.lh/100).toFixed(2)}!important;max-width:${Math.round(720*r.width/100)}px!important;font-family:${fam}!important}
+  #feed .msg .bubble{font-family:${fam}!important}`; }
+toolTab('reading','🔠 Reading',body=>{ const r=readCfg();
+  const row=(id,label,min,max,step,val,unit)=>`<label style="display:block;margin:14px 0 4px">${label} <span class="small" id="${id}V">${val}${unit}</span></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" style="width:100%">`;
+  body.innerHTML=`<p class="small" style="margin-top:0">How the story looks while you read. Saved on this device for every story.</p>
+  ${row('rdSize','Text size',75,160,5,r.size,'%')}${row('rdLh','Line spacing',80,150,5,r.lh,'%')}${row('rdW','Column width',70,150,5,r.width,'%')}
+  <label style="display:block;margin:14px 0 4px">Font</label><select id="rdFont"><option value="serif">Book (serif)</option><option value="sans">Clean (sans-serif)</option><option value="dys">Wide and easy to read</option></select>
+  <div class="msg ai" id="rdPrev" style="margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;max-width:none"><p><em>The rain eases off over Sixth Street, and the neon signs flicker back on one by one.</em></p><p><b>Nangong:</b> "Took you long enough."</p></div>
+  <div class="rowbtns" style="margin-top:12px"><button class="ghost" id="rdReset">Back to normal</button></div>`;
+  $('#rdFont').value=r.font;
+  const upd=()=>{ CFG.reading={size:+$('#rdSize').value, lh:+$('#rdLh').value, width:+$('#rdW').value, font:$('#rdFont').value}; $('#rdSizeV').textContent=CFG.reading.size+'%'; $('#rdLhV').textContent=CFG.reading.lh+'%'; $('#rdWV').textContent=CFG.reading.width+'%';
+    saveCfg(); applyReading(); const pv=$('#rdPrev'); const fam=CFG.reading.font==='sans'?'system-ui,sans-serif':CFG.reading.font==='dys'?'Verdana,Tahoma,sans-serif':'var(--serif)'; pv.style.fontSize=`calc(17.5px * ${CFG.reading.size/100})`; pv.style.lineHeight=(1.75*CFG.reading.lh/100).toFixed(2); pv.style.fontFamily=fam; };
+  ['rdSize','rdLh','rdW','rdFont'].forEach(id=>$('#'+id).oninput=upd); upd();
+  $('#rdReset').onclick=()=>{ CFG.reading={...READ_DEF}; saveCfg(); applyReading(); renderTools(); }; });
+setTimeout(()=>{ try{ applyReading(); }catch(e){} },0);
+var SCREEN_HOOKS=window.SCREEN_HOOKS=window.SCREEN_HOOKS||[]; SCREEN_HOOKS.push(()=>{ try{ applyReading(); }catch(e){} });
 // <<< tools
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -3950,8 +3974,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.57.0';
+const APP_VERSION = '0.58.0';
 const CHANGELOG = [
+ {v:'0.58.0', d:'2026-11-20', notes:['🧰 Tools → 🔠 Reading: change the story\'s text size, line spacing, column width and font (book, clean, or wide and easy to read), with a live preview. Saved on this device. Also fixed the Tools window sometimes showing story text on top of it.']},
  {v:'0.57.0', d:'2026-11-20', notes:['🧰 Tools → 📝 Notes: write your own rules and facts for a story (like "Aria doesn\'t know my name yet") and the AI follows them every reply. Also: the reminder about emotional dialogue now asks for emotion in proportion, so calm moments stay calm.']},
  {v:'0.56.0', d:'2026-11-20', notes:['New 🧰 Tools button in a story, with 🔎 Search: find any word, name or place across the whole story, even the oldest messages. Tap a result to jump straight to it (it lights up). On a computer, Ctrl+F opens it too.']},
  {v:'0.55.6', d:'2026-11-20', notes:['Fixed: on iPhone, the Close buttons on the map and world pages sat under the clock and battery. They now sit below the status bar, and so do pop-up notifications.']},
@@ -5127,7 +5152,7 @@ async function renderHomeStudio(){ const sec=$('#studioSec'); if(!sec) return; i
 
 // ======================= screens =======================
 function showScreen(name){
-  SCREEN=name; document.body.classList.toggle('in-world',name==='world'); document.body.classList.toggle('chats-ui',name==='home'||name==='world'); try{ closeChats(); }catch(e){}
+  SCREEN=name; document.body.classList.toggle('in-world',name==='world'); document.body.classList.toggle('chats-ui',name==='home'||name==='world'); try{ closeChats(); }catch(e){} try{ for(const f of (window.SCREEN_HOOKS||[])) f(name); }catch(e){}
   $('#home').classList.toggle('on',name==='home'); $('#studio').classList.toggle('on',name==='studio'); if(name==='studio') renderStudio();
   $('#app').style.display=name==='world'?'grid':'none'; if(name==='world'){ const a=$('#app'); a.classList.remove('screenIn'); void a.offsetWidth; a.classList.add('screenIn'); }
   if(name==='home'){ renderHome(); let seen=''; try{ seen=LS.getItem(LOG_SEEN_KEY)||''; }catch(e){}
