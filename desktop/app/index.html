@@ -3749,9 +3749,9 @@ function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; cons
     ${(()=>{ const cw=COMBINED.find(x=>x.universe===u); if(!cw) return ''; const s=worldProgress(cw); const started=s&&s.chat?.length>1; const tl=getBranches().filter(b=>b.world===cw.id);
       return `<div class="wm-sec"><div class="everyone" data-all="${cw.id}"><div class="ev-av">${cast.slice(0,14).map((c,i)=>`<span style="background:${avatarBg(c.color,c.img)};--k:${i}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div>
         <div class="ev-tx"><b>Everyone in ${esc(u)}</b><span>${ws.length} worlds, ${cast.length} characters, one story. No set plot: they all live their lives side by side and you can meet anyone.</span>${started?`<span class="small">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span>`:''}</div>
-        <div class="ev-btns"><button class="primary" data-allgo="${cw.id}">${started?'Continue':'Start'}</button>${started?`<button class="ghost" data-allnew="${cw.id}">Start over</button>`:''}</div></div>
+        <div class="ev-btns"><button class="primary" data-allgo="${cw.id}">${started?'Continue':'Start'}</button>${started?`<button class="ghost" data-allfresh="${cw.id}">Start new roleplay</button><button class="ghost" data-allnew="${cw.id}">Start over</button>`:''}</div></div>
         ${groupRowsHTML(u)}
-        ${tl.map(b=>`<div class="wm-row"><div class="wm-av" style="background:radial-gradient(circle at 30% 25%,${a.color},#1a1b22)">⑂</div><div class="wm-tx"><b>${esc(b.title)}</b><span>Timeline</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`).join('')}</div>`; })()}
+        ${tl.map(b=>`<div class="wm-row"><div class="wm-av" style="background:radial-gradient(circle at 30% 25%,${a.color},#1a1b22)">⑂</div><div class="wm-tx"><b>${esc(b.title)}</b><span>${b.fresh?'Separate roleplay':'Timeline'}</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`).join('')}</div>`; })()}
     <div class="wm-sec"><h3>Worlds</h3><div class="wgrid">${ws.map(w=>{ const s=worldProgress(w); const started=s&&s.chat?.length>1; const subs=getBranches().filter(x=>x.world===w.id).length;
       return `<div class="wcard" data-wopen="${w.id}"><div class="top" style="--wbg:linear-gradient(135deg,${w.characters[0].color}44,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)"><h4>${esc(w.title.split(':')[0])}</h4><div class="set">${esc(w.title.split(': ')[1]||w.setting)}</div><div class="bl">${esc(w.blurb)}</div>
         <div class="cast">${w.characters.map(c=>`<span title="${esc(c.full)}" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div></div>
@@ -3761,6 +3761,7 @@ function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; cons
   $('#wmBody').querySelectorAll('.wcard').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-go]')) return; openWorldPage(el.dataset.wopen,u); });
   $('#wmBody').querySelectorAll('[data-go]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.go); });
   $('#wmBody').querySelectorAll('[data-allgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.allgo); });
+  $('#wmBody').querySelectorAll('[data-allfresh]').forEach(x=>x.onclick=()=>newRoleplay(x.dataset.allfresh, close));
   $('#wmBody').querySelectorAll('[data-allnew]').forEach(x=>x.onclick=()=>{ if(confirm('Start the Everyone story over? The current one is deleted.')){ LS.removeItem('livingworld_save_'+x.dataset.allnew); close(); enterWorld(x.dataset.allnew); } });
   $('#wmBody').querySelectorAll('[data-wmb]').forEach(x=>x.onclick=()=>{ close(); openBranch(x.dataset.wmb); });
   $('#wmBody').querySelectorAll('[data-wmdel]').forEach(x=>x.onclick=()=>{ deleteBranch(x.dataset.wmdel); openUniversePage(u); });
@@ -3779,15 +3780,16 @@ function bindGroupUI(u, close){ const nb=$('#grpNew'); if(!nb) return; nb.onclic
 function openWorldPage(wid,fromU){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
   const subs=getBranches().filter(b=>b.world===w.id);
   const subRow=b=>{ let bs=null; try{ bs=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c=b.charId&&w.characters.find(x=>x.id===b.charId);
-    return `<div class="wm-row"><div class="wm-av" style="background:${c?avatarBg(c.color,c.img):`radial-gradient(circle at 30% 25%,${w.characters[0].color},#1a1b22)`}">${c?(c.img?'':esc(c.name[0])):'⑂'}</div><div class="wm-tx"><b>${esc(b.kind==='timeline'?b.title:(c?c.full+': '+b.title:b.title))}</b><span>${b.kind==='timeline'?'Timeline':'1-on-1'}${bs?` · ${wdName(bs.clock).slice(0,3)} ${mmdd(bs.clock)} ${hhmm(bs.clock)}`:''}</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`; };
+    return `<div class="wm-row"><div class="wm-av" style="background:${c?avatarBg(c.color,c.img):`radial-gradient(circle at 30% 25%,${w.characters[0].color},#1a1b22)`}">${c?(c.img?'':esc(c.name[0])):'⑂'}</div><div class="wm-tx"><b>${esc(b.kind==='timeline'?b.title:(c?c.full+': '+b.title:b.title))}</b><span>${b.kind==='timeline'?(b.fresh?'Separate roleplay':'Timeline'):'1-on-1'}${bs?` · ${wdName(bs.clock).slice(0,3)} ${mmdd(bs.clock)} ${hhmm(bs.clock)}`:''}</span></div><button class="primary" data-wmb="${b.id}">Open</button><button class="ghost" data-wmdel="${b.id}" title="Delete">✕</button></div>`; };
   $('#wmBody').innerHTML=`<div class="wm-head" style="--wbg:linear-gradient(135deg,${w.characters[0].color}55,${(w.characters[1]||w.characters[0]).color}22 60%,transparent)">
       <button class="ghost" id="wmClose" style="float:right">Close</button><button class="ghost" id="wmBack" style="padding-left:0">← ${esc(universeOf(w))}</button><h2>${esc(w.title.split(':')[0])}</h2><div class="small">${esc(w.title.split(': ')[1]||'')}${w.setting?' · '+esc(w.setting):''}</div><p>${esc(w.blurb||'')}</p>
-      <div class="rowbtns"><button class="primary" id="wmGo">${started?'Chat now with everyone':'Start the story'}</button>${started?`<span class="small" style="align-self:center">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span><button class="ghost" id="wmNew">Start over</button>`:''}<button class="ghost" id="wmLore">Lorebook</button></div></div>
+      <div class="rowbtns"><button class="primary" id="wmGo">${started?'Chat now with everyone':'Start the story'}</button>${started?`<span class="small" style="align-self:center">${wdName(s.clock)} ${mmdd(s.clock)} ${hhmm(s.clock)} · ${esc(s.user.loc)}</span><button class="ghost" id="wmFresh">Start new roleplay</button><button class="ghost" id="wmNew">Start over</button>`:''}<button class="ghost" id="wmLore">Lorebook</button></div></div>
     <div class="wm-sec"><h3>Characters</h3>${w.characters.map(c=>`<div class="wm-row"><div class="wm-av" style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</div><div class="wm-tx"><b>${esc(c.full)}</b><span>${esc(c.tagline||'')}</span></div><button data-wmsolo="${c.id}">1-on-1</button><button class="ghost" data-wmchar="${c.id}">Profile</button></div>`).join('')}</div>
     ${subs.length?`<div class="wm-sec"><h3>Your 1-on-1 chats and timelines here</h3>${subs.map(subRow).join('')}</div>`:''}`;
   $('#worldModal').classList.add('on');
   const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close; $('#wmBack').onclick=()=>openUniversePage(universeOf(w));
   $('#wmGo').onclick=()=>{ close(); enterWorld(w.id); };
+  const nf=$('#wmFresh'); if(nf) nf.onclick=()=>newRoleplay(w.id, close);
   const nw=$('#wmNew'); if(nw) nw.onclick=()=>{ if(confirm('Start this world over from the beginning? The current story is deleted (your 1-on-1s and timelines stay).')){ LS.removeItem('livingworld_save_'+w.id); close(); enterWorld(w.id); } };
   $('#wmLore').onclick=()=>{ close(); LORE_WORLD=w.id; openLore(); };
   $('#wmBody').querySelectorAll('[data-wmsolo]').forEach(b=>b.onclick=()=>{ close(); openSolo(w.id+':'+b.dataset.wmsolo); });
@@ -3823,8 +3825,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.53.0';
+const APP_VERSION = '0.54.0';
 const CHANGELOG = [
+ {v:'0.54.0', d:'2026-11-20', notes:['Start a new roleplay without losing your old one: on a world\'s page (or the Everyone story on a universe page), "Start new roleplay" begins a fresh story in a separate save. You pick the scene like a brand new start, name it, and switch between your roleplays from the same page any time. "Start over" still exists if you really want to wipe one.']},
  {v:'0.53.0', d:'2026-11-20', notes:['Every character has an ID you can copy from their page (like CISSIA-4F2).', 'Group chats: on the home screen, start a New group chat, paste character IDs (several at once) or tap people you\'ve already talked to, search anyone by name, set where you are and what\'s going on, and chat with up to 8 characters at once, even from different worlds. They keep their own personalities and histories and only know each other if their stories say so. Each group chat has its own save.']},
  {v:'0.52.1', d:'2026-11-20', notes:['Cissia\'s Amber Hall status is accurate now: Norma filed it, and she is officially registered in Aurelia Academy\'s records as an emotional support pet, which gets her free meals, housing and her own private room. Velina says it\'s just text in a file, so nobody makes her act like a pet. Billy embraced being a "domestic support unit" and vowed to be the most badass guardian Amber Hall\'s ever seen.']},
  {v:'0.52.0', d:'2026-11-20', notes:['Group stories: on a universe page, use "+ Group worlds together" to pick any worlds (for example Yunkui Summit + Roscaelifer + the Angels of Delusion), name it, and play them as one story where everyone lives side by side. Each group story has its own save.', 'Season 3 living arrangements: whenever Roscaelifer is part of the story (the Everyone in Zenless story or a group story), Belle, Wise, Cissia and Billy live at Amber Hall on Beckford Street, the Aurelia Academy dorm across from Roarin\' Brekkies. Belle and Wise are cover "transfer students" (no classes) getting Etheric treatment at the CCD and running the Random Play branch; Cissia is registered as Phaethon\'s "emotional support pet" and Billy as a "domestic support unit", and the two bicker nonstop. Housekeeper Bonnie, shy Shirley upstairs and Boodiac\'s basement Divination Parlor are part of the building.']},
@@ -4058,6 +4061,10 @@ function renderBranchSection(){
   $('#branchGrid').querySelectorAll('[data-bdel]').forEach(x=>x.onclick=()=>{ deleteBranch(x.dataset.bdel); renderHome(); });
 }
 function openBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b) return; enterWorld(b.world,{branchId:bid}); }
+// a brand new roleplay in the same world, saved separately (your other stories stay untouched)
+function newRoleplay(wid, closeFn){ const w=findWorld(wid); if(!w) return; const n=getBranches().filter(b=>b.world===wid&&b.fresh).length+2; const name=prompt('Name this roleplay (optional):',`Roleplay ${n}`); if(name===null) return;
+  const id='t'+Date.now().toString(36); const list=getBranches(); list.push({id, world:wid, kind:'timeline', fresh:true, title:name.trim()||`Roleplay ${n}`, charId:null, created:Date.now(), last:Date.now()}); setBranches(list);
+  if(closeFn) closeFn(); enterWorld(wid,{branchId:id}); }
 function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!confirm(`Delete ${b.kind==='timeline'?'the timeline':'the 1-on-1'} "${b.title}"? This can't be undone.`)) return;
   setBranches(getBranches().filter(x=>x.id!==bid)); LS.removeItem(branchSaveKey(b.world,bid)); }
 
@@ -4991,7 +4998,7 @@ function showScreen(name){
 }
 function enterWorld(id, opts={}){
   const w=findWorld(id); if(!w) return;
-  const isNew=!opts.branch&&!opts.branchId&&!LS.getItem('livingworld_save_'+id);
+  const isNew=!opts.branch&&!LS.getItem(opts.branchId?branchSaveKey(id,opts.branchId):'livingworld_save_'+id);
   if(isNew&&!opts.scene){ openScenePicker(id, opts); return; }
   if(W&&S){ LS.setItem(SAVE_KEY, JSON.stringify(S)); }
   W=w; queue.length=0;

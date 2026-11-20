@@ -1,11 +1,10 @@
 {
- "version": "0.53.0",
+ "version": "0.54.0",
  "date": "2026-11-20",
  "notes": [
-  "Every character has an ID you can copy from their page (like CISSIA-4F2).",
-  "Group chats: on the home screen, start a New group chat, paste character IDs (several at once) or tap people you've already talked to, search anyone by name, set where you are and what's going on, and chat with up to 8 characters at once, even from different worlds. They keep their own personalities and histories and only know each other if their stories say so. Each group chat has its own save."
+  "Start a new roleplay without losing your old one: on a world's page (or the Everyone story on a universe page), \"Start new roleplay\" begins a fresh story in a separate save. You pick the scene like a brand new start, name it, and switch between your roleplays from the same page any time. \"Start over\" still exists if you really want to wipe one."
  ],
  "file": "index.html",
- "sha256": "584b2e1eec95e7e8c33a32163bdf01e642ad00d820ef7ee2693ca4c2d845f2d2",
+ "sha256": "6be54026e29a9f2cb3ab902d324028b222a56a2c9002befc431498ba8a3a6c97",
  "minShell": "0.5.0"
 }
