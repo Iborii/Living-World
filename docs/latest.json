@@ -1,10 +1,10 @@
 {
- "version": "0.62.0",
+ "version": "0.63.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83e\uddf0 Tools \u2192 \ud83d\udcf8 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your \ud83d\udccc pinned moments are there too. Tap any of them to jump back to that moment."
+  "Birthdays for everyone. Every Zenless Zone Zero character now has their canon birthday (from the official agent calendar), and it's on the calendar. A few days before, close friends quietly plan something, whisper about it, or ask you to help keep it a surprise; on the day, people who know wish them happy birthday. Your phone reminds you the day before for people you know. \ud83e\uddf0 Tools \u2192 \ud83c\udf82 Birthdays: see who's next, set your own birthday (people who trust you will remember it), and give a birthday to characters who don't have a canon one."
  ],
  "file": "index.html",
- "sha256": "db3c5482afc196f4063397c92d109dd7d18c72f069f0ef43f1e4575da3fca614",
+ "sha256": "661d464065a9fdfbd099e61e8f6db0c6186d8d2c62ee69f554fa7dc874444997",
  "minShell": "0.5.0"
 }

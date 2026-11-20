@@ -1694,7 +1694,7 @@ function applyAges(silent){ if(!W||!S) return; S.ages=S.ages||{}; const turned=[
   for(const c of W.characters){ if(!c.born||c.protect) continue; const a=ageOf(c,S.clock); const adult=a>=18; c.age=a;
     if(adult&&S.ages[c.id]===false) turned.push(c); c.minor=!adult; S.ages[c.id]=adult; }
   ageWalk(W,0,W.characters,S.clock); S._ageDay=Math.floor(S.clock/DAYMS);
-  for(const c of W.characters){ if(!c.born) continue; const b=String(c.born).split('-').map(Number), d=dt(S.clock); if(b[1]===d.mo&&b[2]===d.d&&S.lastBday!==c.id+d.y){ S.lastBday=c.id+d.y; if(!silent) notice(`🎂 It's ${c.name}'s birthday: ${c.age} today.`); } }
+  for(const c of W.characters){ const bd=bdayOf(c); if(!bd||isDead(c)) continue; const b=bd.split('-').map(Number), d=dt(S.clock); if(b[0]===d.mo&&b[1]===d.d&&S.lastBday!==c.id+d.y){ S.lastBday=c.id+d.y; if(!silent) notice(`🎂 It's ${c.name}'s birthday${c.born&&!c.protect?`: ${c.age} today`:' today'}.`); } }
   for(const c of turned){ notice(`🎂 ${c.name} turned 18 today. The under-18 limits for ${c.name} are lifted from now on.`); addMemory({who:[c.id],text:`I turned 18 today. I'm officially an adult.`,t:S.clock,src:'birthday',imp:3});
     S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: today is ${c.full}'s 18th birthday. ${c.name} is an adult now; the people around them know and may make a fuss about it.)`}); if(S.chars[c.id]&&!S.chars[c.id].cycle?.on) S.chars[c.id].cycle=defaultCycle(c); }
   if(turned.length){ save(); if(SCREEN==='world') render(); } }
@@ -3632,6 +3632,43 @@ function metScan(){ S.firsts=S.firsts||{}; for(const c of W.characters){ if(S.fi
 function trInit(){ if(!S||!W) return; try{ metScan(); }catch(e){} S._tr=S._tr||{}; for(const c of W.characters){ const st=S.chars[c.id]; if(st&&S._tr[c.id]==null) S._tr[c.id]=st.trust; } }
 SCREEN_HOOKS.push(n=>{ if(n==='world') try{ trInit(); }catch(e){} });
 // <<< album
+// >>> bday
+// ======================= birthdays: everyone has one, people plan for them =======================
+// canon birthdays (Zenless Zone Zero wiki agent calendar, checked against Google AI Mode)
+const CANON_BDAYS={'Qingyi':'01-01','Ju Fufu':'01-06','Cissia':'01-10','Ye Shunguang':'01-20','Jane Doe':'02-16','Anby Demara':'02-20','Soldier 11':'03-21','Seth Lowell':'04-08','Vivian Banshee':'04-10','Trigger':'04-21',
+ 'Pan Yinhu':'05-10','Dialyn':'05-28','Aria':'06-07','Sunna':'07-18','Claret Flint':'07-23','Banyue':'07-24','Norma Hollowell':'07-26','Nekomiya Mana':'07-30','Zhu Yuan':'09-01','Velina Airgid':'09-22','Nangong Yu':'09-29',
+ 'Zhao':'10-14','Phoenix':'10-31','Orphie Magnusson':'11-03','Nicole Demara':'11-11','Seed':'11-22','Billy Kid':'11-25','Yixuan':'12-03','Promeia':'12-23','Roxy Ifrita Pryce':'12-29','Severian Lowell':'12-31'};
+const BDAY_ALIASES={'Nekomata':'Nekomiya Mana','Fufu':'Ju Fufu','Shunguang':'Ye Shunguang','Yinhu':'Pan Yinhu','Jane':'Jane Doe','Anby':'Anby Demara','Seth':'Seth Lowell','Vivian':'Vivian Banshee','Claret':'Claret Flint','Norma':'Norma Hollowell',
+ 'Velina':'Velina Airgid','Nangong':'Nangong Yu','Orphie':'Orphie Magnusson','Nicole':'Nicole Demara','Billy':'Billy Kid','Roxy':'Roxy Ifrita Pryce','Severian':'Severian Lowell'};
+function bdayOf(c){ if(!c) return ''; try{ if(S&&S.bdays&&S.bdays[c.id]) return S.bdays[c.id]; }catch(e){} if(c.bday) return String(c.bday).slice(-5); if(c.born) return String(c.born).slice(5,10);
+  const full=String(c.full||''); for(const k in CANON_BDAYS) if(full===k||full.startsWith(k+' ')||full.includes('('+k)) return CANON_BDAYS[k];
+  const al=BDAY_ALIASES[c.name]; if(al&&(full.includes(al.split(' ')[0])||full.includes(c.name))) return CANON_BDAYS[al]; return CANON_BDAYS[c.name]||''; }
+function daysUntil(md, ms){ const d=dt(ms); const [m,dd]=md.split('-').map(Number); let t=Date.UTC(d.y,m-1,dd), now=Date.UTC(d.y,d.mo-1,d.d); if(t<now) t=Date.UTC(d.y+1,m-1,dd); return Math.round((t-now)/DAYMS); }
+function mdName(md){ const [m,d]=md.split('-').map(Number); return `${MONTHS[m-1]} ${d}`; }
+PROMPT_HOOKS.push(pres=>{ const out=[]; const close=c=>W.characters.filter(o=>o!==c&&!isDead(o)&&relScore(o.id,c.id)>=55).map(o=>o.name);
+  for(const c of W.characters){ const md=bdayOf(c); if(!md||isDead(c)) continue; const n=daysUntil(md,S.clock); const here=pres.includes(c); const age=c.born&&!c.protect?` (turning ${ageOf(c,S.clock+n*DAYMS+HOUR)})`:'';
+    if(n===0) out.push(`TODAY is ${c.name}'s birthday${age}. ${c.name} knows, of course${here?', and reacts in character (pretends not to care, fishes for wishes, gets shy, or loves the attention)':''}. People close to them${close(c).length?` (${close(c).join(', ')})`:''} remember and wish them happy birthday or have something planned; others may not know unless told.`);
+    else if(n<=4&&close(c).length) out.push(`${c.name}'s birthday is in ${n} day${n>1?'s':''} (${mdName(md)})${age}. Close friends (${close(c).join(', ')}) may quietly plan something (a gift, a dinner, a small party), whisper about it, or ask ${uN()} to help keep it a surprise; ${c.name} may drop hints.`);
+    else if(here) out.push(`${c.name}'s birthday: ${mdName(md)} (they know it; others only if they've been told).`); }
+  const ub=S.userBday; if(ub){ const n=daysUntil(ub,S.clock); const know=W.characters.filter(c=>!isDead(c)&&(S.chars[c.id]||{}).trust>=50).map(c=>c.name);
+    if(n===0) out.push(`TODAY is ${uN()}'s birthday. ${know.length?`${know.join(', ')} know${know.length===1?'s':''} it and may wish them happy birthday, give something or have a surprise ready, each in their own way.`:'Nobody here knows yet unless '+uN()+' tells them.'}`);
+    else if(n<=5&&know.length) out.push(`${uN()}'s birthday is in ${n} day${n>1?'s':''} (${mdName(ub)}). ${know.join(', ')} know${know.length===1?'s':''} and may be planning something quietly; don't spoil it outright.`); }
+  return out.length?`\nBIRTHDAYS:\n- ${out.join('\n- ')}\n`:''; });
+function relScore(a,b){ try{ const r=(S.rel||{})[relKey(a,b)]; if(r&&r.score!=null) return r.score; }catch(e){} return 0; }
+// a reminder on your phone the day before (for people you know)
+function bdayTick(){ if(SCREEN!=='world'||!S||!W) return; const y=dt(S.clock).y; S.bdayNote=S.bdayNote||{};
+  for(const c of W.characters){ const md=bdayOf(c); if(!md||isDead(c)) continue; const known=(S.firsts&&S.firsts[c.id]&&S.firsts[c.id].met)||isContact(c.id); if(!known) continue;
+    if(daysUntil(md,S.clock)===1&&!S.bdayNote[c.id+y]){ S.bdayNote[c.id+y]=1; pushNotif({icon:'🎂', app:'Calendar', title:`Tomorrow is ${c.name}'s birthday`, body:`${mdName(md)}${c.born&&!c.protect?` · turning ${ageOf(c,S.clock+DAYMS+HOUR)}`:''}`}); } } }
+setInterval(()=>{ try{ bdayTick(); }catch(e){} }, 30000);
+toolTab('bday','🎂 Birthdays',body=>{ const list=W.characters.filter(c=>bdayOf(c)&&!isDead(c)).map(c=>({c,md:bdayOf(c),n:daysUntil(bdayOf(c),S.clock)})).sort((a,b)=>a.n-b.n);
+  const nob=W.characters.filter(c=>!bdayOf(c)&&!isDead(c));
+  body.innerHTML=`<label>Your birthday in this story</label><div class="rowbtns"><input type="date" id="ubDate" value="${S.userBday?dt(S.clock).y+'-'+S.userBday:''}" style="max-width:200px"><button class="ghost" id="ubSave">Save</button><span class="small" id="ubMsg" style="align-self:center"></span></div>
+  <p class="small">People who trust you (50+) know it, and as it gets close they may plan something.</p>
+  <h3 style="margin:16px 0 8px">Coming up</h3>${list.map(({c,md,n})=>`<div class="sr-row" style="cursor:default;display:flex;align-items:center;gap:10px">${avHTML(c,30,false)}<div style="flex:1"><b>${esc(c.full)}</b><div class="sr-m" style="margin:0">${mdName(md)}${c.born&&!c.protect?` · turning ${ageOf(c,S.clock+n*DAYMS+HOUR)}`:''}</div></div><span class="${n<=7?'badge':'small'}">${n===0?'🎂 Today':n===1?'Tomorrow':`in ${n} days`}</span></div>`).join('')}
+  ${nob.length?`<h3 style="margin:18px 0 6px">No canon birthday</h3><p class="small" style="margin-top:0">Give them one for this story:</p>${nob.map(c=>`<div class="rowbtns" style="align-items:center;margin-bottom:6px">${avHTML(c,26,false)}<span style="min-width:120px">${esc(c.name)}</span><input type="date" data-sb="${c.id}" style="max-width:190px"></div>`).join('')}`:''}`;
+  body.querySelectorAll('[data-sb]').forEach(i=>i.onchange=()=>{ if(!i.value) return; S.bdays=S.bdays||{}; S.bdays[i.dataset.sb]=i.value.slice(5); save(); renderTools(); });
+  $('#ubSave').onclick=()=>{ const v=$('#ubDate').value; S.userBday=v?v.slice(5):''; save(); $('#ubMsg').textContent=v?`Saved: ${mdName(S.userBday)}.`:'Cleared.'; }; });
+// <<< bday
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3693,7 +3730,7 @@ function vDayNote(dayStart, L){ const end=dayStart+DAYMS; const out=[]; const nm
   out.push(V_NOTE+`# ${wdName(dayStart)}, ${isoDate(dayStart)}\n\n`);
   try{ const w=weather(dayStart+13*HOUR); out.push(`*${w.desc}, around ${w.temp}°F, ${w.season}.*\n`); }catch(e){}
   const md=isoDate(dayStart).slice(5); const hol=holidaysOf().filter(h=>h[0]===md); if(hol.length) out.push(`\n🎉 **${hol.map(h=>h[1]).join(', ')}**\n`);
-  for(const c of W.characters) if(c.born&&String(c.born).slice(5)===md) out.push(`\n🎂 **${L(c.name)}'s birthday** (${ageOf(c,dayStart+12*HOUR)})\n`);
+  for(const c of W.characters) if(bdayOf(c)===md) out.push(`\n🎂 **${L(c.name)}'s birthday**${c.born&&!c.protect?` (${ageOf(c,dayStart+12*HOUR)})`:''}\n`);
   // on screen
   let lastT=0; const scene=[]; for(const m of S.chat){ if(m.t) lastT=m.t; const t=m.t||lastT; if(m.hidden||t<dayStart||t>=end) continue;
     if(m.role==='user') scene.push(`> **${nm}:** ${String(m.text).replace(/\n+/g,'\n> ')}\n`);
@@ -4101,8 +4138,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.62.0';
+const APP_VERSION = '0.63.0';
 const CHANGELOG = [
+ {v:'0.63.0', d:'2026-11-20', notes:['Birthdays for everyone. Every Zenless Zone Zero character now has their canon birthday (from the official agent calendar), and it\'s on the calendar. A few days before, close friends quietly plan something, whisper about it, or ask you to help keep it a surprise; on the day, people who know wish them happy birthday. Your phone reminds you the day before for people you know. 🧰 Tools → 🎂 Birthdays: see who\'s next, set your own birthday (people who trust you will remember it), and give a birthday to characters who don\'t have a canon one.']},
  {v:'0.62.0', d:'2026-11-20', notes:['🧰 Tools → 📸 Album: firsts and milestones with each person, collected automatically as they happen: first meeting, first text, call and photo, first gift, the first time you made them laugh, first hug, first meal together, first time staying over, your first real argument, and trust milestones (friends, close, trusts you completely). Your 📌 pinned moments are there too. Tap any of them to jump back to that moment.']},
  {v:'0.61.0', d:'2026-11-20', notes:['Photos in texts. Characters sometimes text you a photo when it fits (where they are, something funny, food, a new outfit, a selfie); it shows as a picture card with what it shows. Send your own with the 📷 button next to the message box: describe the photo and they react to it. A new 🖼️ Photos app on the phone keeps every photo sent and received.']},
  {v:'0.60.0', d:'2026-11-20', notes:['🧰 Tools → 📕 Export: download a story as a book, with a cover, one chapter per day in the story and every scene laid out for reading. Choose whether your own lines are included. Open it in any browser, or print it to a PDF.']},
