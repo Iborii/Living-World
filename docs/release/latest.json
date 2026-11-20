@@ -1,10 +1,10 @@
 {
- "version": "0.54.1",
+ "version": "0.55.0",
  "date": "2026-11-20",
  "notes": [
-  "The Sunbringers have a lot more free time, and spend most of it together: weekday lunches at Cuppa Moment, dinners at each other's quarters (tea and talk at Eldreda's, Lindverne's Starlight Knight movie nights), Friday nights out on Beckford Street, Saturday strolls and game night, Sunday brunch and dinner cooked together. Work hours are shorter, with real free time in the late afternoon."
+  "All your chats in one place. On a computer, tap the Chats tab on the left edge and a sidebar slides in; on a phone, tap the round \ud83d\udcac button at the bottom and a sheet slides up. It lists every story, Everyone story, group story, group chat, 1-on-1, roleplay and timeline you can continue, newest first, with who's in it, the in-story time and the last line. Tap one to jump straight back in."
  ],
  "file": "index.html",
- "sha256": "6af506014cbfb28f20598d1005afb96d2bc168a81dbdfe75767a5644e2774f63",
+ "sha256": "1af56a835f9e840a7b537206c56f667de250370207baa1a3fbb799ba26f46412",
  "minShell": "0.5.0"
 }

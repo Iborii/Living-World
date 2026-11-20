@@ -716,6 +716,43 @@ button:hover{background:#262b36}
 .nb-ic{font-size:22px;line-height:1;margin-top:2px}.nb-tx{min-width:0;flex:1}.nb-top{display:flex;justify-content:space-between;font-size:11px;opacity:.65}.nb-top b{font-weight:600}.nb-ti{font-weight:600;font-size:14px;margin-top:1px}.nb-bd{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ph-notifs{margin:10px 14px 12px;display:flex;flex-direction:column;gap:6px}.ph-nt{display:flex;gap:9px;padding:8px 10px;border-radius:12px;background:rgba(20,22,28,.72);backdrop-filter:blur(8px);cursor:pointer}.ph-nt>span{font-size:18px}
 @media (prefers-reduced-motion: reduce){ #notifBanner{transition:none} }
+/* ---- all chats: sidebar on computers, bottom sheet on phones ---- */
+body:not(.chats-ui) #chatsFab{display:none}
+#chatsFab{position:fixed;z-index:95;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(28,30,37,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--text,#eee);cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.35);transition:transform .2s ease,background .2s}
+#chatsFab:hover{background:rgba(40,42,52,.95)}
+#chatsScrim{position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s}
+body.chats-open #chatsScrim{opacity:1;pointer-events:auto}
+#chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
+#chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+.cl-item{display:flex;gap:11px;align-items:center;text-align:left;width:100%;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:none;color:inherit;cursor:pointer;font:inherit}
+.cl-item:hover,.cl-item:focus-visible{background:rgba(255,255,255,.05)}.cl-item.cur{border-color:var(--line);background:rgba(255,255,255,.04)}
+.cl-av{display:flex;flex:none;width:44px;justify-content:center}.cl-av span{width:30px;height:30px;border-radius:50%;margin-left:-14px;border:2px solid #16181e;display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background-size:cover}.cl-av span:first-child{margin-left:0}
+.cl-tx{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}.cl-top{display:flex;justify-content:space-between;gap:8px}.cl-top b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-top span{font-size:11px;opacity:.55;white-space:nowrap}
+.cl-kind{font-size:12px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-snip{font-size:12.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-empty{padding:30px 16px;text-align:center;opacity:.7;font-size:14px}
+/* computers: a tab on the left edge and a sidebar that slides in */
+@media (min-width:761px){
+ #chatsFab{left:0;top:50%;transform:translateY(-50%);flex-direction:column;padding:12px 7px;border-left:0;border-radius:0 12px 12px 0}
+ #chatsFab .cf-tx{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;letter-spacing:.06em}
+ #chatsFab:hover{transform:translateY(-50%) translateX(2px)}
+ #chatsPanel{left:0;top:0;bottom:0;width:360px;border-left:0;border-radius:0 16px 16px 0;transform:translateX(-105%);transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+ body.chats-open #chatsPanel{transform:none} body.chats-open #chatsFab{transform:translateY(-50%) translateX(-110%)}
+ #chatsList .cl-item{animation:none}
+ body.chats-open #chatsList .cl-item{animation:clIn .35s both}
+ body.chats-open #chatsList .cl-item:nth-child(2){animation-delay:.03s} body.chats-open #chatsList .cl-item:nth-child(3){animation-delay:.06s} body.chats-open #chatsList .cl-item:nth-child(4){animation-delay:.09s} body.chats-open #chatsList .cl-item:nth-child(n+5){animation-delay:.12s}
+}
+@keyframes clIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+/* phones: a round button at the bottom and a sheet that slides up */
+@media (max-width:760px){
+ #chatsFab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;justify-content:center;padding:0}
+ #chatsFab .cf-tx{display:none} #chatsFab .cf-ic{font-size:22px}
+ body.in-world #chatsFab{bottom:calc(92px + env(safe-area-inset-bottom));width:44px;height:44px} body.in-world #chatsFab .cf-ic{font-size:19px}
+ #chatsPanel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:78vh;border-radius:18px 18px 0 0;border-bottom:0;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom)}
+ #chatsPanel::before{content:'';display:block;width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
+ body.chats-open #chatsPanel{transform:none} body.chats-open #chatsFab{transform:scale(0)}
+}
+@media (prefers-reduced-motion: reduce){ #chatsPanel,#chatsFab,#chatsScrim{transition:none} body.chats-open #chatsList .cl-item{animation:none} }
 /* ---- group chats ---- */
 .gc-stack{display:flex;align-items:center;justify-content:center;position:relative}.gc-stack span{width:22px;height:22px;border-radius:50%;margin-left:-8px;border:2px solid var(--bg,#14151b);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff}.gc-stack span:first-child{margin-left:0}
 .gc-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px}.gc-dot{width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover}
@@ -851,6 +888,9 @@ button:hover{background:#262b36}
 </div></div>
 
 <div id="notifBanner" role="status" aria-live="polite"></div>
+<button id="chatsFab" aria-label="Your chats" title="Your chats"><span class="cf-ic">💬</span><span class="cf-tx">Chats</span></button>
+<div id="chatsScrim"></div>
+<aside id="chatsPanel" aria-hidden="true" aria-label="Your chats"><div class="cp-head"><b>Your chats</b><span class="small">Pick up where you left off</span><button class="ghost" id="chatsClose" aria-label="Close">✕</button></div><div id="chatsList"></div></aside>
 <div class="modal" id="gcModal"><div class="box" style="max-width:620px">
   <h3 style="margin-top:0">New group chat</h3>
   <label>Character IDs</label><div style="display:flex;gap:6px"><input id="gcIds" placeholder="Paste IDs, e.g. CISSIA-4F2 VIVIAN-K9Q"><button id="gcIdAdd">Add</button></div>
@@ -3356,6 +3396,25 @@ function renderGCSuggest(){ const q=$('#gcSearch').value.trim().toLowerCase(); c
 function gcAddIds(){ const raw=$('#gcIds').value; const codes=raw.split(/[\s,;]+/).filter(Boolean); const bad=[]; for(const code of codes){ const c=charByCode(code); if(c){ if(!GCP.includes(c.key)&&GCP.length<8) GCP.push(c.key); } else bad.push(code); }
   $('#gcIds').value=bad.join(' '); if(bad.length) notice(`No character with the ID ${bad.join(', ')}.`,true); renderGCPicked(); renderGCSuggest(); }
 
+// ======================= all your chats: a floating button on phones, a sliding sidebar on computers =======================
+function allChatsList(){ const out=[]; const snip=s=>{ const a=[...(s.chat||[])].reverse().find(m=>m.role==='assistant'&&!m.hidden); return (a?.text||'').replace(/^\|.*\|\s*/,'').replace(/[*"]/g,'').replace(/\s+/g,' ').slice(0,90); };
+  const read=k=>{ try{ return JSON.parse(LS.getItem(k)||'null'); }catch(e){ return null; } };
+  for(const w of [...WORLDS,...COMBINED]){ const s=read('livingworld_save_'+w.id); if(!s||!(s.chat||[]).some(m=>m.role==='assistant')) continue;
+    out.push({kind:w.chat?'Group chat':w.group?'Group story':w.combined?'Everyone':'Story', title:w.chat||w.group?w.title:w.title.split(':')[0]+(w.combined&&!w.group?'':''), sub:w.combined&&!w.group&&!w.chat?w.title:'', last:s.lastPlayed||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:(w.characters||[]).slice(0,3), open:()=>enterWorld(w.id), cur:SCREEN==='world'&&W&&W.id===w.id&&!S.branch&&SAVE_KEY==='livingworld_save_'+w.id}); }
+  for(const b of getBranches()){ const w=findWorld(b.world); if(!w) continue; const s=read(branchSaveKey(b.world,b.id)); if(!s||!(s.chat||[]).some(m=>m.role==='assistant')) continue; const c=b.charId&&w.characters.find(x=>x.id===b.charId);
+    out.push({kind:b.charId?'1-on-1':b.fresh?'Roleplay':'Timeline', title:c?c.full:b.title, sub:c?b.title:w.title.split(':')[0], last:s.lastPlayed||b.last||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:c?[c]:(w.characters||[]).slice(0,3), open:()=>openBranch(b.id), cur:SCREEN==='world'&&SAVE_KEY===branchSaveKey(b.world,b.id)}); }
+  return out.sort((a,b)=>b.last-a.last); }
+function agoText(t){ if(!t) return ''; const m=Math.round((Date.now()-t)/60000); return m<1?'just now':m<60?`${m}m ago`:m<1440?`${Math.round(m/60)}h ago`:`${Math.round(m/1440)}d ago`; }
+let CHATS_ITEMS=[];
+function renderChatsPanel(){ const L=CHATS_ITEMS=allChatsList(); const B=$('#chatsList'); if(!B) return;
+  B.innerHTML=L.length?L.map((x,i)=>`<button class="cl-item${x.cur?' cur':''}" data-cl="${i}"><span class="cl-av">${x.cast.map((c,j)=>`<span style="background:${avatarBg(c.color,c.img)};z-index:${3-j}">${c.img?'':esc(c.name[0])}</span>`).join('')}</span>
+    <span class="cl-tx"><span class="cl-top"><b>${esc(x.title)}</b><span>${agoText(x.last)}</span></span><span class="cl-kind">${esc(x.kind)}${x.sub?' · '+esc(x.sub):''}${x.clock?` · ${wdName(x.clock).slice(0,3)} ${hhmm(x.clock)}`:''}</span><span class="cl-snip">${esc(subUser(x.snip||''))}</span></span></button>`).join('')
+    :`<div class="cl-empty">No chats yet. Start a story from a universe, a 1-on-1, or a group chat, and it shows up here.</div>`;
+  B.querySelectorAll('[data-cl]').forEach(b=>b.onclick=()=>{ const x=CHATS_ITEMS[+b.dataset.cl]; if(!x) return; closeChats(); if(!x.cur) x.open(); }); }
+function openChats(){ renderChatsPanel(); document.body.classList.add('chats-open'); $('#chatsPanel').setAttribute('aria-hidden','false'); }
+function closeChats(){ document.body.classList.remove('chats-open'); $('#chatsPanel').setAttribute('aria-hidden','true'); }
+function toggleChats(){ document.body.classList.contains('chats-open')?closeChats():openChats(); }
+
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -3825,8 +3884,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.54.1';
+const APP_VERSION = '0.55.0';
 const CHANGELOG = [
+ {v:'0.55.0', d:'2026-11-20', notes:['All your chats in one place. On a computer, tap the Chats tab on the left edge and a sidebar slides in; on a phone, tap the round 💬 button at the bottom and a sheet slides up. It lists every story, Everyone story, group story, group chat, 1-on-1, roleplay and timeline you can continue, newest first, with who\'s in it, the in-story time and the last line. Tap one to jump straight back in.']},
  {v:'0.54.1', d:'2026-11-20', notes:['The Sunbringers have a lot more free time, and spend most of it together: weekday lunches at Cuppa Moment, dinners at each other\'s quarters (tea and talk at Eldreda\'s, Lindverne\'s Starlight Knight movie nights), Friday nights out on Beckford Street, Saturday strolls and game night, Sunday brunch and dinner cooked together. Work hours are shorter, with real free time in the late afternoon.']},
  {v:'0.54.0', d:'2026-11-20', notes:['Start a new roleplay without losing your old one: on a world\'s page (or the Everyone story on a universe page), "Start new roleplay" begins a fresh story in a separate save. You pick the scene like a brand new start, name it, and switch between your roleplays from the same page any time. "Start over" still exists if you really want to wipe one.']},
  {v:'0.53.0', d:'2026-11-20', notes:['Every character has an ID you can copy from their page (like CISSIA-4F2).', 'Group chats: on the home screen, start a New group chat, paste character IDs (several at once) or tap people you\'ve already talked to, search anyone by name, set where you are and what\'s going on, and chat with up to 8 characters at once, even from different worlds. They keep their own personalities and histories and only know each other if their stories say so. Each group chat has its own save.']},
@@ -4312,6 +4372,8 @@ function closeSide(){ const a=document.querySelector('aside'); if(a) a.classList
 $('#sideBtn').onclick=()=>{ document.querySelector('aside').classList.add('open'); $('#sideShade').classList.add('on'); }; $('#sideShade').onclick=closeSide; document.querySelector('aside').addEventListener('click',e=>{ if(e.target.closest('.card')) setTimeout(closeSide,60); });
 $('#phoneBtn').onclick=()=>{ if(phonesOn()) openPhone('home'); };
 $('#worldBtn').onclick=()=>openHub();
+$('#chatsFab').onclick=toggleChats; $('#chatsClose').onclick=closeChats; $('#chatsScrim').onclick=closeChats;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.body.classList.contains('chats-open')) closeChats(); });
 $('#gcCancel').onclick=()=>$('#gcModal').classList.remove('on');
 $('#gcIdAdd').onclick=gcAddIds; $('#gcIds').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); gcAddIds(); } });
 $('#gcSearch').addEventListener('input',renderGCSuggest);
@@ -4991,7 +5053,7 @@ async function renderHomeStudio(){ const sec=$('#studioSec'); if(!sec) return; i
 
 // ======================= screens =======================
 function showScreen(name){
-  SCREEN=name;
+  SCREEN=name; document.body.classList.toggle('in-world',name==='world'); document.body.classList.toggle('chats-ui',name==='home'||name==='world'); try{ closeChats(); }catch(e){}
   $('#home').classList.toggle('on',name==='home'); $('#studio').classList.toggle('on',name==='studio'); if(name==='studio') renderStudio();
   $('#app').style.display=name==='world'?'grid':'none'; if(name==='world'){ const a=$('#app'); a.classList.remove('screenIn'); void a.offsetWidth; a.classList.add('screenIn'); }
   if(name==='home'){ renderHome(); let seen=''; try{ seen=LS.getItem(LOG_SEEN_KEY)||''; }catch(e){}
