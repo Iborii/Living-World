@@ -4919,14 +4919,15 @@ function thoughtsHTML(m){ if(!CFG.showThoughts||!m.thoughts||!m.thoughts.length)
 // canon agent rarity (Google AI Mode, double-checked 2026-11-24). In this app the rank also means capability, at the user's request.
 const AGENT_RANKS={nicole:'A',anby:'A',billy:'A',seth:'A',yinhu:'A',
  nekomata:'S',zhuyuan:'S',qingyi:'S',jane:'S',cissia:'S',severian:'S',soldier11:'S',trigger:'S',seed:'S',orphie:'S',nangong:'S',aria:'S',sunna:'S',
- yixuan:'S',fufu:'S',shunguang:'S',vivian:'S',phoenix:'S',dialyn:'S',zhao:'S',promeia:'S',banyue:'S',velina:'S',norma:'S',claret:'S',roxy:'S',eldreda:'S',lindverne:'S',dracaene:'S',sigrid:'S'};
+ yixuan:'S',fufu:'S',shunguang:'S',vivian:'S',phoenix:'S',dialyn:'S',zhao:'S',promeia:'S',banyue:'S',velina:'S',norma:'S',claret:'S',roxy:'S',eldreda:'S',lindverne:'S',dracaene:'S',sigrid:'S',cecilia:'S'};
 const VOID_HUNTERS=new Set(['yixuan','shunguang','eldreda','lindverne','dracaene']);
 function rankOf(c){ return VOID_HUNTERS.has(c.id)?'Void Hunter':(AGENT_RANKS[c.id]||(c.rank&&/^[SA]$/.test(c.rankLetter||'')?c.rankLetter:null)); }
 const RANK_MEAN={'Void Hunter':'Void Hunter level: the very top; handles almost anything alone, including threats that need a whole squad for anyone else',
  S:'S-rank: handles most things on their own (Ethereals, Hollow jobs, fights, emergencies); rarely needs help',
  A:'A-rank: handles some things on their own but not all; for big threats, tough fights or deep Hollows they need backup or a team',
  none:'no rank: not a fighter; needs protection in real danger'};
-PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c.name}: ${RANK_MEAN[rankOf(c)||'none']}`);
+const FIGHT_UNKNOWN={cecilia:'her fighting style, weapon and Ether ability have never been shown; she is retired from the stage and avoids fights, so if danger comes she handles it calmly and capably, but never describe a specific weapon, technique or power for her'};
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c.name}: ${RANK_MEAN[rankOf(c)||'none']}${FIGHT_UNKNOWN[c.id]?' ('+FIGHT_UNKNOWN[c.id]+')':''}`);
   return `\nRANKS (how capable each person is on their own; let danger, fights and Hollow situations play out to match, confidently for S-rank and above, with A-rank needing backup for the big stuff):\n${L.join('\n')}\n`; });
 // show it on the relationship card
 { const _or=openRel; openRel=function(id){ _or(id); const c=charById(id); const r=c&&rankOf(c); const h=document.querySelector('#relBody .rc-head > div:last-child'); if(r&&h&&!h.querySelector('.rk')) h.insertAdjacentHTML('beforeend',`<div class="rk small" style="margin-top:2px">${r==='Void Hunter'?'🜲 Void Hunter':r+'-rank'}</div>`); }; }
@@ -5401,8 +5402,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.6.2';
 const CHANGELOG = [
+ {v:'1.6.2', d:'2026-11-20', notes:['Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power.']},
  {v:'1.6.1', d:'2026-11-20', notes:['Shunguang does a small nervous wiggle when she shows off an outfit to someone precious to her (shy little sway, tail swishing, fidgeting with a ribbon) while she waits to hear what they think, with her real Touch of Dawnlight lines ("Could you... hold the other end for me?"). Her white-haired side poses confidently instead.']},
  {v:'1.6.0', d:'2026-11-20', notes:['Ranks. Every agent has their canon rank, and in the story it now means how much they can handle alone. S-rank characters handle most things themselves (Ethereals, Hollow jobs, fights, emergencies). A-rank (Nicole, Anby, Billy, Seth, Pan Yinhu) handle some things but need backup for big threats. Void Hunters (Yixuan, Shunguang and the Sunbringers) are above that and handle almost anything. People without a rank (Belle, Wise, Cecilia, you unless you say otherwise) aren\'t fighters and need protecting in real danger. The rank shows on each relationship card.']},
  {v:'1.5.0', d:'2026-11-20', notes:['Inner thoughts. Every reply now carries what one to three characters in the scene are privately thinking, in their own inner voice, sometimes the opposite of what they said out loud. They\'re hidden by default; turn on Settings → Show thoughts to see them as little 💭 lines under each reply. Turning it on also shows thoughts from earlier replies. Nobody in the story ever knows another person\'s thoughts, including your character. In progressive story mode, unknown people\'s thoughts show as ???.']},

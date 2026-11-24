@@ -1,10 +1,10 @@
 {
- "version": "1.6.1",
+ "version": "1.6.2",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang does a small nervous wiggle when she shows off an outfit to someone precious to her (shy little sway, tail swishing, fidgeting with a ribbon) while she waits to hear what they think, with her real Touch of Dawnlight lines (\"Could you... hold the other end for me?\"). Her white-haired side poses confidently instead."
+  "Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power."
  ],
  "file": "index.html",
- "sha256": "5d7b2efe5fffbd6b378785743a3384705d45a593379b2060a0ac8d9ce743035d",
+ "sha256": "f8d9a2778b6025f70c3eac54f8c5cab1e81e85eb77cb23a64230c34d9602a812",
  "minShell": "0.5.0"
 }
