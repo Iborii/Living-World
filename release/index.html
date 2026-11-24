@@ -4663,9 +4663,18 @@ function tidyTextMsg(t){ t=String(t||'').trim(); if(!t||/^\[/.test(t)) return [t
   for(let i=0;i<toks.length;i++){ const x=toks[i]; if(/^\.\s+$/.test(x)){ if(ABBR.test(cur+'.')){ cur+=x; continue; } parts.push(cur); cur=''; } else cur+=x; } if(cur) parts.push(cur);
   return parts.map(p=>p.trim().replace(/(?<!\.)\.$/,'')).filter(Boolean).slice(0,4); }
 { const _at=addText; addText=function(id, me, text, kind){ if(me||kind==='call'||typeof text!=='string') return _at(id,me,text,kind); const ps=tidyTextMsg(text); if(ps.length<=1) return _at(id,me,ps[0]??text,kind); for(const p of ps) _at(id,me,p,kind); }; }
-// Story: spoken lines don't end in a period, except the very last line of the reply (that's the conversation ending).
-function tidyStoryQuotes(s){ const re=/([^.])\.(["”])/g; const hits=[...s.matchAll(re)]; if(hits.length<=1) return s; const lastIx=hits[hits.length-1].index; return s.replace(re,(m,a,q,off)=>off===lastIx?m:a+q); }
+// Story: inside spoken lines, sentence periods become commas ("Hey. Come in." -> "Hey, come in"), and the line doesn't end in a period,
+// except the very last spoken line of the reply (that's the conversation ending, so it keeps its period).
+function keepCap(w){ if(/^(I|I'm|I'll|I've|I'd|OK|TV)\b/.test(w)) return true; const n=[uN(),...(W?W.characters.flatMap(c=>[c.name,...String(c.full||'').split(/\s+/)]):[])].filter(Boolean); return n.some(x=>w.startsWith(x)); }
+function tidyQuote(inner,last){ let out=inner.replace(/(^|[^.])\.\s+(?=(\S+))/g,(m,a,nx,off,str)=>{ const before=str.slice(0,off+a.length+1); if(ABBR.test(before)) return m; return a+', '; });
+  out=out.replace(/, (\S+)/g,(m,w)=>', '+(keepCap(w)?w:w.charAt(0).toLowerCase()+w.slice(1)));
+  if(!last) out=out.replace(/([^.])\.$/,'$1'); return out; }
+function tidyStoryQuotes(s){ const re=/(["“])([^"“”\n]{1,600}?)(["”])/g; const hits=[...s.matchAll(re)]; if(!hits.length) return s; const lastIx=hits[hits.length-1].index; return s.replace(re,(m,o,inner,c,off)=>o+tidyQuote(inner,off===lastIx)+c); }
 REPLY_HOOKS.push(msg=>{ try{ if(msg&&typeof msg.text==='string'&&!msg._pt){ msg._pt=1; msg.text=tidyStoryQuotes(msg.text); } }catch(e){} });
+// one-time cleanup of stories and texts written before this fix
+SCREEN_HOOKS.push(()=>{ try{ if(!S||S._perFix2) return; S._perFix2=1; for(const m of S.chat||[]) if(m.role==='assistant'&&typeof m.text==='string'){ m.text=tidyStoryQuotes(m.text); m._pt=1; }
+  let P=null; try{ P=phone(); }catch(e){} if(P&&P.threads) for(const k of Object.keys(P.threads)) for(const m of P.threads[k]) if(!m.me&&m.kind!=='call'&&typeof m.text==='string'&&!/^\[/.test(m.text)&&!/^\S+(\s\S+)?\.$/.test(m.text)) m.text=m.text.replace(/(^|[^.])\.\s+/g,'$1, ').replace(/(?<!\.)\.$/,'');
+  save(); render(); }catch(e){ console.warn('perfix',e); } });
 // <<< periods
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -5136,8 +5145,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.97.5';
+const APP_VERSION = '0.97.6';
 const CHANGELOG = [
+ {v:'0.97.6', d:'2026-11-20', notes:['No more periods after every sentence, in every message. Inside spoken lines, sentences now run on with commas the way people actually talk: "Hey. Come in. Nangong said you were coming." becomes "Hey, come in, Nangong said you were coming". Only the very last spoken line of a reply keeps a period, because that\'s the conversation ending. Names and "I" stay capitalized, and "...", ! and ? are left alone. Texts work the same way. Stories and texts you already have are cleaned up once when you open them.']},
  {v:'0.97.5', d:'2026-11-20', notes:['Periods are enforced now instead of only asked for. Texts: no period at the end of a message, and a text written like "Hey. I saw your message. See you at 5." arrives as three quick bubbles with no periods, the way people actually text. A short cold reply like "ok." keeps its period on purpose, and "..." is left alone. Story: spoken lines lose their ending period, except the very last line of the reply.']},
  {v:'0.97.4', d:'2026-11-20', notes:['Nangong\'s goal is canon now: her only real goal is making her friends happy. Every goal she has is about Sunna and Aria: getting Sunna\'s song onto the stage she dreams of, making their next show one they\'ll remember, and quietly keeping money worries off them. Existing stories switch over too.']},
  {v:'0.97.3', d:'2026-11-20', notes:['Nangong\'s goals fixed. She has money (she makes it herself trading stocks and investing, and nobody knows if her family is rich too), so she isn\'t saving up for anything. Her goals now: keep secretly covering the group\'s costs without Sunna or Aria catching on, get the Angels and Sunna\'s songs a headline slot at a real venue, and figure out a dream of her own instead of a borrowed one. Her spending money also matches: about 150,000 Dennies on hand instead of 9,000, and existing stories are updated too.']},
