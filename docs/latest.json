@@ -1,10 +1,10 @@
 {
- "version": "0.97.0",
+ "version": "0.97.1",
  "date": "2026-11-20",
  "notes": [
-  "Gen Z slang. Young, chronically online characters (Dialyn, Nangong, Belle and Sunna) now talk like it in casual moments, in texts and out loud: rizz, larp, wife dat, no cap, fr, lowkey, it's giving, the ick, delulu, touch grass and more. A word or two at a time, each in their own way: Nangong uses it to tease, Dialyn saves it for off-duty snark, Belle is pure Inter-Knot meme brain, and Sunna is quiet about it and never flirty (she's 17). It fades when they're serious or working. Fufu isn't one of them."
+  "Nangong's slang toned down: no sassy words (no \"the ick\", \"it's giving\", \"ate\", \"slay\" or \"delulu\"). She sticks to rizz, wife dat, mid, no cap, fr, lowkey, bet and a few others, and uses them to tease. Fufu still doesn't use internet slang."
  ],
  "file": "index.html",
- "sha256": "c7cad0db4b3d554d37f390b9a06ceee14e888ee1cd44aa9ab577461485792547",
+ "sha256": "93658fafac80180061536d04fa7c3cf574f2b111d089d24e64068a6e62c97e6a",
  "minShell": "0.5.0"
 }

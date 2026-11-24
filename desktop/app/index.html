@@ -4636,11 +4636,13 @@ setInterval(()=>{ try{ if(!S||!W||SCREEN!=='world') return; const k=Math.floor(S
 // >>> genz
 // ======================= Gen Z slang for young, chronically online characters =======================
 // under 23 and always online (user's call + Google AI Mode check, 2026-11-24). NOT Fufu (small-town, offline).
+const GENZ_WORDS={nangong:'rizz, larp, "wife that" (as "wife dat"), mid, no cap, fr, lowkey/highkey, bet, W/L, NPC, caught in 4K, main character, rent free, bruh'};
 const GENZ={dialyn:'snarky; saves it for off-duty, texts and roasting coworkers; never in her customer-service voice',
- nangong:'teasing and flirty with it ("rizz", "the ick", "it\'s giving", "mid", "ate"); plays it cool, uses it to tease',
+ nangong:'teasing and flirty with it ("rizz", "wife dat", "mid"); plays it cool, uses it to tease. Never sassy slang: no "the ick", "it\'s giving", "ate", "slay", "periodt", "delulu" or similar',
  belle:'meme-brained Proxy energy from living on Inter-Knot; casual and quick ("no cap", "fr", "lowkey", "L/W", "touch grass")',
  sunna:'quiet and shy, so it comes out small and mostly in texts or with close friends ("lowkey", "fr", "slay", "it\'s giving"); she is 17, so nothing flirty'};
-function genzLine(c){ const g=GENZ[c.id]; if(!g) return ''; return `\nGEN Z SPEAK: ${c.name} is young and chronically online, so internet slang is just how they talk in casual moments: words like ${c.minor?'':'rizz, "wife that" (as "wife dat"), '}larp, no cap, fr, lowkey/highkey, bet, slay, ate, mid, the ick, delulu, it's giving, rent free, main character, touch grass, ratio, W/L, bruh, sus, bussin, NPC, caught in 4K. Their way: ${g}. Sprinkle it naturally (a word or two, not every line), in their own voice; it fades when they're serious, upset or at work.`; }
+function genzLine(c){ const g=GENZ[c.id]; if(!g) return ''; const base='larp, no cap, fr, lowkey/highkey, bet, slay, ate, mid, the ick, delulu, it\'s giving, rent free, main character, touch grass, ratio, W/L, bruh, sus, bussin, NPC, caught in 4K'; const words=GENZ_WORDS[c.id]?GENZ_WORDS[c.id]+' (only these)':(c.minor?'':'rizz, "wife that" (as "wife dat"), ')+base;
+  return `\nGEN Z SPEAK: ${c.name} is young and chronically online, so internet slang is just how they talk in casual moments: words like ${words}. Their way: ${g}. Sprinkle it naturally (a word or two, not every line), in their own voice; it fades when they're serious, upset or at work.`; }
 { const _cv=charVoice; charVoice=function(c,...a){ return _cv(c,...a)+genzLine(c); }; }
 PROMPT_HOOKS.push(pres=>{ const L=pres.map(genzLine).filter(Boolean); return L.length?'\n'+L.join('\n')+'\n':''; });
 // <<< genz
@@ -5113,8 +5115,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.97.0';
+const APP_VERSION = '0.97.1';
 const CHANGELOG = [
+ {v:'0.97.1', d:'2026-11-20', notes:['Nangong\'s slang toned down: no sassy words (no "the ick", "it\'s giving", "ate", "slay" or "delulu"). She sticks to rizz, wife dat, mid, no cap, fr, lowkey, bet and a few others, and uses them to tease. Fufu still doesn\'t use internet slang.']},
  {v:'0.97.0', d:'2026-11-20', notes:['Gen Z slang. Young, chronically online characters (Dialyn, Nangong, Belle and Sunna) now talk like it in casual moments, in texts and out loud: rizz, larp, wife dat, no cap, fr, lowkey, it\'s giving, the ick, delulu, touch grass and more. A word or two at a time, each in their own way: Nangong uses it to tease, Dialyn saves it for off-duty snark, Belle is pure Inter-Knot meme brain, and Sunna is quiet about it and never flirty (she\'s 17). It fades when they\'re serious or working. Fufu isn\'t one of them.']},
  {v:'0.96.1', d:'2026-11-20', notes:['Nangong\'s wings, checked against canon. Her feathered wings and halo are real (the only real ones in the group), but the wings sit on mechanical mounts with screws and release-valve fittings marked "Suriel", over two jagged X-shaped scars on her upper back. The game never explains the scars or says whether the wings are partly prosthetic, so she doesn\'t either: she deflects if asked and guards where the wings join her back.']},
  {v:'0.96.0', d:'2026-11-20', notes:['Thiren instincts. Every Thiren\'s animal side slips out on its own, set off by what\'s around them. Nekomata wiggles her butt before she pounces, swipes with her claws, knocks things over when bored and catnaps anywhere. Ju Fufu claws at things for 20+ minutes if nobody stops her, chases paper in the wind and anything rolling, gets pulled off course by the smell of meat, and can\'t keep her voice down. Zhao curls into a ball to sleep and secretly hates meat. Yinhu puts food first. Seth\'s ears swivel toward gossip and he hisses when mad. Jane is nocturnal and hoards shiny things. Cissia chases warm sunbeams and flicks her tongue. Sigrid\'s ears and tail, Shunguang\'s sensitive ears and Nangong\'s wings react on their own. Off-screen, free Thirens sometimes get caught up in one too. Researched one by one with Google AI Mode and the wiki.']},
