@@ -1,10 +1,10 @@
 {
- "version": "0.88.0",
+ "version": "0.89.0",
  "date": "2026-11-20",
  "notes": [
-  "Your body: hunger, energy and sleep. Skip meals or stay up too long and the story shows it; people who care notice. New \ud83e\uddcd You tab in Tools."
+  "Dating bars: once it's official, three small bars sit under their name in the with-you bar. They start black and fade into the character's color as your points grow, one bar per stage. Tap anyone's name there to open their relationship card: trust, mood, dating stage, points and how far to the next stage, recent ups and downs, what they've told you they want, their goal, inside jokes, secrets, promises and their tell. Tone: someone you mildly irritate may go a little tsundere, if it fits them."
  ],
  "file": "index.html",
- "sha256": "4e4f59d042958c1bfb6f75c01d5e27b3d89ab0cf4e4dcb7be571d5ad9b3825ea",
+ "sha256": "a9afd79c1eac3adddd5e0c4ad2555d7d1c449317676fe89b91d135d7c3c95a35",
  "minShell": "0.5.0"
 }

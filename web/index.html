@@ -790,6 +790,19 @@ body:has(.modal.on) #chatsFab{display:none}
 /* >>> moods */
 .mood-b{font-size:13px;margin-right:3px}
 /* <<< moods */
+/* >>> relcard */
+.bond[data-rel]{cursor:pointer;position:relative}
+.bond.dt{padding-bottom:9px}
+.rbars{position:absolute;left:12px;right:12px;bottom:3px;display:flex;gap:3px;font-style:normal}
+.rbars i{flex:1;height:3px;border-radius:2px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);transition:background .6s}
+.rbars.big{position:static;margin:4px 0 10px}.rbars.big i{height:8px;border-radius:3px}
+#relModal{z-index:42}#relModal .box{width:min(520px,94vw);max-height:88vh;overflow-y:auto;padding-top:max(18px,env(safe-area-inset-top))}
+.rc-head{display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--cc);padding-bottom:10px;margin-bottom:6px}.rc-head h2{margin:0}
+.rc-sec{margin-top:14px}.rc-sec h4{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.rc-row{display:flex;gap:8px;align-items:baseline;padding:3px 0}.rc-row>span:first-child{width:118px;color:var(--muted);font-size:13px}
+.rc-item{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}.rc-item i,.rc-log i{color:var(--muted);font-size:12px;font-style:normal;margin-left:4px}
+.rc-log{margin-top:6px;font-size:13px}.rc-log .up{color:#6c6}.rc-log .dn{color:#e66}.rc-log span{display:inline-block;min-width:30px;font-variant-numeric:tabular-nums}
+/* <<< relcard */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -1057,6 +1070,9 @@ body:has(.modal.on) #chatsFab{display:none}
   <div class="tools-body" id="toolsBody"></div>
 </div></div>
 <!-- <<< tools -->
+<!-- >>> relcard -->
+<div class="modal" id="relModal"><div class="box"><div style="display:flex;justify-content:flex-end"><button class="ghost" id="relClose">Close</button></div><div id="relBody"></div></div></div>
+<!-- <<< relcard -->
 <div id="app" style="display:none">
   <header>
     <div class="hgrp hnavgrp">
@@ -4176,7 +4192,7 @@ function lieSeen(id){ return ((S.lies||{})[id]||[]).length; }
 CONTROL_HOOKS.LIE=arg=>{ const p=arg.split(':').map(x=>x.trim()); const c=charByName(p[0]); if(!c) return; S.lies=S.lies||{}; const L=S.lies[c.id]=S.lies[c.id]||[]; L.push({t:S.clock, intent:(p[1]||'').toLowerCase().slice(0,20), what:p.slice(2).join(':').slice(0,160)}); if(L.length>30) L.shift();
   if(L.length===3) notice(`🎭 You're starting to pick up on ${c.name}'s tell.`); };
 PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const tl=pres.map(c=>`${c.name}: ${tellOf(c)}${lieSeen(c.id)>=3?` (${uN()} has started to notice this)`:''}`);
-  return `\nWORD MOODS AND LITTLE LIES: people don't always say exactly what they mean. They joke, tease, exaggerate, play dumb, tell white lies to be kind, deny being embarrassed or worried, and now and then lie for real, each in character (some almost never, some constantly). Make the intent readable through delivery: a joking lie gets a grin or is given away a moment later; teasing has warmth; a white lie is soft; a real lie is smooth. The tone line under the dialogue says when a line is teasing, joking or sarcastic. When someone isn't telling the truth, show their tell in the narration without spelling out that it's a lie:\n- ${tl.join('\n- ')}\nAfter a reply where someone lied or bent the truth, add [[LIE: Name: joking|teasing|white|embarrassed|protective|selfish|deceit: what it was]] at the very end.\n`; });
+  return `\nWORD MOODS AND LITTLE LIES: people don't always say exactly what they mean. They joke, tease, exaggerate, play dumb, tell white lies to be kind, deny being embarrassed or worried, go tsundere when someone they like irritates them a little (huffy denials, "it's not like I did it for you", helping anyway while acting put out; only the mild version, and only if it fits who they are), and now and then lie for real, each in character (some almost never, some constantly). Make the intent readable through delivery: a joking lie gets a grin or is given away a moment later; teasing has warmth; tsundere huffiness has obvious care underneath; a white lie is soft; a real lie is smooth. The tone line under the dialogue says when a line is teasing, joking or sarcastic. When someone isn't telling the truth, show their tell in the narration without spelling out that it's a lie:\n- ${tl.join('\n- ')}\nAfter a reply where someone lied or bent the truth, add [[LIE: Name: joking|teasing|white|embarrassed|protective|selfish|deceit: what it was]] at the very end.\n`; });
 toolTab('tells','🎭 Tells',body=>{ const cs=W.characters.filter(c=>!isDead(c)); const known=cs.filter(c=>lieSeen(c.id)>=3), learning=cs.filter(c=>lieSeen(c.id)>0&&lieSeen(c.id)<3);
   body.innerHTML=`<p class="small" style="margin-top:0">People joke, tease and fib. Catch someone not telling the truth a few times and you'll learn their tell.</p>
   <h3 style="margin:12px 0 8px">Tells you know</h3>${known.length?known.map(c=>{ const L=S.lies[c.id]; const by={}; L.forEach(x=>by[x.intent||'?']=(by[x.intent||'?']||0)+1); return `<div class="sr-row" style="cursor:default"><b>${esc(c.name)}</b>: ${esc(tellOf(c))}<div class="sr-m" style="margin:4px 0 0">${Object.entries(by).map(([k,v])=>`${esc(k)} ×${v}`).join(' · ')}</div>${L.slice(-3).reverse().map(x=>`<div class="small">${mmdd(x.t)}: ${esc(subUser(x.what||''))} <i>(${esc(x.intent)})</i></div>`).join('')}</div>`; }).join(''):'<div class="small">None yet.</div>'}
@@ -4341,6 +4357,33 @@ toolTab('you','🧍 You',body=>{ const H=hungerOf(), E=energyOf(); let c=[]; try
   <div class="sr-row" style="cursor:default">😴 <b>Energy:</b> ${E[0]} · awake ${Math.round((S.clock-S.user.lastSleep)/HOUR)} h</div>
   ${c.length?`<div class="sr-row" style="cursor:default">🚿 <b>Body:</b> ${esc(c.join('; '))}</div>`:''}${ill.length?`<div class="sr-row" style="cursor:default">🤒 ${esc(ill.join('; '))}</div>`:''}`; });
 // <<< needs
+// >>> relcard
+// ======================= relationship card + dating bars =======================
+function relBars(id){ const d=(S.dating||{})[id]; if(!d||!d.on) return ''; const c=charById(id); if(!c) return '';
+  return `<i class="rbars">${[0,1,2].map(i=>{ const f=Math.max(0,Math.min(1,(d.pts-60*i)/60)); return `<i style="background:color-mix(in srgb, ${c.color} ${Math.round(f*100)}%, #000)"></i>`; }).join('')}</i>`; }
+function wantsOf(id){ return ((S.wants||{})[id]||[]); }
+CONTROL_HOOKS.WANT=arg=>{ const i=arg.indexOf(':'); if(i<1) return; const c=charByName(arg.slice(0,i).trim()); if(!c) return; const text=arg.slice(i+1).trim().slice(0,200); if(!text) return;
+  S.wants=S.wants||{}; const L=S.wants[c.id]=S.wants[c.id]||[]; if(L.some(w=>w.text.toLowerCase()===text.toLowerCase())) return; L.push({t:S.clock,text}); if(L.length>25) L.shift(); };
+PROMPT_HOOKS.push(pres=>{ const L=pres.filter(c=>wantsOf(c.id).length).map(c=>`${c.name}: ${wantsOf(c.id).slice(-5).map(w=>w.text).join('; ')}`);
+  return `\nWHAT THEY'VE TOLD ${uN().toUpperCase()} THEY WANT: ${L.length?L.join(' | '):'nothing yet'}. When someone tells ${uN()} a real desire, wish or want of their own (something they want to do, have, become or have happen between them), add [[WANT: Name: what they want]] at the very end.\n`; });
+function relSec(t,h){ return h?`<div class="rc-sec"><h4>${t}</h4>${h}</div>`:''; }
+function openRel(id){ const c=charById(id); if(!c) return; const st=S.chars[id]; const d=(S.dating||{})[id]; let h='';
+  const tryv=f=>{ try{ return f(); }catch(e){ return ''; } };
+  h+=`<div class="rc-head" style="--cc:${c.color}">${avHTML(c,52,false)}<div><h2>${esc(c.full)}</h2><div class="small">${esc(st.loc||'')}${st.act?' · '+esc(String(st.act).replace(/\s*\(with you\)$/,'')):''}</div></div></div>`;
+  h+=relSec('Standing',`<div class="rc-row"><span>Trust</span><b>${st.trust}/100</b> <span class="small">${trustLabel(st.trust)}</span></div>${tryv(()=>{ const I=moodInfo(mv(id)); return `<div class="rc-row"><span>Mood</span><b>${esc(I[1])}</b></div>`; })}`);
+  if(d) { const s=dStage(Math.max(0,d.pts)); h+=relSec(d.on?'Dating':'Dated',`${d.on?relBars(id).replace('rbars','rbars big'):''}
+    <div class="rc-row"><span>Stage</span><b>${esc(s.name)}</b></div><div class="rc-row"><span>Points</span><b>${Math.max(0,d.pts)}/180</b> <span class="small">${d.pts>=180?'maxed':`${s.max+(s.n<3?1:0)-Math.max(0,d.pts)} to ${s.n<3?'the next stage':'the top'}`}</span></div>
+    <div class="rc-row"><span>Together since</span><b>${mmdd(d.since)}</b></div>${d.strikes?`<div class="rc-row"><span>On thin ice</span><b>${d.strikes} strike${d.strikes>1?'s':''}</b></div>`:''}${!d.on&&d.endWhy?`<div class="rc-row"><span>Ended</span><b>${esc(d.endWhy)}</b></div>`:''}
+    ${(d.log||[]).length?`<div class="rc-log">${d.log.slice(-8).reverse().map(x=>`<div><span class="${x.d>0?'up':x.d<0?'dn':''}">${x.d>0?'+':''}${x.d||''}</span> ${esc(x.why||'')} <i>${mmdd(x.t)}</i></div>`).join('')}</div>`:''}`); }
+  const W_=wantsOf(id); h+=relSec('What they want',W_.length?W_.slice().reverse().map(w=>`<div class="rc-item">${esc(w.text)} <i>${mmdd(w.t)}</i></div>`).join(''):'<div class="small">They haven\'t told you yet.</div>');
+  h+=relSec('Their goal',tryv(()=>{ const g=goalOf(id); return g?`<div class="rc-item">${esc(g.text)} · ${g.p}%</div>`:''; }));
+  h+=relSec('Inside jokes and nicknames',(S.jokes||[]).filter(j=>j.who.includes(id)).slice(-6).map(j=>`<div class="rc-item">${esc(j.text)}</div>`).join(''));
+  h+=relSec('Secrets',(S.secrets||[]).filter(s=>(s.owner===id&&s.knownBy.includes('user'))||(s.owner==='user'&&s.knownBy.includes(id))).map(s=>`<div class="rc-item">${s.owner==='user'?'You told them: ':''}${esc(s.text)}</div>`).join(''));
+  h+=relSec('Promises',(S.promises||[]).filter(p=>p.from===id||p.to===id).slice(-5).map(p=>`<div class="rc-item">${p.from==='user'?'You':esc(c.name)}: ${esc(p.text)} <i>${esc(p.status)}</i></div>`).join(''));
+  h+=relSec('Their tell',tryv(()=>((S.lies||{})[id]||[]).length>=3?`<div class="rc-item">${esc(tellOf(c))}</div>`:''));
+  $('#relBody').innerHTML=h; $('#relModal').classList.add('on'); }
+document.addEventListener('click',e=>{ const b=e.target.closest('#statusbar .bond[data-rel]'); if(b){ openRel(b.dataset.rel); return; } if(e.target.id==='relClose'||e.target.id==='relModal') $('#relModal').classList.remove('on'); });
+// <<< relcard
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4549,7 +4592,7 @@ function renderCards(){
 function renderStatus(){
   const CS=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
   const presI=present().map(c=>c.id); const near=CS.filter(c=>presI.includes(c.id)), far=CS.filter(c=>!presI.includes(c.id));
-  const pill=c=>{ const t=S.chars[c.id].trust; return `<span class="bond" title="${esc(c.full)}: ${t}/100, ${trustLabel(t)}${(()=>{ try{ return ' · mood: '+moodInfo(mv(c.id))[1]; }catch(e){ return ''; } })()}"><i class="bd" style="background:${c.color}"></i>${(()=>{ try{ return moodBadge(c.id); }catch(e){ return ''; } })()}${esc(c.name)} <b>${t}</b><i class="tl">${trustLabel(t)}</i><i class="bar"><i style="width:${t}%;background:${c.color}"></i></i></span>`; };
+  const pill=c=>{ const t=S.chars[c.id].trust; const rb=(()=>{ try{ return relBars(c.id); }catch(e){ return ''; } })(); return `<span class="bond${rb?' dt':''}" data-rel="${c.id}" title="${esc(c.full)}: ${t}/100, ${trustLabel(t)}${(()=>{ try{ return ' · mood: '+moodInfo(mv(c.id))[1]; }catch(e){ return ''; } })()}"><i class="bd" style="background:${c.color}"></i>${(()=>{ try{ return moodBadge(c.id); }catch(e){ return ''; } })()}${esc(c.name)} <b>${t}</b><i class="tl">${trustLabel(t)}</i><i class="bar"><i style="width:${t}%;background:${c.color}"></i></i>${rb}</span>`; };
   const open=$('#statusbar').classList.contains('full');
   $('#statusbar').innerHTML=(near.length?near.map(pill).join(''):'<span class="small">Nobody with you</span>')+
     `<button class="ghost morebtn" id="bondMore">${open?'Less':'All bonds & hygiene'}</button>`+
@@ -4810,8 +4853,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.88.0';
+const APP_VERSION = '0.89.0';
 const CHANGELOG = [
+ {v:'0.89.0', d:'2026-11-20', notes:['Dating bars: once it\'s official, three small bars sit under their name in the with-you bar. They start black and fade into the character\'s color as your points grow, one bar per stage. Tap anyone\'s name there to open their relationship card: trust, mood, dating stage, points and how far to the next stage, recent ups and downs, what they\'ve told you they want, their goal, inside jokes, secrets, promises and their tell. Tone: someone you mildly irritate may go a little tsundere, if it fits them.']},
  {v:'0.88.0', d:'2026-11-20', notes:['Your body: hunger, energy and sleep. Skip meals or stay up too long and the story shows it; people who care notice. New 🧍 You tab in Tools.']},
  {v:'0.87.0', d:'2026-11-20', notes:['📈 Your skills grow. Cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying and charm all improve as you actually do them, from total beginner to expert. The story keeps results true to your level (your first dinner might burn; later people ask for seconds), and a little banner tells you when you\'ve leveled up. See them in 🧰 Tools → 📈 Skills.']},
  {v:'0.86.0', d:'2026-11-20', notes:['Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask "wait, when was that?". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh.']},
