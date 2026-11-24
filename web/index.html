@@ -4914,6 +4914,23 @@ function thoughtsHTML(m){ if(!CFG.showThoughts||!m.thoughts||!m.thoughts.length)
     row.querySelector('#thOn').onchange=e=>{ CFG.showThoughts=e.target.checked; saveCfg(); if(S) renderFeed(); }; }
   row.querySelector('#thOn').checked=!!CFG.showThoughts; return out; }; }
 // <<< thoughts
+// >>> ranks
+// ======================= agent ranks: how much they can handle on their own =======================
+// canon agent rarity (Google AI Mode, double-checked 2026-11-24). In this app the rank also means capability, at the user's request.
+const AGENT_RANKS={nicole:'A',anby:'A',billy:'A',seth:'A',yinhu:'A',
+ nekomata:'S',zhuyuan:'S',qingyi:'S',jane:'S',cissia:'S',severian:'S',soldier11:'S',trigger:'S',seed:'S',orphie:'S',nangong:'S',aria:'S',sunna:'S',
+ yixuan:'S',fufu:'S',shunguang:'S',vivian:'S',phoenix:'S',dialyn:'S',zhao:'S',promeia:'S',banyue:'S',velina:'S',norma:'S',claret:'S',roxy:'S',eldreda:'S',lindverne:'S',dracaene:'S',sigrid:'S'};
+const VOID_HUNTERS=new Set(['yixuan','shunguang','eldreda','lindverne','dracaene']);
+function rankOf(c){ return VOID_HUNTERS.has(c.id)?'Void Hunter':(AGENT_RANKS[c.id]||(c.rank&&/^[SA]$/.test(c.rankLetter||'')?c.rankLetter:null)); }
+const RANK_MEAN={'Void Hunter':'Void Hunter level: the very top; handles almost anything alone, including threats that need a whole squad for anyone else',
+ S:'S-rank: handles most things on their own (Ethereals, Hollow jobs, fights, emergencies); rarely needs help',
+ A:'A-rank: handles some things on their own but not all; for big threats, tough fights or deep Hollows they need backup or a team',
+ none:'no rank: not a fighter; needs protection in real danger'};
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c.name}: ${RANK_MEAN[rankOf(c)||'none']}`);
+  return `\nRANKS (how capable each person is on their own; let danger, fights and Hollow situations play out to match, confidently for S-rank and above, with A-rank needing backup for the big stuff):\n${L.join('\n')}\n`; });
+// show it on the relationship card
+{ const _or=openRel; openRel=function(id){ _or(id); const c=charById(id); const r=c&&rankOf(c); const h=document.querySelector('#relBody .rc-head > div:last-child'); if(r&&h&&!h.querySelector('.rk')) h.insertAdjacentHTML('beforeend',`<div class="rk small" style="margin-top:2px">${r==='Void Hunter'?'🜲 Void Hunter':r+'-rank'}</div>`); }; }
+// <<< ranks
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5384,8 +5401,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const CHANGELOG = [
+ {v:'1.6.0', d:'2026-11-20', notes:['Ranks. Every agent has their canon rank, and in the story it now means how much they can handle alone. S-rank characters handle most things themselves (Ethereals, Hollow jobs, fights, emergencies). A-rank (Nicole, Anby, Billy, Seth, Pan Yinhu) handle some things but need backup for big threats. Void Hunters (Yixuan, Shunguang and the Sunbringers) are above that and handle almost anything. People without a rank (Belle, Wise, Cecilia, you unless you say otherwise) aren\'t fighters and need protecting in real danger. The rank shows on each relationship card.']},
  {v:'1.5.0', d:'2026-11-20', notes:['Inner thoughts. Every reply now carries what one to three characters in the scene are privately thinking, in their own inner voice, sometimes the opposite of what they said out loud. They\'re hidden by default; turn on Settings → Show thoughts to see them as little 💭 lines under each reply. Turning it on also shows thoughts from earlier replies. Nobody in the story ever knows another person\'s thoughts, including your character. In progressive story mode, unknown people\'s thoughts show as ???.']},
  {v:'1.4.0', d:'2026-11-20', notes:['Schedules rebalanced. Angels of Delusion: about 25% of their waking day is idol work (streams, content shoots, setlists, fan letters, the Saturday show), about 15% is practice, and the rest is free time together: brunch, Godfinger, Coff Cafe, the pier, sleepovers at Sunna\'s, nights at the secret base. Sunna keeps her two Coff Cafe shifts. Yunkui Summit: about 10% productive, the rest lazing around the temple, snacks, napping, wandering. Norma\'s tinkering is all free time; only her ESD image campaign and teaching days take a slice. Everyone else got an estimate (Severian and Zhu Yuan are busy, Billy and Nekomata barely), and over-scheduled days are trimmed to it. Real jobs now count as busy even when they sound casual (Dialyn\'s phone shifts, Zhao\'s audits, Claret\'s forging). If you date someone, they want to give you their free time, though work and practice still come first.']},
  {v:'1.3.0', d:'2026-11-20', notes:['Characters have their own lives. They no longer act like they have endless free time for you. Every reply now says, for each person with you, whether they\'re supposed to be somewhere right now (work, shifts, gigs, rehearsal, training, class, duty), what their next real commitment is, and how long they\'ve been with you. If they\'re skipping something they notice and leave. When a commitment is close they start wrapping up and checking the time. After a couple of hours together they want to go do their own things, and they say no to plans that clash. If someone ignores a commitment for over an hour, the app sends them off (dating partners get more leeway). Part-time gigs, training, practice and errands now count as being busy. Zhao and Shunguang show no outward signs of their periods at all. Shunguang: both sides share one memory, so whatever one does, the other lived too. The white-haired side sits boldly with her legs crossed while Xiao\'Guang sits stiff with her knees together. If she has feelings for you and you act flustered, she gets bolder (touching your face, getting dangerously close), and in a relationship she may even kiss you as a teasing "punishment".']},

@@ -1,10 +1,10 @@
 {
- "version": "1.5.0",
+ "version": "1.6.0",
  "date": "2026-11-20",
  "notes": [
-  "Inner thoughts. Every reply now carries what one to three characters in the scene are privately thinking, in their own inner voice, sometimes the opposite of what they said out loud. They're hidden by default; turn on Settings \u2192 Show thoughts to see them as little \ud83d\udcad lines under each reply. Turning it on also shows thoughts from earlier replies. Nobody in the story ever knows another person's thoughts, including your character. In progressive story mode, unknown people's thoughts show as ???."
+  "Ranks. Every agent has their canon rank, and in the story it now means how much they can handle alone. S-rank characters handle most things themselves (Ethereals, Hollow jobs, fights, emergencies). A-rank (Nicole, Anby, Billy, Seth, Pan Yinhu) handle some things but need backup for big threats. Void Hunters (Yixuan, Shunguang and the Sunbringers) are above that and handle almost anything. People without a rank (Belle, Wise, Cecilia, you unless you say otherwise) aren't fighters and need protecting in real danger. The rank shows on each relationship card."
  ],
  "file": "index.html",
- "sha256": "4e4c865e15a444badb155eb8ad2c558ba23b774f1f69a89e2fc97ce2f26a2a29",
+ "sha256": "937c57df19e07e226f19f5b3b0cc14c7a56aa2218fc50fc556fb3913f64b977c",
  "minShell": "0.5.0"
 }
