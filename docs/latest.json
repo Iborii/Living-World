@@ -1,10 +1,10 @@
 {
- "version": "0.82.0",
+ "version": "0.83.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83c\udfaf Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency's debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn't explode. Goals move a little every day whether you're there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone's progress in \ud83e\uddf0 Tools \u2192 \ud83c\udfaf Goals."
+  "People come find you. Characters who trust you (55+) or are dating you sometimes show up on their own, without being texted: because they missed you, were bored, brought food, have news to tell you in person, or were passing by. It happens during the day (9 to 22), only when they're free, more often the closer you are and the better their mood, at most once every ten hours. If you're sick, close friends may turn up with soup and medicine. If you're not there when they arrive, they remember it."
  ],
  "file": "index.html",
- "sha256": "9ba94d36709860c1fb69b032ed3810e4da9bc202575dd6729d0992844b49538c",
+ "sha256": "e2b864a678379aaa108d0d32d5fc84f7cf97ead3cbb80fedd6122742e7309e02",
  "minShell": "0.5.0"
 }

@@ -3065,23 +3065,24 @@ function applyRide(arg){ const mode=String(arg||'').trim().toLowerCase().split(/
 // ---- someone you texted is coming over ----
 function comingContext(c){ const st=S.chars[c.id]; const r=bestRoute(st.loc,S.user.loc,c.id); const busy=BUSY.test(st.act||''); const tr=st.trust||0;
   return `IF ${uN().toUpperCase()} ASKS YOU TO COME OVER / MEET UP NOW: decide like the real ${c.name}. You trust ${uN()} ${tr}/100. Right now you are: ${st.act} at ${st.loc}${busy?' (a real commitment)':''}. Getting to ${S.user.loc} would take about ${r.min} minutes by ${r.mode}${r.cost?` and cost ${money(r.cost)} (you have ${money(walletOf(c.id).money)})`:''}${!metroRunning()?'; the metro has stopped for the night':''}. Low trust, real duties, being asleep, far away, broke, or just not in the mood are all good reasons to say no or "later" (give your real reason or an excuse that fits you). If you agree to come now, after your texts write a last line: COMING: minutes (your honest ETA). If you say no or not now, don't write it.`; }
-function startComing(c, eta){ const st=S.chars[c.id]; const r=bestRoute(st.loc,S.user.loc,c.id); eta=Math.max(r.min||5, Math.min(240, Math.round(+eta||r.min||20)));
+function startComing(c, eta, why){ const st=S.chars[c.id]; const r=bestRoute(st.loc,S.user.loc,c.id); eta=Math.max(r.min||5, Math.min(240, Math.round(+eta||r.min||20)));
   const now=S.clock, arrive=now+eta*MIN; const target=S.user.loc;
   S.events=S.events||[]; const d=isoDate(now); const t0=hhmm(now), t1=hhmm(arrive);
   if(isoDate(arrive)===d) S.events.push({id:'go'+now, who:c.id, date:d, start:t0, end:t1, loc:`on the way to ${target}`, act:`heading over to meet ${uN()} (${r.mode})`, coming:true});
   const endM=Math.min(1439, dt(arrive).h*60+dt(arrive).mi+150);
-  S.events.push({id:'meet'+now, who:c.id, date:isoDate(arrive), start:t1, end:`${pad(Math.floor(endM/60))}:${pad(endM%60)}`, loc:target, act:`meeting ${uN()} (came over because ${uN()} texted)`, coming:true});
-  S.coming=(S.coming||[]).filter(x=>x.id!==c.id); S.coming.push({id:c.id, at:arrive, loc:target, mode:r.mode});
+  S.events.push({id:'meet'+now, who:c.id, date:isoDate(arrive), start:t1, end:`${pad(Math.floor(endM/60))}:${pad(endM%60)}`, loc:target, act:why?`with ${uN()} (${why})`:`meeting ${uN()} (came over because ${uN()} texted)`, coming:true});
+  S.coming=(S.coming||[]).filter(x=>x.id!==c.id); S.coming.push({id:c.id, at:arrive, loc:target, mode:r.mode, why:why||''});
   if(r.cost) pay(c.id, r.mode==='taxi'?'taxi':'transit', r.cost, r.mode+' fare');
   delete st.ovr; updateSchedules(); save(); }
 function comingTick(){ if(!S.coming||!S.coming.length) return; const keep=[];
   for(const x of S.coming){ const c=charById(x.id); if(!c||isDead(c)){ continue; } if(S.clock<x.at){ keep.push(x); continue; }
     const sameSpot=String(S.user.loc).toLowerCase()===String(x.loc).toLowerCase(), sameDist=String(S.user.loc).split(',')[0].trim()===String(x.loc).split(',')[0].trim();
     if(sameSpot||sameDist){ if(!S.user.companions.includes(c.id)){ if(typeof freshJoin==='function') freshJoin(c.id); S.user.companions.push(c.id); }
-      S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.full} has just arrived at ${x.loc} after ${uN()} texted them to come${x.mode?`, by ${x.mode}`:''}. Show them arriving in the next reply: how they look after the trip, the weather on them, why they came.)`});
-      pushNotif({icon:'🚶', app:phoneApp(), title:contactName(c), body:`I'm here!`, open:{view:'chat',id:c.id}}); }
+      S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.full} has just arrived at ${x.loc} ${x.why?`on their own, unannounced (${x.why})`:`after ${uN()} texted them to come`}${x.mode?`, by ${x.mode}`:''}. Show them arriving in the next reply: how they look after the trip, the weather on them, why they came.)`});
+      if(!x.why) pushNotif({icon:'🚶', app:phoneApp(), title:contactName(c), body:`I'm here!`, open:{view:'chat',id:c.id}}); }
+    else if(x.why){ /* they came by on their own and missed you */ }
     else if(hasPhone(c)&&isContact(c.id)) addText(c.id,false,`i'm at ${x.loc.split(',').slice(-1)[0].trim()}... where are you??`);
-    addMemory({who:[c.id], text:`Went to ${x.loc} because ${uN()} asked me to come${sameDist?'':', but they weren\'t there'}`, imp:2, src:'coming'}); }
+    addMemory({who:[c.id], text:x.why?`Dropped by ${x.loc} to see ${uN()} (${x.why})${sameDist?'':', but they weren\'t there'}`:`Went to ${x.loc} because ${uN()} asked me to come${sameDist?'':', but they weren\'t there'}`, imp:2, src:'coming'}); }
   S.coming=keep; }
 
 // ======================= phone realism: battery, signal, read receipts, voicemail =======================
@@ -4224,6 +4225,18 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ cons
 toolTab('goals','🎯 Goals',body=>{ const cs=W.characters.filter(c=>!isDead(c));
   body.innerHTML=`<p class="small" style="margin-top:0">Everyone is working on something. Progress happens day by day whether you're there or not; helping (or getting in the way) moves it faster.</p>${cs.map(c=>{ const g=goalOf(c.id); return `<div class="sr-row" style="cursor:default"><div style="display:flex;gap:10px;align-items:center">${avHTML(c,28,false)}<div style="flex:1"><b>${esc(c.name)}</b>: ${esc(g.text)}</div><span class="small">${g.p}%</span></div><div class="dbar" style="margin-top:6px"><div class="dfill" style="width:${g.p}%"></div></div>${g.log.slice(-2).reverse().map(l=>`<div class="small">${l.d>0?'+':''}${l.d} · ${mmdd(l.t)} · ${esc(subUser(l.why))}</div>`).join('')}${g.done.length?`<div class="small" style="margin-top:4px">✅ ${g.done.map(d=>esc(d.text)).join(' · ')}</div>`:''}</div>`; }).join('')}`; });
 // <<< goals
+// >>> seek
+// ======================= people who care about you come find you on their own =======================
+const SEEK_REASONS=[['missed you','just wanted to see them'],['bored','was bored and figured they would be fun'],['food','brought food to share'],['news','has something they want to tell them in person'],['walk','was passing by and wanted company']];
+function seekTick(){ if(!S||!W||SCREEN!=='world'||busyMain||S.branch&&S.branch.charId) return; const hr=Math.floor(S.clock/HOUR); if(S._skH===hr) return; const n=S._skH==null?1:Math.min(3,hr-S._skH); S._skH=hr;
+  const h=dt(S.clock).h; if(h<9||h>=22) return; if((S.coming||[]).length) return; if(S._skLast&&S.clock-S._skLast<10*HOUR) return;
+  const sickMe=(()=>{ try{ return !!illOf('user')&&illStage(illOf('user'))!=='coming down'; }catch(e){ return false; } })();
+  for(const c of W.characters){ const st=S.chars[c.id]; if(!st||isDead(c)||S.user.companions.includes(c.id)||sameLoc(st.loc,S.user.loc)) continue; if(SLEEPY.test(st.act||'')||BUSY.test(st.act||'')) continue;
+    const d=(S.dating||{})[c.id]; const tr=st.trust||0; if(tr<55&&!d) continue; let p=(tr-50)/50*.04; if(d) p+=.04+(d.pts>60?.03:0); try{ p*=1+.25*mv(c.id); }catch(e){} if(sickMe) p+=tr>=60?.12:0;
+    if(Math.random()>p*n) continue; const R=sickMe?['sick','heard they were sick and brought soup and medicine']:SEEK_REASONS[Math.floor(Math.random()*SEEK_REASONS.length)];
+    S._skLast=S.clock; startComing(c, null, R[1]); return; } }
+setInterval(()=>{ try{ seekTick(); }catch(e){} }, 20000);
+// <<< seek
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4693,8 +4706,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.82.0';
+const APP_VERSION = '0.83.0';
 const CHANGELOG = [
+ {v:'0.83.0', d:'2026-11-20', notes:['People come find you. Characters who trust you (55+) or are dating you sometimes show up on their own, without being texted: because they missed you, were bored, brought food, have news to tell you in person, or were passing by. It happens during the day (9 to 22), only when they\'re free, more often the closer you are and the better their mood, at most once every ten hours. If you\'re sick, close friends may turn up with soup and medicine. If you\'re not there when they arrive, they remember it.']},
  {v:'0.82.0', d:'2026-11-20', notes:['🎯 Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency\'s debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn\'t explode. Goals move a little every day whether you\'re there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone\'s progress in 🧰 Tools → 🎯 Goals.']},
  {v:'0.81.0', d:'2026-11-20', notes:['Word moods, little lies and tells. People don\'t always say exactly what they mean now: they joke, tease, exaggerate, tell white lies to be kind, deny being embarrassed, and sometimes lie for real, each in character (Jane constantly, Seth and Zhu Yuan can barely manage it). The delivery shows the intent: a joking lie gets a grin or is given away a moment later, teasing has warmth, and the tone line says when a line is teasing or sarcastic. Everyone has a tell (Seth\'s ears go flat, Nicole calls it an "investment," Roxy shows nothing at all). Catch someone three times and you\'ve learned it: 🧰 Tools → 🎭 Tells. Also: Zhao\'s slight lisp on some s sounds, now and then.']},
  {v:'0.80.1', d:'2026-11-20', notes:['Owner build only: Ju Fufu is now a young adult (19), matching canon. The under-18 limits on her are lifted; she\'s still petite, loud and heroic, and still insists she\'s a fearsome senior disciple.']},
