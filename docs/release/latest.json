@@ -1,10 +1,10 @@
 {
- "version": "0.87.0",
+ "version": "0.88.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83d\udcc8 Your skills grow. Cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying and charm all improve as you actually do them, from total beginner to expert. The story keeps results true to your level (your first dinner might burn; later people ask for seconds), and a little banner tells you when you've leveled up. See them in \ud83e\uddf0 Tools \u2192 \ud83d\udcc8 Skills."
+  "Your body: hunger, energy and sleep. Skip meals or stay up too long and the story shows it; people who care notice. New \ud83e\uddcd You tab in Tools."
  ],
  "file": "index.html",
- "sha256": "d7f96e8d9245e9ec36e2fb8c3ba2115fcd2e9591d1f56ef80f6a8f02254369a4",
+ "sha256": "4e4f59d042958c1bfb6f75c01d5e27b3d89ab0cf4e4dcb7be571d5ad9b3825ea",
  "minShell": "0.5.0"
 }

@@ -4323,6 +4323,24 @@ PROMPT_HOOKS.push(()=>{ const S2=S.skills||{}; const L=SKILLS.filter(([k])=>S2[k
   return `\n${uN().toUpperCase()}'S SKILLS (results match their real level: a beginner's first dinner may burn, an expert's draws compliments; anything not listed they've never really done):${L.length?' '+L.join('; '):' nothing practiced yet'}. When ${uN()} practices something seriously or has a real breakthrough, add [[SKILL: name +1]] (cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying, charm).\n`; });
 toolTab('skills','📈 Skills',body=>{ const S2=S.skills||{}; body.innerHTML=`<p class="small" style="margin-top:0">You get better at things by doing them. The story keeps results true to your level, so practice pays off.</p>${SKILLS.map(([k,i])=>{ const x=(S2[k]||{}).xp||0; const nx=SKLV.find(L=>L[0]>x); return `<div class="sr-row" style="cursor:default"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:22px">${i}</span><b style="flex:1;text-transform:capitalize">${k}</b><span class="small">${skLevel(x)}</span></div><div class="dbar" style="margin-top:6px"><div class="dfill" style="width:${Math.min(100,x/150*100)}%"></div></div>${nx?`<div class="small">${nx[0]-x} more practice to "${nx[1]}"</div>`:''}</div>`; }).join('')}`; });
 // <<< skills
+// >>> needs
+// ======================= your hunger, energy and sleep =======================
+const EAT_RX=/\b(eat|eats|ate|eating|munch|devour|wolf(s|ed)? down|have (lunch|dinner|breakfast|a snack)|grab (a bite|food|lunch|dinner)|bite of|slurp|finish(es|ed)? (my|the|their) (food|plate|bowl|meal))/i;
+const SLEEP_RX=/\b(go(es)? to (bed|sleep)|fall(s)? asleep|fell asleep|sleep(s|ing)? (for|until|in)|take a nap|nap(s|ped|ping)?|doze off|dozed off|crash(es|ed)? (on|out))/i;
+function needsInit(){ const u=S.user; if(u.lastMeal==null) u.lastMeal=S.clock-3*HOUR; if(u.lastSleep==null) u.lastSleep=S.clock-Math.max(1,dt(S.clock).h-7)*HOUR; }
+function hungerOf(){ needsInit(); const h=(S.clock-S.user.lastMeal)/HOUR; return h>=16?['starving','light-headed, shaky, stomach cramping, hard to focus']:h>=9?['hungry','stomach growling audibly, a little irritable']:h>=5?['peckish','starting to think about food']:['fed','']; }
+function energyOf(){ needsInit(); const h=(S.clock-S.user.lastSleep)/HOUR; return h>=30?['running on empty','eyes burning, words slurring, nodding off mid-sentence']:h>=20?['exhausted','yawning constantly, slow reactions, heavy eyelids']:h>=16?['tired','starting to drag, yawning']:['rested','']; }
+const _ndSent={}; REPLY_HOOKS.push(msg=>{ needsInit(); const ix=S.chat.indexOf(msg); const u=[...S.chat.slice(0,ix)].reverse().find(m=>m.role==='user'&&!m.hidden); if(u&&!_ndSent[u.t]){ _ndSent[u.t]=1; if(EAT_RX.test(u.text)) S.user.lastMeal=S.clock; if(SLEEP_RX.test(u.text)) S._sleepAsk=S.clock; }
+  if(S._sleepAsk&&S.clock-S._sleepAsk>=4*HOUR){ S.user.lastSleep=S.clock; delete S._sleepAsk; } });
+CONTROL_HOOKS.ATE=()=>{ S.user.lastMeal=S.clock; }; CONTROL_HOOKS.SLEPT=()=>{ S.user.lastSleep=S.clock; delete S._sleepAsk; };
+PROMPT_HOOKS.push(()=>{ const H=hungerOf(), E=energyOf(); const bits=[]; if(H[1]) bits.push(`${H[0]} (${H[1]}; last ate ${Math.round((S.clock-S.user.lastMeal)/HOUR)}h ago)`); if(E[1]) bits.push(`${E[0]} (${E[1]}; awake ${Math.round((S.clock-S.user.lastSleep)/HOUR)}h)`);
+  return `\n${uN().toUpperCase()}'S BODY: ${bits.length?bits.join('; ')+'. Show it in how they feel (never decide what they do about it); people who care may notice and say something or push food at them.':'fed and rested.'} When ${uN()} actually eats a real meal add [[ATE: user]]; when they wake from real sleep add [[SLEPT: user]].\n`; });
+toolTab('you','🧍 You',body=>{ const H=hungerOf(), E=energyOf(); let c=[]; try{ c=condBits('user'); }catch(e){} let ill=[]; try{ ill=illBits('user'); }catch(e){}
+  body.innerHTML=`<p class="small" style="margin-top:0">How your body is doing right now. Skipping meals or sleep shows up in the story, and people notice.</p>
+  <div class="sr-row" style="cursor:default">🍙 <b>Hunger:</b> ${H[0]} · last ate ${Math.round((S.clock-S.user.lastMeal)/HOUR)} h ago</div>
+  <div class="sr-row" style="cursor:default">😴 <b>Energy:</b> ${E[0]} · awake ${Math.round((S.clock-S.user.lastSleep)/HOUR)} h</div>
+  ${c.length?`<div class="sr-row" style="cursor:default">🚿 <b>Body:</b> ${esc(c.join('; '))}</div>`:''}${ill.length?`<div class="sr-row" style="cursor:default">🤒 ${esc(ill.join('; '))}</div>`:''}`; });
+// <<< needs
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4792,8 +4810,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.87.0';
+const APP_VERSION = '0.88.0';
 const CHANGELOG = [
+ {v:'0.88.0', d:'2026-11-20', notes:['Your body: hunger, energy and sleep. Skip meals or stay up too long and the story shows it; people who care notice. New 🧍 You tab in Tools.']},
  {v:'0.87.0', d:'2026-11-20', notes:['📈 Your skills grow. Cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying and charm all improve as you actually do them, from total beginner to expert. The story keeps results true to your level (your first dinner might burn; later people ask for seconds), and a little banner tells you when you\'ve leveled up. See them in 🧰 Tools → 📈 Skills.']},
  {v:'0.86.0', d:'2026-11-20', notes:['Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask "wait, when was that?". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh.']},
  {v:'0.85.0', d:'2026-11-20', notes:['Missing closeness. People who are close to you (trust 65+, or dating) notice when it\'s been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected.']},
