@@ -1,10 +1,10 @@
 {
- "version": "1.1.1",
+ "version": "1.1.2",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang's other self goes straight to the person Shunguang is most fond of and is completely herself with them. That could be you if you've grown close, or Wise if not. She's very open: if Shunguang has romantic feelings for you, the other self admits it plainly, and if there aren't any, she won't pretend. Either way she teases a lot."
+  "Shunguang's other self is very bold: she closes the distance first, says exactly what she thinks, holds eye contact until you look away, and never hesitates or blushes. Where Xiao'Guang would stammer, she just smiles and says it."
  ],
  "file": "index.html",
- "sha256": "928090d05a4b1012918aa479de5425231fe2ff94d5c06db5d94814b08320a7e1",
+ "sha256": "cf01602d5cb48be75bcf8bbf31d916ecf046fb231c3b9efafbcb29d57cbc59fd",
  "minShell": "0.5.0"
 }
