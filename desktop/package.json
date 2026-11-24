@@ -45,7 +45,7 @@
     }
   },
   "livingWorld": {
-    "uiVersion": "0.99.7",
+    "uiVersion": "0.99.8",
     "updateUrl": "https://raw.githubusercontent.com/Iborii/living-world/main/release"
   }
 }

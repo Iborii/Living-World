@@ -1,10 +1,10 @@
 {
- "version": "0.99.7",
+ "version": "0.99.8",
  "date": "2026-11-20",
  "notes": [
-  "Zhao's exact line is now in her sheet, from Season 2 Chapter 6. Visiting Yunkui with gifts, she was all sugar to Shunguang, and when the Proxy said she seemed different she answered: \"Oh? Looks like you're still getting to know me. My attitude always depends on the relationship, you know.\" Her real backstory from that chapter is in too. Her father cast her out as a child for being \"useless\", which is why she thinks every relationship is a game of value, and the Proxy and Shunguang are slowly showing her otherwise."
+  "Characters stick to their info. Every story reply, text and group chat now has a strict rule to play characters only from what's written about them (sheet, voice card, history, relationships and what's happened in your story). No invented traits, quirks, catchphrases, backstory, family, likes or generic anime tropes. When the info doesn't cover something, they react in the smallest way that fits what is written. Story replies also run a bit less random now (temperature 0.75), which keeps voices steadier. Zhao: her small :3 rabbit mouth and big buck teeth are described now, and they soften some of her sounds: \"Failume Heights\" comes out like \"Failume Heighsh\", \"that's\" like \"thash\". Only now and then, and it nearly vanishes when she's being the careful Krampus Judge."
  ],
  "file": "index.html",
- "sha256": "609838f46a64f25346bd7e5164408e5fc370d138c976a285ef5dbc3fa858478b",
+ "sha256": "283fc6e3f0bee5688e98a6f958ee9d3a5df3e161fe8718f06c66fa2f431837a1",
  "minShell": "0.5.0"
 }
