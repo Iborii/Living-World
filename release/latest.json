@@ -1,10 +1,10 @@
 {
- "version": "0.76.1",
+ "version": "0.77.0",
  "date": "2026-11-20",
  "notes": [
-  "Owner build only: Sigrid's outfit fixed: no cape or coat. She has a translucent, wing-like blue mantle at her left shoulder and floating white ribbon tails."
+  "Your messages now type out on screen as you \"say\" them, and the person you're talking to can cut you off mid-sentence, even mid-word (\"So I was thinking we could go to the arc\u2014\"), then react only to what you actually got out. It happens only when it fits: impatient, excited or panicking characters, urgent moments, or you rambling. Line endings now carry tone: no end mark is normal talk, a period is serious, ! is excited or loud, ~ is playful or affectionate, and a dash means cut off or not done talking, in the story and in texts. Owner build: Vivian calls out of nowhere once she's devoted (and switches to a video call if you say you were in the shower), Claret's maintenance on Roxy keeps ending in compromising-looking tangles that are never what they look like, Aria gets mistaken for the wanted Remielle, Nangong flirts with men she's close to (sometimes for real, sometimes just teasing), and Norma's second outfit (overalls over a plain white shirt)."
  ],
  "file": "index.html",
- "sha256": "7565446c28e71f63c959a4ad2f3614ce68a29833ff18241d52db13c5d323960b",
+ "sha256": "ecad4cee76ad087f0dd875839fb5bbb52557458eee09d4feb4e4828d901c5c5d",
  "minShell": "0.5.0"
 }
