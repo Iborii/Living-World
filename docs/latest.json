@@ -1,10 +1,10 @@
 {
- "version": "0.99.3",
+ "version": "0.99.4",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang and the word \"Senior\", done properly from her actual introduction scene. The first time Belle and Wise called her Senior she completely lost it: \"Wait... are you... saying! I have a junior now?\", panting \"Breathe... calm yourself...\", then \"*gasp* Breathe! Focus!\" when they said it again, and debating out loud whether \"Senior Shunguang\" or \"Second Senior Sister\" sounds more impressive. Now it lights her up every time, and a brand-new junior gets the full meltdown."
+  "Shunguang's split personality. Her other self, the white-haired shadow, is now part of her sheet, researched until AI Mode ran out of details. The shadow is unfiltered, blunt, mischievous and playfully seductive, mocks martyrdom (\"Thought I was your sweet, well-behaved senior? Too bad. The one standing here now is a beast who just wants to survive.\"), and once snitched her crush to her junior's face. Day to day its boldness slips through: she buys herself flowers, teases people she trusts and seeks closeness. Under strain, in danger or when she draws the sword, the shadow's voice takes over, and sometimes she argues with it out loud. Also added: she hid every sense the sword took behind cheerfulness, and she keeps a hand-drawn portrait of her junior in her diary."
  ],
  "file": "index.html",
- "sha256": "7afefc0fe675fa2b85e3595c7793b5339ba4dd708a36ea46d536ef7ca7053c4b",
+ "sha256": "53a8ecb0cb7ff3c5668175bdee9be183e47308bed14be2e09aec1822101d7548",
  "minShell": "0.5.0"
 }
