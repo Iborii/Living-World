@@ -4237,6 +4237,47 @@ function seekTick(){ if(!S||!W||SCREEN!=='world'||busyMain||S.branch&&S.branch.c
     S._skLast=S.clock; startComing(c, null, R[1]); return; } }
 setInterval(()=>{ try{ seekTick(); }catch(e){} }, 20000);
 // <<< seek
+// >>> city
+// ======================= city events: concerts, markets, sales, premieres you can go to =======================
+const ZZZ_BANDS=['The Forecasters','Angels of Delusion','Vesper','a visiting indie band','an underground DJ night'], ZZZ_MOVIES=['Starlight Knight: The Final Arc','Mill and Yuko: The Spider Cowboy 2','a new horror flick everyone is daring each other to see','a sappy romance that is somehow sold out'];
+const EVT_T=[
+ {k:'concert',icon:'🎤',name:v=>`Live show: ${v.band}`,venue:/livehouse|theater|theatre|stage|arena|hall|club/i,price:[30,90],start:19,dur:3,likes:/music|song|idol|band|guitar|sing|concert|dance/i},
+ {k:'market',icon:'🏮',name:()=>'Night market',venue:/square|street|market|plaza|lane/i,price:[0,0],start:18,dur:4,likes:/food|eat|snack|shop|cheap|bargain/i},
+ {k:'sale',icon:'🛍️',name:v=>`Big sale at ${v.place}`,venue:/mall|galleria|shop|store|mart|boutique/i,price:[0,0],start:10,dur:8,likes:/shop|fashion|clothes|bargain|money|discount/i},
+ {k:'movie',icon:'🎬',name:v=>`Premiere: ${v.movie}`,venue:/cinema|theater|theatre|video/i,price:[15,25],start:20,dur:2.5,likes:/movie|film|tape|cinema/i},
+ {k:'arcade',icon:'🕹️',name:()=>'Arcade tournament',venue:/arcade|godfinger|game/i,price:[5,10],start:15,dur:4,likes:/game|arcade|rhythm|competit/i},
+ {k:'food',icon:'🍢',name:()=>'Street food festival',venue:/square|street|park|plaza|port|pier/i,price:[0,0],start:12,dur:8,likes:/food|eat|cook|snack|hungry|bun|noodle/i},
+ {k:'art',icon:'🖼️',name:()=>'Gallery opening',venue:/gallery|museum/i,price:[0,10],start:18,dur:3,likes:/art|paint|photo|design|draw/i},
+];
+const PRIVATE=/room|office|backstage|apartment|quarters|home|dorm|bedroom|upstairs|house|townhouse|bunk|base|hq|headquarters|precinct|department|workshop|lab\b|physio|clinic|treatment|kitchen|locker|capsule/i;
+function cityVenues(){ const L=(W.locations||[]).concat(W.characters.flatMap(c=>(c.schedule||[]).map(x=>x.loc))); const out=new Set();
+  for(const l of L.filter(Boolean)){ const base=String(l).replace(/\s*\([^)]*\)\s*$/,'').trim(); const par=(String(l).match(/\(([^)]*)\)/)||[])[1]; if(par&&/^(main )?stage|\bhall\b|arena|theater|theatre|cinema|gallery|arcade|market|square|park|mall|galleria|plaza/i.test(par)&&!PRIVATE.test(par)) out.add(l); else if(par&&!PRIVATE.test(par)) out.add(base); else if(!PRIVATE.test(base.split(',').slice(1).join(','))) out.add(base); }
+  const dists=[...new Set(L.map(l=>String(l).split(',')[0].trim()).filter(Boolean))]; for(const d of dists){ out.add(`${d}, the main square`); out.add(`${d}, the market street`); }
+  return [...out]; }
+function cityEvents(fromMs, days){ const out=[]; const V=cityVenues(); if(!V.length) return out; const zzz=/eridu|lumina|sixth street|roscaelifer|booastrum|janus|failume|port elpis|vyrium/i.test(V.join(' '));
+  for(let d=0; d<days; d++){ const day=Math.floor(fromMs/DAYMS)+d; const ds=day*DAYMS;
+    for(let k=0;k<EVT_T.length;k++){ const T=EVT_T[k]; const h=Math.abs(hashStr((W.id||'w')+T.k+day))>>>0; const wd=dt(ds).wd; const weekend=wd===0||wd===5||wd===6; if(h%100>=(weekend?40:16)) continue;
+      const vs=V.filter(v=>T.venue.test(v)); if(!vs.length) continue; const venue=vs[h%vs.length]; const place=((venue.match(/\(([^)]*)\)/)||[])[1]||venue.split(',').slice(-1)[0].trim()).replace(/^(outside|inside|near|behind) (the )?/i,'');
+      const name=T.name({band:zzz?ZZZ_BANDS[h%ZZZ_BANDS.length]:'a local band', movie:zzz?ZZZ_MOVIES[(h>>3)%ZZZ_MOVIES.length]:'a new release', place});
+      const price=T.price[0]+(T.price[1]>T.price[0]?(h>>5)%(T.price[1]-T.price[0]+1):0); const start=ds+T.start*HOUR;
+      out.push({id:T.k+day, k:T.k, icon:T.icon, name, venue, start, end:start+T.dur*HOUR, price:Math.round(price*(+currency().scale||1)), likes:T.likes}); } }
+  return out.sort((a,b)=>a.start-b.start); }
+function evtInterested(c,e){ return e.likes.test(String(c.brief||'')+' '+String(c.sheet||'').slice(0,4000)); }
+// characters who'd like it put it in their plans
+function cityTick(){ if(!S||!W||SCREEN!=='world') return; const day=Math.floor(S.clock/DAYMS); if(S._cityDay===day) return; S._cityDay=day; S.cityGo=S.cityGo||{};
+  for(const e of cityEvents(S.clock,3)){ for(const c of W.characters){ if(isDead(c)||!evtInterested(c,e)) continue; const key=e.id+c.id; if(S.cityGo[key]!=null) continue; const go=hashStr(key)%100<35; S.cityGo[key]=go; if(!go) continue;
+      const st=dt(e.start), en=dt(Math.min(e.end, e.start+3*HOUR)); S.events=S.events||[]; S.events.push({id:'cx'+key, who:c.id, date:isoDate(e.start), start:`${pad(st.h)}:${pad(st.mi)}`, end:`${pad(en.h)}:${pad(en.mi)}`, loc:e.venue, act:`at the ${e.name.toLowerCase()}`, city:e.id}); } }
+  updateSchedules(); }
+setInterval(()=>{ try{ cityTick(); }catch(e){} }, 30000);
+PROMPT_HOOKS.push(pres=>{ const E=cityEvents(S.clock-6*HOUR,3).filter(e=>e.end>S.clock).slice(0,6); if(!E.length) return ''; const mine=(S.tickets||[]);
+  return `\nWHAT'S ON IN THE CITY (posters, people talking about it; characters may bring these up, ask ${uN()} along, or already be going):\n${E.map(e=>{ const goers=W.characters.filter(c=>S.cityGo&&S.cityGo[e.id+c.id]).map(c=>c.name); return `- ${e.icon} ${e.name}: ${wdName(e.start)} ${hhmm(e.start)} at ${e.venue}${e.price?` (${money(e.price)})`:' (free)'}${goers.length?`; going: ${goers.join(', ')}`:''}${mine.includes(e.id)?`; ${uN()} has a ticket`:''}`; }).join('\n')}\n`; });
+toolTab('city','🎟️ City',body=>{ const E=cityEvents(S.clock-6*HOUR,14).filter(e=>e.end>S.clock); S.tickets=S.tickets||[];
+  body.innerHTML=`<p class="small" style="margin-top:0">Concerts, markets, sales, premieres and tournaments in the next two weeks. People who'd enjoy them make plans to go, and may ask you along. Buying a ticket puts it in your plans.</p>${E.map(e=>{ const goers=W.characters.filter(c=>S.cityGo&&S.cityGo[e.id+c.id]); const has=S.tickets.includes(e.id);
+    return `<div class="sr-row" style="cursor:default;display:flex;gap:10px;align-items:center"><span style="font-size:24px">${e.icon}</span><div style="flex:1"><b>${esc(e.name)}</b><div class="sr-m" style="margin:0">${wdName(e.start).slice(0,3)} ${mmdd(e.start)} · ${hhmm(e.start)}–${hhmm(e.end)} · ${esc(e.venue)} · ${e.price?money(e.price):'free'}</div>${goers.length?`<div class="small">Going: ${goers.map(c=>esc(c.name)).join(', ')}</div>`:''}</div>${has?'<span class="badge">🎟️ Going</span>':`<button class="ghost small" data-tk="${e.id}">${e.price?'Buy ticket':'I\'ll go'}</button>`}</div>`; }).join('')||'<div class="small">Nothing on right now.</div>'}`;
+  body.querySelectorAll('[data-tk]').forEach(b=>b.onclick=()=>{ const e=E.find(x=>x.id===b.dataset.tk); if(!e) return; if(e.price){ const w=walletOf('user'); if(w.money<e.price){ notice(`Not enough money: it costs ${money(e.price)}.`,true); return; } w.money-=e.price; }
+    S.tickets.push(e.id); const st=dt(e.start); const P=phone(); P.invites.push({id:'', vid:'tk'+e.id, what:e.name, loc:e.venue, date:isoDate(e.start), start:`${pad(st.h)}:${pad(st.mi)}`, status:'self', sentAt:S.clock});
+    addMemory({who:[], text:`${uN()} got a ticket for ${e.name} (${mmdd(e.start)})`, imp:1, src:'city'}); save(); notice(`🎟️ You're going: ${e.name}, ${wdName(e.start)} ${hhmm(e.start)}.`); renderTools(); }); });
+// <<< city
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4706,8 +4747,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.83.0';
+const APP_VERSION = '0.84.0';
 const CHANGELOG = [
+ {v:'0.84.0', d:'2026-11-20', notes:['🎟️ City events. Every story now has things going on around town over the next two weeks: live shows, night markets, big sales, movie premieres, arcade tournaments, street food festivals, gallery openings, more on weekends. People who\'d enjoy an event make plans to go (it goes in their schedule, so you can find them there), mention it, or ask you along. 🧰 Tools → 🎟️ City lists everything with times, places and prices; buying a ticket puts it in your plans.']},
  {v:'0.83.0', d:'2026-11-20', notes:['People come find you. Characters who trust you (55+) or are dating you sometimes show up on their own, without being texted: because they missed you, were bored, brought food, have news to tell you in person, or were passing by. It happens during the day (9 to 22), only when they\'re free, more often the closer you are and the better their mood, at most once every ten hours. If you\'re sick, close friends may turn up with soup and medicine. If you\'re not there when they arrive, they remember it.']},
  {v:'0.82.0', d:'2026-11-20', notes:['🎯 Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency\'s debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn\'t explode. Goals move a little every day whether you\'re there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone\'s progress in 🧰 Tools → 🎯 Goals.']},
  {v:'0.81.0', d:'2026-11-20', notes:['Word moods, little lies and tells. People don\'t always say exactly what they mean now: they joke, tease, exaggerate, tell white lies to be kind, deny being embarrassed, and sometimes lie for real, each in character (Jane constantly, Seth and Zhu Yuan can barely manage it). The delivery shows the intent: a joking lie gets a grin or is given away a moment later, teasing has warmth, and the tone line says when a line is teasing or sarcastic. Everyone has a tell (Seth\'s ears go flat, Nicole calls it an "investment," Roxy shows nothing at all). Catch someone three times and you\'ve learned it: 🧰 Tools → 🎭 Tells. Also: Zhao\'s slight lisp on some s sounds, now and then.']},
