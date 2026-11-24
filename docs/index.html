@@ -806,6 +806,11 @@ body:has(.modal.on) #chatsFab{display:none}
 /* >>> profiles */
 .pf-cat{margin:8px 0 4px}.pf-cat>b{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
 /* <<< profiles */
+/* >>> thoughts */
+.thoughts{margin:10px 0 2px;display:flex;flex-direction:column;gap:6px}
+.th{font-size:14px;font-style:italic;color:var(--muted);padding:6px 10px;border-left:2px solid var(--cc);background:color-mix(in srgb,var(--cc) 7%,transparent);border-radius:0 8px 8px 0}
+.th-who{font-style:normal;font-weight:600;color:var(--cc);font-size:12px;margin-right:4px}
+/* <<< thoughts */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -4894,6 +4899,21 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; S.together=S.together||{};
     L.push(`- ${c.name}: ${bits.join('; ')}`); }
   return `\nTHEIR OWN LIVES (strict): characters do NOT have unlimited free time and don't drop their lives for ${uN()}. Work, shifts, rehearsals, training, classes, duty and sleep come first; free time also goes to their own errands, friends, hobbies and rest, not only ${uN()}. They say no to plans that clash, show up late or leave early when they have to, and say goodbye and go when it's time (add [[LEAVE: Name]]). Only an emergency or a truly big moment makes them skip a commitment, and they feel it.\n${L.join('\n')}\n`; });
 // <<< obligations
+// >>> thoughts
+// ======================= inner thoughts (hidden unless turned on in Settings) =======================
+let _pendThoughts=[];
+CONTROL_HOOKS.THOUGHT=arg=>{ const i=String(arg).indexOf(':'); if(i<1) return; const c=charByName(arg.slice(0,i).trim()); const t=arg.slice(i+1).trim().slice(0,300); if(c&&t) _pendThoughts.push({id:c.id,text:t}); };
+REPLY_HOOKS.push(msg=>{ if(_pendThoughts.length&&msg){ msg.thoughts=(msg.thoughts||[]).concat(_pendThoughts).slice(0,4); } _pendThoughts=[]; });
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; return `\nINNER THOUGHTS: at the very end of the reply, add 1 to 3 lines [[THOUGHT: Name: what they're privately thinking right now]] for characters in the scene, in their own inner voice (honest, unfiltered, sometimes the opposite of what they said out loud, true to their info and what they know). These are hidden from everyone in the story: no character ever hears, reads or reacts to another's thoughts, and ${uN()} doesn't know them either. Never put thoughts in the story text itself.\n`; });
+function thoughtsHTML(m){ if(!CFG.showThoughts||!m.thoughts||!m.thoughts.length) return ''; return `<div class="thoughts">${m.thoughts.map(t=>{ const c=charById(t.id); if(!c) return ''; const nm=(typeof progOn==='function'&&progOn()&&!isKnown(c.id))?'???':c.name; return `<div class="th" style="--cc:${c.color}"><span class="th-who">💭 ${esc(nm)}</span> <span class="th-tx">${esc(t.text)}</span></div>`; }).join('')}</div>`; }
+{ const _rf=renderFeed; renderFeed=function(...a){ const out=_rf.apply(this,a); try{ if(CFG.showThoughts) document.querySelectorAll('#feed .msg.ai[data-i]').forEach(el=>{ const m=S.chat[+el.dataset.i]; if(m&&m.thoughts&&!el.querySelector('.thoughts')) el.insertAdjacentHTML('beforeend',thoughtsHTML(m)); }); }catch(e){} return out; }; }
+{ const _os=openSettings; openSettings=function(...a){ const out=_os.apply(this,a); let row=document.getElementById('thRow');
+  if(!row){ row=document.createElement('label'); row.id='thRow'; row.style.cssText='display:flex;gap:9px;align-items:flex-start;color:var(--text);font-size:14px;margin:12px 0;cursor:pointer';
+    row.innerHTML='<input type="checkbox" id="thOn" style="width:auto;margin-top:3px"><span><b>Show thoughts</b><br><span class="small">Show what characters are privately thinking under each reply. Hidden by default; characters never know each other\'s thoughts, and neither does your character.</span></span>';
+    const pr=document.getElementById('progRow'); const box=document.querySelector('#settingsModal .box'); if(pr) pr.insertAdjacentElement('afterend',row); else { const anchor=document.getElementById('saveSettings'); (anchor&&anchor.parentElement&&box.contains(anchor.parentElement)?anchor.parentElement:box).insertAdjacentElement('beforebegin',row); }
+    row.querySelector('#thOn').onchange=e=>{ CFG.showThoughts=e.target.checked; saveCfg(); if(S) renderFeed(); }; }
+  row.querySelector('#thOn').checked=!!CFG.showThoughts; return out; }; }
+// <<< thoughts
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5364,8 +5384,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const CHANGELOG = [
+ {v:'1.5.0', d:'2026-11-20', notes:['Inner thoughts. Every reply now carries what one to three characters in the scene are privately thinking, in their own inner voice, sometimes the opposite of what they said out loud. They\'re hidden by default; turn on Settings → Show thoughts to see them as little 💭 lines under each reply. Turning it on also shows thoughts from earlier replies. Nobody in the story ever knows another person\'s thoughts, including your character. In progressive story mode, unknown people\'s thoughts show as ???.']},
  {v:'1.4.0', d:'2026-11-20', notes:['Schedules rebalanced. Angels of Delusion: about 25% of their waking day is idol work (streams, content shoots, setlists, fan letters, the Saturday show), about 15% is practice, and the rest is free time together: brunch, Godfinger, Coff Cafe, the pier, sleepovers at Sunna\'s, nights at the secret base. Sunna keeps her two Coff Cafe shifts. Yunkui Summit: about 10% productive, the rest lazing around the temple, snacks, napping, wandering. Norma\'s tinkering is all free time; only her ESD image campaign and teaching days take a slice. Everyone else got an estimate (Severian and Zhu Yuan are busy, Billy and Nekomata barely), and over-scheduled days are trimmed to it. Real jobs now count as busy even when they sound casual (Dialyn\'s phone shifts, Zhao\'s audits, Claret\'s forging). If you date someone, they want to give you their free time, though work and practice still come first.']},
  {v:'1.3.0', d:'2026-11-20', notes:['Characters have their own lives. They no longer act like they have endless free time for you. Every reply now says, for each person with you, whether they\'re supposed to be somewhere right now (work, shifts, gigs, rehearsal, training, class, duty), what their next real commitment is, and how long they\'ve been with you. If they\'re skipping something they notice and leave. When a commitment is close they start wrapping up and checking the time. After a couple of hours together they want to go do their own things, and they say no to plans that clash. If someone ignores a commitment for over an hour, the app sends them off (dating partners get more leeway). Part-time gigs, training, practice and errands now count as being busy. Zhao and Shunguang show no outward signs of their periods at all. Shunguang: both sides share one memory, so whatever one does, the other lived too. The white-haired side sits boldly with her legs crossed while Xiao\'Guang sits stiff with her knees together. If she has feelings for you and you act flustered, she gets bolder (touching your face, getting dangerously close), and in a relationship she may even kiss you as a teasing "punishment".']},
  {v:'1.2.1', d:'2026-11-20', notes:['Shunguang\'s other self is now written as her own person: a second mind living inside her, with her own feelings and opinions, using Shunguang\'s body as a vessel. She talks about "we" and "our" ("I am you... I haven\'t left you. I\'ll simply exist in a different form," from the actual story). She often takes over to stop Xiao\'Guang from doing something dangerous, then hands the body back. The two of them talk and argue out loud through the same mouth, so it looks like Shunguang is arguing with herself, voice and expression flipping back and forth.']},

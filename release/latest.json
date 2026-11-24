@@ -1,10 +1,10 @@
 {
- "version": "1.4.0",
+ "version": "1.5.0",
  "date": "2026-11-20",
  "notes": [
-  "Schedules rebalanced. Angels of Delusion: about 25% of their waking day is idol work (streams, content shoots, setlists, fan letters, the Saturday show), about 15% is practice, and the rest is free time together: brunch, Godfinger, Coff Cafe, the pier, sleepovers at Sunna's, nights at the secret base. Sunna keeps her two Coff Cafe shifts. Yunkui Summit: about 10% productive, the rest lazing around the temple, snacks, napping, wandering. Norma's tinkering is all free time; only her ESD image campaign and teaching days take a slice. Everyone else got an estimate (Severian and Zhu Yuan are busy, Billy and Nekomata barely), and over-scheduled days are trimmed to it. Real jobs now count as busy even when they sound casual (Dialyn's phone shifts, Zhao's audits, Claret's forging). If you date someone, they want to give you their free time, though work and practice still come first."
+  "Inner thoughts. Every reply now carries what one to three characters in the scene are privately thinking, in their own inner voice, sometimes the opposite of what they said out loud. They're hidden by default; turn on Settings \u2192 Show thoughts to see them as little \ud83d\udcad lines under each reply. Turning it on also shows thoughts from earlier replies. Nobody in the story ever knows another person's thoughts, including your character. In progressive story mode, unknown people's thoughts show as ???."
  ],
  "file": "index.html",
- "sha256": "836e87af48238b6007f2e91196a9ccc6567c25c6a98243f46770cb1bca8ec11a",
+ "sha256": "4e4c865e15a444badb155eb8ad2c558ba23b774f1f69a89e2fc97ce2f26a2a29",
  "minShell": "0.5.0"
 }
