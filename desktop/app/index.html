@@ -2270,7 +2270,7 @@ const VOICE_NUDGE='(Narrator note, not part of the story: keep the SIZE of react
 function chatMessages(){
   const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
   for(const m of recent){
-    if(m.role==='user') out.push({role:'user',content:m.text});
+    if(m.role==='user') out.push({role:'user',content:m.hidden?m.text:`[${uN()} — this is what ${uN()} wrote: their own words and actions]\n${m.text}`});
     else if(m.role==='assistant') out.push({role:'assistant',content:m.text});
     else if(m.role==='text') out.push({role:'user',content:`(A ${phoneApp()} text arrives on the user's phone from ${m.from}: "${m.text}")`});
   }
@@ -4736,6 +4736,16 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ cons
   return L.length?`\nVOICES (each person must sound exactly like this, in every line; these are style guides, not things that happened):\n${L.join('\n')}\n`:''; });
 { const _cv=charVoice; charVoice=function(c,...a){ const v=voiceCard(c); return _cv(c,...a)+(v?'\n'+v:''); }; }
 // <<< voices
+// >>> ledger
+// ======================= continuity: who actually said what =======================
+function spokenLedger(){ const U=uN(); const rows=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text&&!m.hidden).slice(-8);
+  for(const m of recent){ const t=String(m.text);
+    if(m.role==='user'){ const qs=[...t.matchAll(/["“]([^"”]{2,240})["”]/g)].map(x=>x[1]); const said=qs.length?qs:(/^\s*\*[^*]+\*\s*$/.test(t)?[]:[t.replace(/\*[^*]*\*/g,'').trim()].filter(x=>x.length>1)); for(const q of said) rows.push(`${U}: "${q.slice(0,200)}"`); }
+    else if(m.role==='assistant'){ for(const x of t.matchAll(/^\s*\**([A-Z][\w .'-]{1,30}?)\**:\s*["“]([^"”]{2,240})["”]/gm)) rows.push(`${x[1].trim()}: "${x[2].slice(0,200)}"`); } }
+  return rows.slice(-14); }
+PROMPT_HOOKS.push(()=>{ const L=spokenLedger(); if(!L.length) return ''; const qs=[]; for(const r of L){ const who=r.slice(0,r.indexOf(':')); for(const q of (r.slice(r.indexOf(':')+2).match(/[^.!?"~]*\?/g)||[])) if(q.trim().length>3) qs.push(who+' asked "'+q.trim()+'"'); }
+  return `\nCONTINUITY, WHO SAID WHAT (the last spoken lines, in order, with the real speaker):\n${L.join('\n')}\n${qs.length?`Questions asked so far: ${qs.slice(-8).join('; ')}.\n`:''}Never attribute a line, question, idea or promise to the wrong person. If a character asked something, THEY asked it; ${uN()} only said what is under ${uN()}'s name. Characters remember their own questions and whether they got an answer.\n`; });
+// <<< ledger
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5205,8 +5215,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.98.0';
+const APP_VERSION = '0.98.1';
 const CHANGELOG = [
+ {v:'0.98.1', d:'2026-11-20', notes:['Continuity: who said what. Every reply now comes with a list of the last spoken lines with their real speakers, plus the questions each person asked, and a firm rule never to pin a line, question or promise on the wrong person. If Sunna asks you something, she remembers she asked it and whether you answered. Your own messages are also clearly marked as yours in the story history, so your words don\'t get mixed up with the characters\'.']},
  {v:'0.98.0', d:'2026-11-20', notes:['Characters sound like themselves. The voice examples were only ever read as one long block buried in the middle of the instructions, so they barely registered, and several worlds had just a few lines per person (Cecilia and Vivian had none). Now every character has their own voice card, researched one by one with Google AI Mode and the wiki: how they talk, their verbal tics and catchphrases, what they call people, and sample lines. Some examples: Soldier 11 invents a new odd codename for you every time, Qingyi has her hot water and "sleep mode", Seed gives everyone scent nicknames, and Severian talks in clipped, formal sentences. Aria switches between bubbly idol mode and her soft, shy self, Cecilia calls the trio "the little angels", and Orphie and Magus speak as two separate voices. The cards sit right next to the scene for whoever is present, together with each person\'s own lines pulled from your example scenes, and they\'re used in texts too.']},
  {v:'0.97.6', d:'2026-11-20', notes:['No more periods after every sentence, in every message. Inside spoken lines, sentences now run on with commas the way people actually talk: "Hey. Come in. Nangong said you were coming." becomes "Hey, come in, Nangong said you were coming". Only the very last spoken line of a reply keeps a period, because that\'s the conversation ending. Names and "I" stay capitalized, and "...", ! and ? are left alone. Texts work the same way. Stories and texts you already have are cleaned up once when you open them.']},
  {v:'0.97.5', d:'2026-11-20', notes:['Periods are enforced now instead of only asked for. Texts: no period at the end of a message, and a text written like "Hey. I saw your message. See you at 5." arrives as three quick bubbles with no periods, the way people actually text. A short cold reply like "ok." keeps its period on purpose, and "..." is left alone. Story: spoken lines lose their ending period, except the very last line of the reply.']},

@@ -1,10 +1,10 @@
 {
- "version": "0.98.0",
+ "version": "0.98.1",
  "date": "2026-11-20",
  "notes": [
-  "Characters sound like themselves. The voice examples were only ever read as one long block buried in the middle of the instructions, so they barely registered, and several worlds had just a few lines per person (Cecilia and Vivian had none). Now every character has their own voice card, researched one by one with Google AI Mode and the wiki: how they talk, their verbal tics and catchphrases, what they call people, and sample lines. Some examples: Soldier 11 invents a new odd codename for you every time, Qingyi has her hot water and \"sleep mode\", Seed gives everyone scent nicknames, and Severian talks in clipped, formal sentences. Aria switches between bubbly idol mode and her soft, shy self, Cecilia calls the trio \"the little angels\", and Orphie and Magus speak as two separate voices. The cards sit right next to the scene for whoever is present, together with each person's own lines pulled from your example scenes, and they're used in texts too."
+  "Continuity: who said what. Every reply now comes with a list of the last spoken lines with their real speakers, plus the questions each person asked, and a firm rule never to pin a line, question or promise on the wrong person. If Sunna asks you something, she remembers she asked it and whether you answered. Your own messages are also clearly marked as yours in the story history, so your words don't get mixed up with the characters'."
  ],
  "file": "index.html",
- "sha256": "784730eaee10296e210eb496015cb8bde340f927d5e9fa6a26e969ea4d116723",
+ "sha256": "5fd26176c553fd3d8c2fe8946ef24e7b70dd513dafc64d15cbcb0cfcf72a4585",
  "minShell": "0.5.0"
 }
