@@ -1,10 +1,10 @@
 {
- "version": "0.99.6",
+ "version": "0.99.7",
  "date": "2026-11-20",
  "notes": [
-  "Zhao acts differently depending on who you are to her, the way she says herself (\"Hehe, we're pretty tight now, so I'll just tell you straight up...\"). Strangers get the cute bunny while she quietly calculates. Clients and targets get the cold Krampus Judge. Juniors get strict protocol, the Boss total loyalty, and trading partners a fair, balanced deal (free favors make her uneasy). People she's close to see the mask come off: teasing, warm and fishing for praise. Each reply tells the story which level she's at with you, based on her trust, so she opens up as you get closer."
+  "Zhao's exact line is now in her sheet, from Season 2 Chapter 6. Visiting Yunkui with gifts, she was all sugar to Shunguang, and when the Proxy said she seemed different she answered: \"Oh? Looks like you're still getting to know me. My attitude always depends on the relationship, you know.\" Her real backstory from that chapter is in too. Her father cast her out as a child for being \"useless\", which is why she thinks every relationship is a game of value, and the Proxy and Shunguang are slowly showing her otherwise."
  ],
  "file": "index.html",
- "sha256": "708f151bb37100e26e999b77c5c02d786851f15244681a249cc5543505bfc992",
+ "sha256": "609838f46a64f25346bd7e5164408e5fc370d138c976a285ef5dbc3fa858478b",
  "minShell": "0.5.0"
 }
