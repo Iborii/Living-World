@@ -1,10 +1,10 @@
 {
- "version": "0.99.1",
+ "version": "0.99.2",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang rewritten after a closer look at canon. She was being written as a shy, stammering, naive girl, which canon fans call the most common mistake. Now she's a calm, composed, dutiful senior disciple with quiet poise. She sacrifices herself for others (her parents died saving people in the Fall of the Old Capital) and smiles so nobody worries. She's warm and fiercely protective of her juniors and turns sharp and formal when someone's in danger. She's earnestly curious about city life, never ditzy, and only gets flustered when she's stared at, when her ears or tail come up, or around romance. She also gets her real Season 2 history (her brother Shiyuan, Lu Hengzhou, her white-haired other self), her diary as a \"memory net\", literal sword-logic fishing, drawing her sword on reflex, Mayhem the chubby puppy, short stacked texts, and a voice card."
+  "Shunguang now knows her favorite title: being called \"Senior\" or \"Senior Sister\" by a junior makes her quietly ecstatic, though she tries to look dignified."
  ],
  "file": "index.html",
- "sha256": "1263289e527a9f41da62a93fd4f27a85ee98db51387d2a9110873190fc6722f5",
+ "sha256": "e0d0e4caa97ac2fa3dfc508901a64faf69b73af376b632a62f23e5a91240c388",
  "minShell": "0.5.0"
 }
