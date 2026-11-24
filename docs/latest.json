@@ -1,10 +1,10 @@
 {
- "version": "0.98.2",
+ "version": "0.98.3",
  "date": "2026-11-20",
  "notes": [
-  "Belle isn't your ex anymore. That should have been gone already: it was taken out of her and Wise's character sheets, but it was still in the Yunkui Summit opening scene (\"her ex, they dated years ago\"), Wise's \"irritated she's glowing around her ex\" line, and the world's description. Now Belle is an old friend you lost touch with years ago, and Wise is a wary, protective brother keeping an eye on someone he barely knows. New Yunkui stories start this way. In a story you've already started, the opening that's already written stays as it is."
+  "Scene prompts no longer get stuck on day one. Each world's scene prompt was sent with every reply forever, so days later the AI was still being told \"today is your first day\" (Angels of Delusion) or \"the three of them are walking up the temple stairs right now\" (Yunkui Summit), and characters kept acting like you'd just met. Now the scene prompt only counts as \"right now\" for the opening, meaning the first few replies on the first day. After that it turns into background: \"how this story started, X days ago\". The \"where everyone is\" and \"what happens next\" parts are dropped, and the AI is told people know you now based on what actually happened since. Works for every world, 1-on-1s and custom scenes, and for stories you've already started."
  ],
  "file": "index.html",
- "sha256": "de7e2923b6d20024420434ebacb43f6fbc3865d3aabcd5280fac75d16388089f",
+ "sha256": "d659b45971dce8b53ea1bc8df85b89678876709745f3b1ca5dd76b569f644fe2",
  "minShell": "0.5.0"
 }

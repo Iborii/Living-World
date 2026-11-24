@@ -2183,7 +2183,7 @@ Never speak, think, feel, or act for the user. Never decide the user's choices. 
 
 SCENARIO
 ${S.branch?`This is a private one-on-one story between the user and ${charById(S.branch.charId).full}. It is separate from the main world story. Other main characters do not appear in person unless the user brings them in (they can be mentioned, call, or text).
-${S.branch.scenario}`:sceneText()}
+${sceneAge(S.branch.scenario)}`:sceneAge(sceneText())}
 
 `;
   s+=`
@@ -4746,6 +4746,16 @@ function spokenLedger(){ const U=uN(); const rows=[]; const recent=S.chat.filter
 PROMPT_HOOKS.push(()=>{ const L=spokenLedger(); if(!L.length) return ''; const qs=[]; for(const r of L){ const who=r.slice(0,r.indexOf(':')); for(const q of (r.slice(r.indexOf(':')+2).match(/[^.!?"~]*\?/g)||[])) if(q.trim().length>3) qs.push(who+' asked "'+q.trim()+'"'); }
   return `\nCONTINUITY, WHO SAID WHAT (the last spoken lines, in order, with the real speaker):\n${L.join('\n')}\n${qs.length?`Questions asked so far: ${qs.slice(-8).join('; ')}.\n`:''}Never attribute a line, question, idea or promise to the wrong person. If a character asked something, THEY asked it; ${uN()} only said what is under ${uN()}'s name. Characters remember their own questions and whether they got an answer.\n`; });
 // <<< ledger
+// >>> sceneage
+// ======================= scene prompts age: once the story moves on, the opening setup becomes background, not "right now" =======================
+function storyStartMs(){ try{ if(S.branch&&S.branch.t0) return S.branch.t0; const st=W.start||{}; if(st.date) return parseStart(st.date,st.time||'08:00'); }catch(e){} return S._t0||(S._t0=S.clock); }
+function sceneIsFresh(){ const replies=(S.chat||[]).filter(m=>m.role==='assistant'&&!m.hidden).length; const t0=storyStartMs(); return replies<4&&(S.clock-t0)<6*HOUR; }
+function sceneAge(txt){ txt=String(txt||''); if(!txt.trim()||sceneIsFresh()) return txt;
+  const drop=/^(WHERE EVERYONE IS|WHAT HAPPENS NEXT|WHAT HAPPENS FIRST|OPENING BEAT|NEXT)\b/i; const out=[]; let skip=false;
+  for(const line of txt.split('\n')){ if(/^[A-Z][A-Z '’&/-]{3,}$/.test(line.trim())) skip=drop.test(line.trim()); if(!skip) out.push(line); }
+  const t0=storyStartMs(); const days=Math.floor((S.clock-t0)/DAYMS);
+  return `HOW THIS STORY STARTED (${mmdd(t0)}${days>=1?`, ${days} day${days>1?'s':''} ago`:', earlier today'}). This is the PAST, not the present: everything below describes the first meeting only. Since then people have met ${uN()}, talked, and their feelings have moved on according to what actually happened in the story and their trust levels now. Do not replay the opening, do not treat ${uN()} as new or unknown to people they've already met, and ignore any "right now", "today" or "first day" below. Use it only for who ${uN()} is, their role, and how they first came into everyone's lives.\n\n${out.join('\n').trim()}`; }
+// <<< sceneage
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5215,8 +5225,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.98.2';
+const APP_VERSION = '0.98.3';
 const CHANGELOG = [
+ {v:'0.98.3', d:'2026-11-20', notes:['Scene prompts no longer get stuck on day one. Each world\'s scene prompt was sent with every reply forever, so days later the AI was still being told "today is your first day" (Angels of Delusion) or "the three of them are walking up the temple stairs right now" (Yunkui Summit), and characters kept acting like you\'d just met. Now the scene prompt only counts as "right now" for the opening, meaning the first few replies on the first day. After that it turns into background: "how this story started, X days ago". The "where everyone is" and "what happens next" parts are dropped, and the AI is told people know you now based on what actually happened since. Works for every world, 1-on-1s and custom scenes, and for stories you\'ve already started.']},
  {v:'0.98.2', d:'2026-11-20', notes:['Belle isn\'t your ex anymore. That should have been gone already: it was taken out of her and Wise\'s character sheets, but it was still in the Yunkui Summit opening scene ("her ex, they dated years ago"), Wise\'s "irritated she\'s glowing around her ex" line, and the world\'s description. Now Belle is an old friend you lost touch with years ago, and Wise is a wary, protective brother keeping an eye on someone he barely knows. New Yunkui stories start this way. In a story you\'ve already started, the opening that\'s already written stays as it is.']},
  {v:'0.98.1', d:'2026-11-20', notes:['Continuity: who said what. Every reply now comes with a list of the last spoken lines with their real speakers, plus the questions each person asked, and a firm rule never to pin a line, question or promise on the wrong person. If Sunna asks you something, she remembers she asked it and whether you answered. Your own messages are also clearly marked as yours in the story history, so your words don\'t get mixed up with the characters\'.']},
  {v:'0.98.0', d:'2026-11-20', notes:['Characters sound like themselves. The voice examples were only ever read as one long block buried in the middle of the instructions, so they barely registered, and several worlds had just a few lines per person (Cecilia and Vivian had none). Now every character has their own voice card, researched one by one with Google AI Mode and the wiki: how they talk, their verbal tics and catchphrases, what they call people, and sample lines. Some examples: Soldier 11 invents a new odd codename for you every time, Qingyi has her hot water and "sleep mode", Seed gives everyone scent nicknames, and Severian talks in clipped, formal sentences. Aria switches between bubbly idol mode and her soft, shy self, Cecilia calls the trio "the little angels", and Orphie and Magus speak as two separate voices. The cards sit right next to the scene for whoever is present, together with each person\'s own lines pulled from your example scenes, and they\'re used in texts too.']},
