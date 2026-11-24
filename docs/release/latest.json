@@ -1,10 +1,10 @@
 {
- "version": "0.80.1",
+ "version": "0.81.0",
  "date": "2026-11-20",
  "notes": [
-  "Owner build only: Ju Fufu is now a young adult (19), matching canon. The under-18 limits on her are lifted; she's still petite, loud and heroic, and still insists she's a fearsome senior disciple."
+  "Word moods, little lies and tells. People don't always say exactly what they mean now: they joke, tease, exaggerate, tell white lies to be kind, deny being embarrassed, and sometimes lie for real, each in character (Jane constantly, Seth and Zhu Yuan can barely manage it). The delivery shows the intent: a joking lie gets a grin or is given away a moment later, teasing has warmth, and the tone line says when a line is teasing or sarcastic. Everyone has a tell (Seth's ears go flat, Nicole calls it an \"investment,\" Roxy shows nothing at all). Catch someone three times and you've learned it: \ud83e\uddf0 Tools \u2192 \ud83c\udfad Tells. Also: Zhao's slight lisp on some s sounds, now and then."
  ],
  "file": "index.html",
- "sha256": "3275d2796ab44022b0cb0874730bbb828245f59e86fe66da8ffb98345ccf7dd1",
+ "sha256": "b214809ada0c0526e736d056574f439671daf38acded8ed4f9598fc304d97beb",
  "minShell": "0.5.0"
 }
