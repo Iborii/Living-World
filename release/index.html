@@ -4932,6 +4932,33 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c
 // show it on the relationship card
 { const _or=openRel; openRel=function(id){ _or(id); const c=charById(id); const r=c&&rankOf(c); const h=document.querySelector('#relBody .rc-head > div:last-child'); if(r&&h&&!h.querySelector('.rk')) h.insertAdjacentHTML('beforeend',`<div class="rk small" style="margin-top:2px">${r==='Void Hunter'?'🜲 Void Hunter':r+'-rank'}</div>`); }; }
 // <<< ranks
+// >>> floorplans
+// ======================= floor plans the story follows =======================
+const FP_KEY='lw_floorplans_v1';
+function fpAll(){ try{ return JSON.parse(localStorage.getItem(FP_KEY)||'{}'); }catch(e){ return {}; } }
+function fpSave(all){ try{ localStorage.setItem(FP_KEY,JSON.stringify(all)); }catch(e){} }
+function fpBuilding(loc){ return String(loc||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
+function fpRoom(loc){ const m=String(loc||'').match(/\(([^)]*)\)\s*$/); return m?m[1]:''; }
+function fpFor(loc){ const all=fpAll()[W.id]||{}; const b=fpBuilding(loc); if(all[b]) return {key:b,text:all[b]}; const k=Object.keys(all).find(x=>b.startsWith(x)||x.startsWith(b)); return k?{key:k,text:all[k]}:null; }
+function fpSet(key,text){ const all=fpAll(); all[W.id]=all[W.id]||{}; if(text&&text.trim()) all[W.id][key]=text.trim().slice(0,6000); else delete all[W.id][key]; fpSave(all); }
+PROMPT_HOOKS.push(()=>{ const p=fpFor(S.user.loc); if(!p) return ''; const room=fpRoom(S.user.loc);
+  return `\nFLOOR PLAN: ${p.key}${room?` (${uN()} is in: ${room})`:''}. Follow it exactly: where each room is, which rooms connect, doors, stairs, windows, what furniture and objects are where, and how far apart things are. People move through it realistically (you can't see or hear through walls unless the plan says so; going upstairs takes the stairs). Never invent rooms or move things that the plan places.\n${p.text}\n`; });
+async function fpDraft(key){ const chars=W.characters.filter(c=>(c.schedule||[]).some(s=>fpBuilding(s.loc)===key)||fpBuilding(c.loc)===key).map(c=>c.name);
+  const rooms=[...new Set(W.characters.flatMap(c=>(c.schedule||[]).map(s=>s.loc)).concat(W.locations||[]).filter(l=>fpBuilding(l)===key).map(fpRoom).filter(Boolean))];
+  const out=await callAI({model:CFG.bg, maxTokens:900, system:'You draft clear, practical floor plans for a roleplay. Plain text only.', messages:[{role:'user',content:`World: ${W.title}\n${String(W.setting||'').slice(0,1500)}\nPlace: ${key}\nRooms the story already uses: ${rooms.join(', ')||'none listed'}\nPeople who spend time here: ${chars.join(', ')||'unknown'}\n\nDraft a floor plan: floors, then each room with what's in it, where it is (north/south/left/right, which floor), which rooms connect by which doors, stairs, windows and exits, and rough sizes. Include every room listed above. Keep it short and concrete, one line per room. If the place exists in canon, follow what's known; otherwise keep it plausible and plain.`}]});
+  return String(out||'').trim(); }
+toolTab('floor','🏠 Floor plans',body=>{ const all=fpAll()[W.id]||{}; const here=fpBuilding(S.user.loc);
+  const places=[...new Set([here,...Object.keys(all),...(W.locations||[]).map(fpBuilding)])].filter(Boolean).sort((a,b)=>(b===here)-(a===here)||((b in all)-(a in all))||a.localeCompare(b));
+  body.innerHTML=`<p class="small" style="margin-top:0">Write how a place is laid out: rooms, doors, stairs, furniture, what's where. Whenever you're there, the story follows it exactly. You can also have the AI draft one and then fix it.</p>
+  <label>Place</label><select id="fpSel">${places.map(p=>`<option ${p===here?'selected':''}>${esc(p)}${all[p]?' ✓':''}</option>`).join('')}</select>
+  <textarea id="fpTx" rows="14" style="width:100%;margin-top:8px;font-family:ui-monospace,monospace;font-size:13px" placeholder="FLOOR 1&#10;- Rehearsal room (back left): mirror wall on the north side, amp stack in the corner, piano by the window...&#10;- Hallway: connects the rehearsal room, the recording booth and the stairs...&#10;FLOOR 2&#10;- ..."></textarea>
+  <div style="display:flex;gap:8px;margin-top:8px"><button class="primary" id="fpSave">Save</button><button class="ghost" id="fpDraft">Draft with AI</button><button class="ghost" id="fpDel">Delete</button><span class="small" id="fpMsg" style="align-self:center"></span></div>`;
+  const sel=body.querySelector('#fpSel'), tx=body.querySelector('#fpTx'), msg=body.querySelector('#fpMsg'); const key=()=>sel.value.replace(/ ✓$/,'');
+  const load=()=>{ tx.value=(fpAll()[W.id]||{})[key()]||''; msg.textContent=''; }; load(); sel.onchange=load;
+  body.querySelector('#fpSave').onclick=()=>{ fpSet(key(),tx.value); msg.textContent='Saved. The story will follow it.'; };
+  body.querySelector('#fpDel').onclick=()=>{ if(confirm('Delete this floor plan?')){ fpSet(key(),''); load(); } };
+  body.querySelector('#fpDraft').onclick=async()=>{ msg.textContent='Drafting…'; try{ const d=await fpDraft(key()); if(d){ tx.value=d; msg.textContent='Draft ready. Check it, edit anything, then Save.'; } else msg.textContent='Couldn\'t draft one right now.'; }catch(e){ msg.textContent='Couldn\'t draft one right now.'; } }; });
+// <<< floorplans
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5402,8 +5429,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.6.2';
+const APP_VERSION = '1.7.0';
 const CHANGELOG = [
+ {v:'1.7.0', d:'2026-11-20', notes:['Floor plans: write or AI-draft a layout per place; the story follows it whenever you\'re there']},
  {v:'1.6.2', d:'2026-11-20', notes:['Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power.']},
  {v:'1.6.1', d:'2026-11-20', notes:['Shunguang does a small nervous wiggle when she shows off an outfit to someone precious to her (shy little sway, tail swishing, fidgeting with a ribbon) while she waits to hear what they think, with her real Touch of Dawnlight lines ("Could you... hold the other end for me?"). Her white-haired side poses confidently instead.']},
  {v:'1.6.0', d:'2026-11-20', notes:['Ranks. Every agent has their canon rank, and in the story it now means how much they can handle alone. S-rank characters handle most things themselves (Ethereals, Hollow jobs, fights, emergencies). A-rank (Nicole, Anby, Billy, Seth, Pan Yinhu) handle some things but need backup for big threats. Void Hunters (Yixuan, Shunguang and the Sunbringers) are above that and handle almost anything. People without a rank (Belle, Wise, Cecilia, you unless you say otherwise) aren\'t fighters and need protecting in real danger. The rank shows on each relationship card.']},

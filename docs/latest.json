@@ -1,10 +1,10 @@
 {
- "version": "1.6.2",
+ "version": "1.7.0",
  "date": "2026-11-20",
  "notes": [
-  "Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power."
+  "Floor plans: write or AI-draft a layout per place; the story follows it whenever you're there"
  ],
  "file": "index.html",
- "sha256": "f8d9a2778b6025f70c3eac54f8c5cab1e81e85eb77cb23a64230c34d9602a812",
+ "sha256": "caa709ac0ee762bf2448bd7ad026a13c72ac0fd7b7ff4036746dec4f55d764a1",
  "minShell": "0.5.0"
 }
