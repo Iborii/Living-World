@@ -1,10 +1,10 @@
 {
- "version": "0.78.1",
+ "version": "0.79.0",
  "date": "2026-11-20",
  "notes": [
-  "Owner build only: corrections after checking with Google AI Mode. Aria getting mistaken for Remielle is a fan joke, so it stays as something that sometimes happens (they look alike) without claiming it's canon; Claret's maintenance on Roxy now ties to the canon reason (her Porcelloy Heart runs on Claret's blood)."
+  "Moods. Everyone now has a mood that rises and falls, from miserable to over the moon, shown as a little face next to their name. Some people's normal is neutral, cheerful people's normal is happy, and moods drift back to normal over a few hours. Mood heavily affects how much things land: in a bad mood, kindness earns them much less trust and dating points, and hurts cut deeper; in a great mood, good moments count for a lot more. Events, gossip, being sick and the story itself all move it."
  ],
  "file": "index.html",
- "sha256": "c02bd79d78142c398916f92970f4a3652405ced833f5998b5483d312421b0ac2",
+ "sha256": "eb2e54895b33ceccc8d79b27726d33dd5117a7e9a4485d2319f52a474e769e86",
  "minShell": "0.5.0"
 }

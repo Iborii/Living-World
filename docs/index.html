@@ -787,6 +787,9 @@ body:has(.modal.on) #chatsFab{display:none}
 .dfill{height:100%;background:linear-gradient(90deg,#e07a9a,#e8b45a);border-radius:6px;transition:width .6s}
 .dbar i{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,.5)}.dlab{display:flex;justify-content:space-between;margin-top:3px;font-size:11px}
 /* <<< dating */
+/* >>> moods */
+.mood-b{font-size:13px;margin-right:3px}
+/* <<< moods */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -2317,7 +2320,7 @@ function applyControls(text){
     else if(C==='LEAVE'){ const c=charByName(arg); if(c){ S.user.companions=S.user.companions.filter(x=>x!==c.id); S.chars[c.id].lastBeat=S.clock; } }
     else if(C==='WITH'&&!S.branch){ withList=/^\s*(nobody|no one|none|alone|-)\s*$/i.test(arg)?[]:arg.split(/,|\band\b|&/).map(x=>charByName(x)).filter(c=>c&&!isDead(c)).map(c=>c.id); }
     else if(C==='DOING'){ const i=arg.indexOf(':'); if(i>0){ const c=charByName(arg.slice(0,i)); if(c) setDoing(c, arg.slice(i+1)); } }
-    else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ TRUST_TAGGED.add(c.id); const st=S.chars[c.id]; st.trust=Math.max(0,Math.min(100,st.trust+parseInt(mm[2].replace(/\s/g,'')))); } } }
+    else if(C==='TRUST'){ const mm=arg.match(/^(.+?)\s*([+-]\s*\d+)/); if(mm){ const c=charByName(mm[1]); if(c){ TRUST_TAGGED.add(c.id); const st=S.chars[c.id]; let dv=parseInt(mm[2].replace(/\s/g,'')); try{ dv=moodScale(c.id,dv); }catch(e){} st.trust=Math.max(0,Math.min(100,st.trust+dv)); } } }
     else if(C==='BOND'){ applyBond(arg); }
     else if(['BUY_ITEM','USE','GIVE','PAY','EARN','GET','LOSE'].includes(C)){ applyItemTag(C,arg); }
     else if(['ATE','MOOD','OUTFIT','BUY','RETURN','HURT','HEAL'].includes(C)){ applyLifeTag(C,arg); }
@@ -4127,6 +4130,35 @@ toolTab('dating','💞 Dating',body=>{ const D=S.dating||{}; const ids=Object.ke
     <div style="margin-top:8px">${(d.log||[]).slice(-12).reverse().map(l=>`<div class="small" style="padding:2px 0"><b style="color:${l.d>0?'#6fcf97':l.d<0?'#e05a5a':'var(--muted)'}">${l.d>0?'+':''}${l.d}</b> · ${mmdd(l.t)} ${hhmm(l.t)} · ${esc(subUser(l.why||''))} <span style="opacity:.6">(${l.pts})</span></div>`).join('')}</div></div>`; }).join(''):'<div class="small">You\'re not dating anyone right now.</div>'}
   ${Object.keys(X).length?`<h3 style="margin:16px 0 8px">Exes</h3>${Object.entries(X).map(([id,x])=>`<div class="small" style="padding:3px 0">💔 ${esc((charById(id)||{}).name||'?')} · ${mmdd(x.t)}${x.why?' · '+esc(subUser(x.why)):''}</div>`).join('')}`:''}`; });
 // <<< dating
+// >>> moods
+// ======================= moods: a level that rises and falls and colors how much things land =======================
+const MOODS=[[-3,'miserable','😞'],[-2,'in a bad mood','😠'],[-1,'a bit off','😕'],[0,'neutral','😐'],[1,'happy','🙂'],[2,'very happy','😄'],[3,'over the moon','🤩']];
+const HAPPY_BASE=/cheerful|bubbly|sunny|energetic|upbeat|optimis|playful|lively|bright|enthusias|carefree|prankster|happy-go-lucky|chaotic/i;
+function moodBase(c){ if(c.moodBase!=null) return c.moodBase; const t=String(c.brief||'')+' '+String(c.sheet||'').slice(0,2500); return HAPPY_BASE.test(t)&&!/stoic|deadpan|cold|reserved|aloof|gloomy|melanchol/i.test(String(c.brief||''))?1:0; }
+function mv(id){ const st=S.chars[id]; if(!st) return 0; if(st.mv==null){ const c=charById(id); st.mv=c?moodBase(c):0; } return st.mv; }
+function moodInfo(v){ return MOODS.find(m=>m[0]===Math.max(-3,Math.min(3,v)))||MOODS[3]; }
+function moodShift(id,d,why){ const st=S.chars[id]; if(!st||!d) return; const b=mv(id); st.mv=Math.max(-3,Math.min(3,b+d)); st.mvT=S.clock; if(why) st.mvWhy=String(why).slice(0,120); }
+// how much a good or bad moment lands depends on their mood
+function moodScale(id,delta){ const v=mv(id); if(delta>0){ const m={'-3':.25,'-2':.5,'-1':.75,'0':1,'1':1.25,'2':1.5,'3':1.75}[v]; return Math.max(delta>0?1:0,Math.round(delta*m)); } const m={'-3':1.5,'-2':1.35,'-1':1.15,'0':1,'1':.9,'2':.8,'3':.7}[v]; return Math.min(-1,Math.round(delta*m)); }
+const MOOD_UP=/happy|pleased|delight|thrill|ecstatic|giddy|elated|excited|proud|grateful|relieved|amused|charmed|flattered|content|cheerful|smitten|in love|nostalgic|good mood/i;
+const MOOD_DOWN=/angry|furious|hurt|betray|upset|sad|heartbroken|devastat|crushed|humiliat|jealous|anxious|scared|terrified|ashamed|guilty|resent|annoyed|irritat|grumpy|cranky|stressed|disappoint|frustrat|lonely|let down|stood up|put out|flustered|embarrass|sick/i;
+function moodTick(){ if(!S||!W) return; for(const c of W.characters){ const st=S.chars[c.id]; if(!st||st.dead) continue; mv(c.id);
+    // new mood words (from events, gossip, the story) move the level
+    if(st.mood&&st.mood.t&&st.mood.t!==st._mwT){ st._mwT=st.mood.t; const w=st.mood.word||''; const big=STRONG_MOOD.test(w)?2:1; if(MOOD_DOWN.test(w)) moodShift(c.id,-big,st.mood.why||w); else if(MOOD_UP.test(w)) moodShift(c.id,big,st.mood.why||w); }
+    // sick, hungry, exhausted
+    try{ if(illOf(c.id)&&illStage(illOf(c.id))==='at its worst'&&st.mv>-1) moodShift(c.id,-1,'feeling awful'); }catch(e){}
+    // drifts back toward their normal over time
+    const base=moodBase(c); const since=S.clock-(st.mvT||0); if(st.mv!==base&&since>6*HOUR){ st.mv+=st.mv>base?-1:1; st.mvT=S.clock; if(st.mv===base) delete st.mvWhy; } } }
+setInterval(()=>{ try{ if(SCREEN==='world') moodTick(); }catch(e){} }, 15000);
+REPLY_HOOKS.push(()=>{ try{ moodTick(); }catch(e){} });
+CONTROL_HOOKS.MOODSHIFT=arg=>{ const m=arg.match(/^\s*([^:+\-]+?)\s*:?\s*([+-]\s*\d)\s*(?::\s*(.*))?$/); if(!m) return; const c=charByName(m[1].trim()); if(!c) return; moodShift(c.id,Math.max(-2,Math.min(2,parseInt(m[2].replace(/\s/g,'')))),m[3]||''); };
+// dating points feel moods too
+(()=>{ try{ const _d=dChange; dChange=function(id,delta,why){ return _d.call(this,id,moodScale(id,delta),why); }; }catch(e){} })();
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ const v=mv(c.id), b=moodBase(c), I=moodInfo(v); return `${c.name}: ${I[1]}${v!==b?` (normally ${moodInfo(b)[1]})`:''}${S.chars[c.id].mvWhy&&v!==b?` because ${S.chars[c.id].mvWhy}`:''}`; });
+  return `\nMOODS RIGHT NOW (play them: a bad mood means shorter answers, less patience, kindness lands less; a great mood means warmth comes easily; neutral is normal for some people, happy for others):\n- ${L.join('\n- ')}\nWhen something clearly lifts or sours someone's mood, add [[MOODSHIFT: Name +1: why]] or [[MOODSHIFT: Name -1: why]] (±2 for big things).\n`; });
+// show it: a small face next to their name in the people bar
+function moodBadge(id){ const I=moodInfo(mv(id)); return `<span class="mood-b" title="${esc(I[1])}">${I[2]}</span>`; }
+// <<< moods
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4335,7 +4367,7 @@ function renderCards(){
 function renderStatus(){
   const CS=S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters;
   const presI=present().map(c=>c.id); const near=CS.filter(c=>presI.includes(c.id)), far=CS.filter(c=>!presI.includes(c.id));
-  const pill=c=>{ const t=S.chars[c.id].trust; return `<span class="bond" title="${esc(c.full)}: ${t}/100, ${trustLabel(t)}"><i class="bd" style="background:${c.color}"></i>${esc(c.name)} <b>${t}</b><i class="tl">${trustLabel(t)}</i><i class="bar"><i style="width:${t}%;background:${c.color}"></i></i></span>`; };
+  const pill=c=>{ const t=S.chars[c.id].trust; return `<span class="bond" title="${esc(c.full)}: ${t}/100, ${trustLabel(t)}${(()=>{ try{ return ' · mood: '+moodInfo(mv(c.id))[1]; }catch(e){ return ''; } })()}"><i class="bd" style="background:${c.color}"></i>${(()=>{ try{ return moodBadge(c.id); }catch(e){ return ''; } })()}${esc(c.name)} <b>${t}</b><i class="tl">${trustLabel(t)}</i><i class="bar"><i style="width:${t}%;background:${c.color}"></i></i></span>`; };
   const open=$('#statusbar').classList.contains('full');
   $('#statusbar').innerHTML=(near.length?near.map(pill).join(''):'<span class="small">Nobody with you</span>')+
     `<button class="ghost morebtn" id="bondMore">${open?'Less':'All bonds & hygiene'}</button>`+
@@ -4596,8 +4628,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.78.1';
+const APP_VERSION = '0.79.0';
 const CHANGELOG = [
+ {v:'0.79.0', d:'2026-11-20', notes:['Moods. Everyone now has a mood that rises and falls, from miserable to over the moon, shown as a little face next to their name. Some people\'s normal is neutral, cheerful people\'s normal is happy, and moods drift back to normal over a few hours. Mood heavily affects how much things land: in a bad mood, kindness earns them much less trust and dating points, and hurts cut deeper; in a great mood, good moments count for a lot more. Events, gossip, being sick and the story itself all move it.']},
  {v:'0.78.1', d:'2026-11-20', notes:['Owner build only: corrections after checking with Google AI Mode. Aria getting mistaken for Remielle is a fan joke, so it stays as something that sometimes happens (they look alike) without claiming it\'s canon; Claret\'s maintenance on Roxy now ties to the canon reason (her Porcelloy Heart runs on Claret\'s blood).']},
  {v:'0.78.0', d:'2026-11-20', notes:['💞 Dating. Ask someone out in the story and they decide, based on how they really feel. Once you\'re together there\'s a relationship meter from 0 to 180 in three stages. Stage 1 (0–60, getting started): dates, getting to know each other, but no sex; asking too early hurts them and can end it, because it feels like lust, not love. Stage 2 (61–120, locked in): home visits now and then, random calls and texts, and sex becomes possible at their own pace; pushing past it gets the same reaction. Stage 3 (121–180): deep trust. Good moments raise the meter (up to +4 a day, about a month to reach Stage 2), bad or corrupt things drop it, and days without seeing them slowly cost points. Hit 0 and you\'re on thin ice; hit it again and it\'s over. 🧰 Tools → 💞 Dating shows the exact points, stage and every change. Only adults; never anyone under 18 or protected.']},
  {v:'0.77.0', d:'2026-11-20', notes:['Your messages now type out on screen as you "say" them, and the person you\'re talking to can cut you off mid-sentence, even mid-word ("So I was thinking we could go to the arc—"), then react only to what you actually got out. It happens only when it fits: impatient, excited or panicking characters, urgent moments, or you rambling. Line endings now carry tone: no end mark is normal talk, a period is serious, ! is excited or loud, ~ is playful or affectionate, and a dash means cut off or not done talking, in the story and in texts. Owner build: Vivian calls out of nowhere once she\'s devoted (and switches to a video call if you say you were in the shower), Claret\'s maintenance on Roxy keeps ending in compromising-looking tangles that are never what they look like, Aria gets mistaken for the wanted Remielle, Nangong flirts with men she\'s close to (sometimes for real, sometimes just teasing), and Norma\'s second outfit (overalls over a plain white shirt).']},
