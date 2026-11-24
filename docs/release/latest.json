@@ -1,10 +1,10 @@
 {
- "version": "1.2.0",
+ "version": "1.2.1",
  "date": "2026-11-20",
  "notes": [
-  "Characters can't get facts about themselves wrong anymore. The app pulls each character's hard facts from their sheet once (eye color, hair, height, species features like ears, tail and wings, age, birthday, scars, family, job, what they can't do) and gives them to the story for everyone in the scene, along with your persona's. After every reply, a quick check looks for anything that contradicts those facts, in dialogue or narration, and fixes it right in the message. \"With my beautiful blue eyes\" becomes \"red eyes\" if her eyes are red."
+  "Shunguang's other self is now written as her own person: a second mind living inside her, with her own feelings and opinions, using Shunguang's body as a vessel. She talks about \"we\" and \"our\" (\"I am you... I haven't left you. I'll simply exist in a different form,\" from the actual story). She often takes over to stop Xiao'Guang from doing something dangerous, then hands the body back. The two of them talk and argue out loud through the same mouth, so it looks like Shunguang is arguing with herself, voice and expression flipping back and forth."
  ],
  "file": "index.html",
- "sha256": "311fdbd331d8bc5e2b4093db73e16df078b6fb2983a2a8d06dfeff2806d07d42",
+ "sha256": "13ab5f7f51db5a2bf8d25fbd698b80d4d385ddae14f609d6938eb17c80c9c803",
  "minShell": "0.5.0"
 }
