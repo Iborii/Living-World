@@ -1,10 +1,10 @@
 {
- "version": "1.2.1",
+ "version": "1.3.0",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang's other self is now written as her own person: a second mind living inside her, with her own feelings and opinions, using Shunguang's body as a vessel. She talks about \"we\" and \"our\" (\"I am you... I haven't left you. I'll simply exist in a different form,\" from the actual story). She often takes over to stop Xiao'Guang from doing something dangerous, then hands the body back. The two of them talk and argue out loud through the same mouth, so it looks like Shunguang is arguing with herself, voice and expression flipping back and forth."
+  "Characters have their own lives. They no longer act like they have endless free time for you. Every reply now says, for each person with you, whether they're supposed to be somewhere right now (work, shifts, gigs, rehearsal, training, class, duty), what their next real commitment is, and how long they've been with you. If they're skipping something they notice and leave. When a commitment is close they start wrapping up and checking the time. After a couple of hours together they want to go do their own things, and they say no to plans that clash. If someone ignores a commitment for over an hour, the app sends them off (dating partners get more leeway). Part-time gigs, training, practice and errands now count as being busy. Zhao and Shunguang show no outward signs of their periods at all. Shunguang: both sides share one memory, so whatever one does, the other lived too. The white-haired side sits boldly with her legs crossed while Xiao'Guang sits stiff with her knees together. If she has feelings for you and you act flustered, she gets bolder (touching your face, getting dangerously close), and in a relationship she may even kiss you as a teasing \"punishment\"."
  ],
  "file": "index.html",
- "sha256": "13ab5f7f51db5a2bf8d25fbd698b80d4d385ddae14f609d6938eb17c80c9c803",
+ "sha256": "7576329441e97a1c9bfb3e7652ed9086af4dc6ea97982b961586462138c59b88",
  "minShell": "0.5.0"
 }
