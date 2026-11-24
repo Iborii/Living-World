@@ -1,10 +1,10 @@
 {
- "version": "0.86.0",
+ "version": "0.87.0",
  "date": "2026-11-20",
  "notes": [
-  "Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask \"wait, when was that?\". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh."
+  "\ud83d\udcc8 Your skills grow. Cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying and charm all improve as you actually do them, from total beginner to expert. The story keeps results true to your level (your first dinner might burn; later people ask for seconds), and a little banner tells you when you've leveled up. See them in \ud83e\uddf0 Tools \u2192 \ud83d\udcc8 Skills."
  ],
  "file": "index.html",
- "sha256": "cff852da2b8bea8a2789a16a6f5e206e5570ed412efa05fb6ca8a196acafc985",
+ "sha256": "d7f96e8d9245e9ec36e2fb8c3ba2115fcd2e9591d1f56ef80f6a8f02254369a4",
  "minShell": "0.5.0"
 }

@@ -4307,6 +4307,22 @@ function fadeDays(m){ if(m.pinned||m.imp>=3) return Infinity; return m.imp>=2?45
   const _ml=memLines; memLines=function(id,context,n){ return memoriesFor(id,context,n).map(m=>`- [${wdName(m.t).slice(0,3)} ${mmdd(m.t)} ${hhmm(m.t)}] ${m.text}${m.who.length>1?` (also there: ${m.who.filter(x=>x!==id).map(x=>charById(x)?.name).filter(Boolean).join(', ')})`:''}${m._fuzzy?' (FUZZY: a while ago; they remember the gist but may get details wrong, mix up when it was, or need reminding)':''}`).join('\n'); }; })();
 PROMPT_HOOKS.push(()=>`\nMEMORY: people forget small things over time and remember big ones. When a memory is marked FUZZY they may misremember a detail or ask "wait, when was that?"; if ${uN()} reminds them, it comes back. Never invent memories that aren't listed.\n`);
 // <<< fade
+// >>> skills
+// ======================= your skills grow with practice =======================
+const SKILLS=[['cooking','🍳',/\b(cook|cooking|bake|baking|fry|frying|chop|stir|boil|grill|make (dinner|lunch|breakfast|food)|recipe)/i],['fighting','🥊',/\b(spar|sparring|fight|punch|kick|block|dodge|train(ing)? (with|combat)|combat|martial)/i],
+ ['dancing','💃',/\b(dance|dancing|choreograph|routine|twirl|spin)/i],['singing','🎤',/\b(sing|singing|hum|karaoke|vocal)/i],['music','🎸',/\b(guitar|piano|play (a|the) (song|tune)|drum|violin|bass|keyboard|compose)/i],
+ ['driving','🏍️',/\b(drive|driving|ride (the|my) (bike|motorcycle)|steer|park the)/i],['art','🎨',/\b(draw|drawing|sketch|paint|painting|doodle)/i],['gaming','🎮',/\b(arcade|rhythm game|play (a|the)? ?(game|match|round)|controller|joystick|high score)/i],
+ ['fitness','🏃',/\b(run|jog|workout|work out|push-?ups|sit-?ups|lift|gym|stretch)/i],['studying','📚',/\b(study|studying|read up|research|homework|notes|learn)/i],['charm','💬',/\b(compliment|flirt|persuade|negotiate|haggle|convince|smooth talk)/i]];
+const SKLV=[[0,'never tried'],[1,'a total beginner'],[10,'getting the hang of it'],[30,'decent'],[70,'genuinely skilled'],[150,'an expert']];
+function skLevel(x){ let l=SKLV[0]; for(const L of SKLV) if(x>=L[0]) l=L; return l[1]; }
+function skAdd(k,n,why){ S.skills=S.skills||{}; const s=S.skills[k]=S.skills[k]||{xp:0,t:0}; const before=skLevel(s.xp); s.xp+=n; s.t=S.clock; const after=skLevel(s.xp); if(after!==before&&s.xp>=10){ const I=SKILLS.find(x=>x[0]===k); notice(`📈 Your ${k} improved: ${after}.`); } }
+const _skSent={}; REPLY_HOOKS.push(msg=>{ const ix=S.chat.indexOf(msg); const u=[...S.chat.slice(0,ix)].reverse().find(m=>m.role==='user'&&!m.hidden); if(!u||_skSent[u.t]) return; _skSent[u.t]=1;
+  for(const [k,,rx] of SKILLS) if(rx.test(u.text)) skAdd(k,1); });
+CONTROL_HOOKS.SKILL=arg=>{ const m=arg.match(/^\s*(\w+)\s*([+-]\s*\d+)/); if(!m) return; const k=m[1].toLowerCase(); if(!SKILLS.some(x=>x[0]===k)) return; skAdd(k,Math.max(-3,Math.min(5,parseInt(m[2].replace(/\s/g,'')))),''); };
+PROMPT_HOOKS.push(()=>{ const S2=S.skills||{}; const L=SKILLS.filter(([k])=>S2[k]&&S2[k].xp>0).map(([k])=>`${k}: ${skLevel(S2[k].xp)}`);
+  return `\n${uN().toUpperCase()}'S SKILLS (results match their real level: a beginner's first dinner may burn, an expert's draws compliments; anything not listed they've never really done):${L.length?' '+L.join('; '):' nothing practiced yet'}. When ${uN()} practices something seriously or has a real breakthrough, add [[SKILL: name +1]] (cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying, charm).\n`; });
+toolTab('skills','📈 Skills',body=>{ const S2=S.skills||{}; body.innerHTML=`<p class="small" style="margin-top:0">You get better at things by doing them. The story keeps results true to your level, so practice pays off.</p>${SKILLS.map(([k,i])=>{ const x=(S2[k]||{}).xp||0; const nx=SKLV.find(L=>L[0]>x); return `<div class="sr-row" style="cursor:default"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:22px">${i}</span><b style="flex:1;text-transform:capitalize">${k}</b><span class="small">${skLevel(x)}</span></div><div class="dbar" style="margin-top:6px"><div class="dfill" style="width:${Math.min(100,x/150*100)}%"></div></div>${nx?`<div class="small">${nx[0]-x} more practice to "${nx[1]}"</div>`:''}</div>`; }).join('')}`; });
+// <<< skills
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4776,8 +4792,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.86.0';
+const APP_VERSION = '0.87.0';
 const CHANGELOG = [
+ {v:'0.87.0', d:'2026-11-20', notes:['📈 Your skills grow. Cooking, fighting, dancing, singing, music, driving, art, gaming, fitness, studying and charm all improve as you actually do them, from total beginner to expert. The story keeps results true to your level (your first dinner might burn; later people ask for seconds), and a little banner tells you when you\'ve leveled up. See them in 🧰 Tools → 📈 Skills.']},
  {v:'0.86.0', d:'2026-11-20', notes:['Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask "wait, when was that?". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh.']},
  {v:'0.85.0', d:'2026-11-20', notes:['Missing closeness. People who are close to you (trust 65+, or dating) notice when it\'s been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected.']},
  {v:'0.84.0', d:'2026-11-20', notes:['🎟️ City events. Every story now has things going on around town over the next two weeks: live shows, night markets, big sales, movie premieres, arcade tournaments, street food festivals, gallery openings, more on weekends. People who\'d enjoy an event make plans to go (it goes in their schedule, so you can find them there), mention it, or ask you along. 🧰 Tools → 🎟️ City lists everything with times, places and prices; buying a ticket puts it in your plans.']},
