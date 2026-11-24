@@ -4278,6 +4278,25 @@ toolTab('city','🎟️ City',body=>{ const E=cityEvents(S.clock-6*HOUR,14).filt
     S.tickets.push(e.id); const st=dt(e.start); const P=phone(); P.invites.push({id:'', vid:'tk'+e.id, what:e.name, loc:e.venue, date:isoDate(e.start), start:`${pad(st.h)}:${pad(st.mi)}`, status:'self', sentAt:S.clock});
     addMemory({who:[], text:`${uN()} got a ticket for ${e.name} (${mmdd(e.start)})`, imp:1, src:'city'}); save(); notice(`🎟️ You're going: ${e.name}, ${wdName(e.start)} ${hhmm(e.start)}.`); renderTools(); }); });
 // <<< city
+// >>> touch
+// ======================= touch hunger: people who miss physical closeness come and take it =======================
+const TOUCH_RX=/\b(hug|hugs|hugged|hugging|cuddl\w*|snuggl\w*|nuzzl\w*|kiss\w*|holds? (his|her|their|your) hand|holding hands|hand in hand|leans? (against|on|into)|leaning (against|on|into)|in (his|her|their|your) lap|arms? (around|wrapped)|head on (his|her|their|your) shoulder|pats? (his|her|their|your) head|headpat|carr(y|ies|ied) (him|her|them|you))\b/i;
+const RESERVED=/^(severian|roxy|eldreda|promeia|banyue|qingyi|anby|soldier11|zhuyuan|velina)$/;
+function heightIn(c){ const m=String(c.sheet||'').match(/(?:about|around|roughly)?\s*(\d)'(\d{1,2})"?\s*(?:\(\d+\s*cm\))?\s*barefoot/i)||String(c.brief||'').match(/(\d)'(\d{1,2})"/); return m?(+m[1])*12+(+m[2]):null; }
+REPLY_HOOKS.push(msg=>{ const t=msg.text||''; S.touch=S.touch||{}; for(const c of present()){ const seg=(t.match(new RegExp(`[^.!?\\n]*\\b${c.name}\\b[^.!?\\n]*[.!?]?`,'g'))||[]).join(' '); if(TOUCH_RX.test(seg)) S.touch[c.id]=S.clock; } });
+SCREEN_HOOKS.push(n=>{ if(n==='world'&&S){ S.touch=S.touch||{}; for(const c of W.characters) if(S.touch[c.id]==null) S.touch[c.id]=S.clock; } });
+PROMPT_HOOKS.push(pres=>{ const L=[]; S.touch=S.touch||{}; const crowd=pres.length;
+  for(const c of pres){ if(c.minor||c.protect||isConstruct(c)&&!/aria|billy/.test(c.id)) continue; const st=S.chars[c.id]; const d=(S.dating||{})[c.id]; const stage=d?(d.pts>120?3:d.pts>60?2:1):0;
+    if(!d&&(st.trust||0)<65) continue; const last=S.touch[c.id]; if(last==null) continue; const days=(S.clock-last)/DAYMS; const need=stage>=2?1:stage===1?2:4; if(days<need) continue;
+    const res=RESERVED.test(c.id); const small=(heightIn(c)||66)<=62; const strong=days>=need*2;
+    let r=`${c.name} hasn't had any physical closeness with ${uN()} in ${Math.floor(days)} day${Math.floor(days)===1?'':'s'} and ${strong?'is really craving it':'misses it'}. `;
+    if(res) r+=`Being reserved, it shows subtly: sitting a little closer, a hand that lingers, finding an excuse to fix ${uN()}'s collar.`;
+    else r+=`${crowd>2?'With other people around they keep it small (leaning into them, an arm hooked through theirs), but the moment they get a little privacy they':'They'} may simply take it: flop onto ${uN()}, pull them into a cuddle and refuse to let go, burrow into their side${small?', or, being small, latch on, wriggle into their lap or demand to be picked up':''}.`;
+    if(stage>=2) r+=` Since they're together, they may pester ${uN()} for kisses: playfully insistent, pouting, stealing a quick one, not letting go until they get one.`;
+    r+=` They start it; how ${uN()} responds is up to ${uN()}. It's affection, not a lead-in to anything more.`;
+    L.push(r); }
+  return L.length?`\nMISSING CLOSENESS:\n- ${L.join('\n- ')}\n`:''; });
+// <<< touch
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4747,8 +4766,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.84.0';
+const APP_VERSION = '0.85.0';
 const CHANGELOG = [
+ {v:'0.85.0', d:'2026-11-20', notes:['Missing closeness. People who are close to you (trust 65+, or dating) notice when it\'s been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected.']},
  {v:'0.84.0', d:'2026-11-20', notes:['🎟️ City events. Every story now has things going on around town over the next two weeks: live shows, night markets, big sales, movie premieres, arcade tournaments, street food festivals, gallery openings, more on weekends. People who\'d enjoy an event make plans to go (it goes in their schedule, so you can find them there), mention it, or ask you along. 🧰 Tools → 🎟️ City lists everything with times, places and prices; buying a ticket puts it in your plans.']},
  {v:'0.83.0', d:'2026-11-20', notes:['People come find you. Characters who trust you (55+) or are dating you sometimes show up on their own, without being texted: because they missed you, were bored, brought food, have news to tell you in person, or were passing by. It happens during the day (9 to 22), only when they\'re free, more often the closer you are and the better their mood, at most once every ten hours. If you\'re sick, close friends may turn up with soup and medicine. If you\'re not there when they arrive, they remember it.']},
  {v:'0.82.0', d:'2026-11-20', notes:['🎯 Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency\'s debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn\'t explode. Goals move a little every day whether you\'re there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone\'s progress in 🧰 Tools → 🎯 Goals.']},

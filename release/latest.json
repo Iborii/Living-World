@@ -1,10 +1,10 @@
 {
- "version": "0.84.0",
+ "version": "0.85.0",
  "date": "2026-11-20",
  "notes": [
-  "\ud83c\udf9f\ufe0f City events. Every story now has things going on around town over the next two weeks: live shows, night markets, big sales, movie premieres, arcade tournaments, street food festivals, gallery openings, more on weekends. People who'd enjoy an event make plans to go (it goes in their schedule, so you can find them there), mention it, or ask you along. \ud83e\uddf0 Tools \u2192 \ud83c\udf9f\ufe0f City lists everything with times, places and prices; buying a ticket puts it in your plans."
+  "Missing closeness. People who are close to you (trust 65+, or dating) notice when it's been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected."
  ],
  "file": "index.html",
- "sha256": "e201daff9db40318d7d95bdd451d3b5ca0f355265b45878af55a6e8ccc581fb8",
+ "sha256": "b581349120bccf5fe92cd0af17b2a7324899579683cb7335b39ea566c346f584",
  "minShell": "0.5.0"
 }
