@@ -1,10 +1,10 @@
 {
- "version": "0.85.0",
+ "version": "0.86.0",
  "date": "2026-11-20",
  "notes": [
-  "Missing closeness. People who are close to you (trust 65+, or dating) notice when it's been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected."
+  "Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask \"wait, when was that?\". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh."
  ],
  "file": "index.html",
- "sha256": "b581349120bccf5fe92cd0af17b2a7324899579683cb7335b39ea566c346f584",
+ "sha256": "cff852da2b8bea8a2789a16a6f5e206e5570ed412efa05fb6ca8a196acafc985",
  "minShell": "0.5.0"
 }

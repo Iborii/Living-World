@@ -4297,6 +4297,16 @@ PROMPT_HOOKS.push(pres=>{ const L=[]; S.touch=S.touch||{}; const crowd=pres.leng
     L.push(r); }
   return L.length?`\nMISSING CLOSENESS:\n- ${L.join('\n- ')}\n`:''; });
 // <<< touch
+// >>> fade
+// ======================= memory fades: small things blur, big things stay =======================
+function fadeDays(m){ if(m.pinned||m.imp>=3) return Infinity; return m.imp>=2?45:14; }
+(()=>{ const _mf=memoriesFor; memoriesFor=function(id,context,n){ const ctx=String(context||'').toLowerCase(); const list=_mf.call(this,id,context,(n||8)+4); const out=[];
+  for(const m of list){ const hit=(m.keys||[]).some(k=>k&&k.length>3&&ctx.includes(k)); if(hit) m.seen=S.clock; const age=(S.clock-Math.max(m.t,m.seen||0))/DAYMS; const lim=fadeDays(m);
+    if(age>lim*2&&!hit) continue; m._fuzzy=age>lim; out.push(m); }
+  return out.slice(-(n||8)); };
+  const _ml=memLines; memLines=function(id,context,n){ return memoriesFor(id,context,n).map(m=>`- [${wdName(m.t).slice(0,3)} ${mmdd(m.t)} ${hhmm(m.t)}] ${m.text}${m.who.length>1?` (also there: ${m.who.filter(x=>x!==id).map(x=>charById(x)?.name).filter(Boolean).join(', ')})`:''}${m._fuzzy?' (FUZZY: a while ago; they remember the gist but may get details wrong, mix up when it was, or need reminding)':''}`).join('\n'); }; })();
+PROMPT_HOOKS.push(()=>`\nMEMORY: people forget small things over time and remember big ones. When a memory is marked FUZZY they may misremember a detail or ask "wait, when was that?"; if ${uN()} reminds them, it comes back. Never invent memories that aren't listed.\n`);
+// <<< fade
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4766,8 +4776,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.85.0';
+const APP_VERSION = '0.86.0';
 const CHANGELOG = [
+ {v:'0.86.0', d:'2026-11-20', notes:['Memories fade. Small things people learned about you blur after about two weeks (bigger things after about six), so they may get a detail wrong, mix up when it happened, or ask "wait, when was that?". Much later they forget it entirely. Big moments are never forgotten. Mention it again and it comes right back, fresh.']},
  {v:'0.85.0', d:'2026-11-20', notes:['Missing closeness. People who are close to you (trust 65+, or dating) notice when it\'s been a while since any physical contact, and they come and take it: flopping onto you, pulling you into a cuddle and refusing to let go, burrowing into your side. The small ones (Nangong, Seed, Aria and others) latch on, wriggle into your lap or demand to be picked up. Partners at Stage 2 or 3 may pester you for kisses, pouting and stealing a quick one. Reserved people (Severian, Roxy, Eldreda) show it subtly instead. They start it; how you respond is always up to you, and it stays affectionate. Never anyone under 18 or protected.']},
  {v:'0.84.0', d:'2026-11-20', notes:['🎟️ City events. Every story now has things going on around town over the next two weeks: live shows, night markets, big sales, movie premieres, arcade tournaments, street food festivals, gallery openings, more on weekends. People who\'d enjoy an event make plans to go (it goes in their schedule, so you can find them there), mention it, or ask you along. 🧰 Tools → 🎟️ City lists everything with times, places and prices; buying a ticket puts it in your plans.']},
  {v:'0.83.0', d:'2026-11-20', notes:['People come find you. Characters who trust you (55+) or are dating you sometimes show up on their own, without being texted: because they missed you, were bored, brought food, have news to tell you in person, or were passing by. It happens during the day (9 to 22), only when they\'re free, more often the closer you are and the better their mood, at most once every ten hours. If you\'re sick, close friends may turn up with soup and medicine. If you\'re not there when they arrive, they remember it.']},
