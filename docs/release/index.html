@@ -4413,6 +4413,28 @@ toolTab('home','🏠 Home',body=>{ const h=homeOf(); const vis=h?Object.entries(
     q('#hmNb').onclick=()=>{ h.neighbors=[]; meetNeighbors(); renderTools(); }; } });
 setTimeout(()=>{ const b=document.getElementById('moveBtn'); if(b) b.addEventListener('click',()=>{ const h=homeOf(); if(!h) return; const s=document.getElementById('moveSel'); const o=document.createElement('option'); o.value=h.loc; o.textContent='🏠 Home: '+h.loc; s.insertBefore(o,s.children[1]||null); }); },0);
 // <<< home
+// >>> rep
+// ======================= faction reputation =======================
+const FACTIONS={'Angels of Delusion':['nangong','aria','sunna','cecilia'],'Cunning Hares':['nicole','anby','billy','nekomata'],'Public Security':['zhuyuan','qingyi','seth','jane'],
+  'Obol Squad':['seed','soldier11','trigger','orphie'],'Krampus Compliance Authority':['phoenix','dialyn','zhao','promeia','banyue'],'Yunkui Summit':['yixuan','yinhu','shunguang','fufu'],
+  'Phaethon':['belle','wise'],'Sunbringers':['eldreda','lindverne','dracaene']};
+function factionsNow(){ const ids=new Set(W.characters.map(c=>c.id)); const out={}; for(const [f,m] of Object.entries(FACTIONS)){ const mm=m.filter(i=>ids.has(i)); if(mm.length) out[f]=mm; }
+  if(!Object.keys(out).length&&W.characters.length>1){ const nm=String(W.title||W.name||'').split(':')[0].trim(); if(nm) out[nm]=W.characters.map(c=>c.id); } return out; }
+function repOf(f){ S.rep=S.rep||{}; let r=S.rep[f]; if(!r){ const m=factionsNow()[f]||[]; const avg=m.length?m.reduce((a,i)=>a+(S.chars[i]?.trust||0),0)/m.length:30; r=S.rep[f]={v:Math.max(-20,Math.min(20,Math.round((avg-30)/3))),log:[]}; } return r; }
+function repLabel(v){ return v<=-50?'hostile':v<=-20?'distrusted':v<=-6?'cool toward you':v<=5?'neutral':v<=25?'known, in a good way':v<=50?'well liked':'one of their own'; }
+function repChange(f,d,why){ const r=repOf(f); const b=r.v; r.v=Math.max(-100,Math.min(100,r.v+d)); r.log.push({t:S.clock,d,why:String(why||'').slice(0,140)}); if(r.log.length>40) r.log.shift();
+  if(repLabel(b)!==repLabel(r.v)) notice(`${f}: you're now ${repLabel(r.v)}.`, r.v<b); }
+function findFaction(name){ const n=String(name||'').toLowerCase().trim(); const F=Object.keys(factionsNow()); return F.find(f=>f.toLowerCase()===n)||F.find(f=>f.toLowerCase().includes(n)||n.includes(f.toLowerCase())); }
+CONTROL_HOOKS.REP=arg=>{ const m=String(arg).match(/^\s*(.+?)\s*([+-]\s*\d+)\s*(?::\s*(.*))?$/); if(!m) return; const f=findFaction(m[1]); if(!f) return; repChange(f, Math.max(-15,Math.min(15,parseInt(m[2].replace(/\s/g,'')))), m[3]||''); };
+PROMPT_HOOKS.push(pres=>{ const F=factionsNow(); const ks=Object.keys(F); if(!ks.length) return ''; const U=uN();
+  const L=ks.map(f=>{ const r=repOf(f); const here=F[f].filter(i=>pres.some(c=>c.id===i)).map(i=>charById(i).name); return `${f} (${F[f].map(i=>charById(i).name).join(', ')}): ${repLabel(r.v)} (${r.v>0?'+':''}${r.v})${here.length?' · here: '+here.join(', '):''}${r.log.length?` · last: ${r.log[r.log.length-1].why}`:''}`; });
+  return `\nGROUPS AND ${U.toUpperCase()}'S REPUTATION (how each group as a whole sees ${U}, separate from each person's own trust; members who barely know ${U} still go by it, and word travels inside a group):\n- ${L.join('\n- ')}\nWhen ${U} does something a whole group would hear about or care about (helps or embarrasses them, keeps or breaks their rules, sides with or against them), add [[REP: Group +N: why]] or [[REP: Group -N: why]] (N from 2 to 15).\n`; });
+toolTab('rep','🏛 Groups',body=>{ const F=factionsNow(); const ks=Object.keys(F);
+  body.innerHTML=`<p class="small" style="margin-top:0">How each group sees you as a whole. It's separate from each person's trust, and word travels inside a group.</p>`+(ks.length?ks.map(f=>{ const r=repOf(f); const pct=(r.v+100)/2;
+    return `<div class="sr-row" style="cursor:default"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>${esc(f)}</b><span>${repLabel(r.v)} · <b>${r.v>0?'+':''}${r.v}</b></span></div>
+    <div style="position:relative;height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin:6px 0"><i style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.3)"></i><i style="position:absolute;top:0;bottom:0;border-radius:3px;${r.v>=0?`left:50%;width:${pct-50}%;background:#6c9`:`left:${pct}%;width:${50-pct}%;background:#e66`}"></i></div>
+    <div class="sr-m" style="margin:0">${F[f].map(i=>esc(charById(i).name)).join(', ')}</div>${r.log.slice(-4).reverse().map(x=>`<div class="small">${x.d>0?'+':''}${x.d} ${esc(x.why)} · ${mmdd(x.t)}</div>`).join('')}</div>`; }).join(''):'<div class="small">No groups in this world.</div>'); });
+// <<< rep
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4882,8 +4904,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.90.0';
+const APP_VERSION = '0.91.0';
 const CHANGELOG = [
+ {v:'0.91.0', d:'2026-11-20', notes:['Group reputation. Each group (Angels of Delusion, Cunning Hares, Public Security, Obol Squad, Krampus, Yunkui Summit, Phaethon, the Sunbringers) has its own view of you, from hostile to one of their own. It\'s separate from each person\'s trust, members who barely know you go by it, and word travels inside a group. Helping or embarrassing a group, or keeping or breaking its rules, moves it. See it in 🧰 Tools → 🏛 Groups.']},
  {v:'0.90.0', d:'2026-11-20', notes:['Your own place. In 🧰 Tools → 🏠 Home, set where you live (or tap Here). Decorate it there or in the story; anything you buy, hang or set up gets added. First-time visitors look around and react in character, regulars notice what\'s new, and a few neighbors live nearby: a sound through the wall now and then, a hallway run-in. It shows who\'s been over, and Home is at the top of the Move list.']},
  {v:'0.89.0', d:'2026-11-20', notes:['Dating bars: once it\'s official, three small bars sit under their name in the with-you bar. They start black and fade into the character\'s color as your points grow, one bar per stage. Tap anyone\'s name there to open their relationship card: trust, mood, dating stage, points and how far to the next stage, recent ups and downs, what they\'ve told you they want, their goal, inside jokes, secrets, promises and their tell. Tone: someone you mildly irritate may go a little tsundere, if it fits them.']},
  {v:'0.88.0', d:'2026-11-20', notes:['Your body: hunger, energy and sleep. Skip meals or stay up too long and the story shows it; people who care notice. New 🧍 You tab in Tools.']},

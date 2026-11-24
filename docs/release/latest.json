@@ -1,10 +1,10 @@
 {
- "version": "0.90.0",
+ "version": "0.91.0",
  "date": "2026-11-20",
  "notes": [
-  "Your own place. In \ud83e\uddf0 Tools \u2192 \ud83c\udfe0 Home, set where you live (or tap Here). Decorate it there or in the story; anything you buy, hang or set up gets added. First-time visitors look around and react in character, regulars notice what's new, and a few neighbors live nearby: a sound through the wall now and then, a hallway run-in. It shows who's been over, and Home is at the top of the Move list."
+  "Group reputation. Each group (Angels of Delusion, Cunning Hares, Public Security, Obol Squad, Krampus, Yunkui Summit, Phaethon, the Sunbringers) has its own view of you, from hostile to one of their own. It's separate from each person's trust, members who barely know you go by it, and word travels inside a group. Helping or embarrassing a group, or keeping or breaking its rules, moves it. See it in \ud83e\uddf0 Tools \u2192 \ud83c\udfdb Groups."
  ],
  "file": "index.html",
- "sha256": "6009856badacc3b34364484afb42aead40b7bfdb37df8f4136c7b0691f956e3d",
+ "sha256": "d3681853aeac1df794330ee81c567847b3f820cd9e944d3c3989ae319ef088f7",
  "minShell": "0.5.0"
 }
