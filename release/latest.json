@@ -1,10 +1,10 @@
 {
- "version": "1.1.2",
+ "version": "1.2.0",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang's other self is very bold: she closes the distance first, says exactly what she thinks, holds eye contact until you look away, and never hesitates or blushes. Where Xiao'Guang would stammer, she just smiles and says it."
+  "Characters can't get facts about themselves wrong anymore. The app pulls each character's hard facts from their sheet once (eye color, hair, height, species features like ears, tail and wings, age, birthday, scars, family, job, what they can't do) and gives them to the story for everyone in the scene, along with your persona's. After every reply, a quick check looks for anything that contradicts those facts, in dialogue or narration, and fixes it right in the message. \"With my beautiful blue eyes\" becomes \"red eyes\" if her eyes are red."
  ],
  "file": "index.html",
- "sha256": "cf01602d5cb48be75bcf8bbf31d916ecf046fb231c3b9efafbcb29d57cbc59fd",
+ "sha256": "311fdbd331d8bc5e2b4093db73e16df078b6fb2983a2a8d06dfeff2806d07d42",
  "minShell": "0.5.0"
 }

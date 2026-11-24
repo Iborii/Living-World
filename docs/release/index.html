@@ -4842,6 +4842,36 @@ PROMPT_HOOKS.push(pres=>{ if(!W.characters.some(c=>c.id==='shunguang')) return '
   const crush=top[0]==='user'?(((S.dating||{}).shunguang||{}).on||sg.trust>=70?'yes: Shunguang has romantic feelings for them, and the other self admits it openly':'not (yet) romantic: she is fond of them, nothing more, and the other self won\'t claim otherwise'):'Wise (her canon crush)';
   return `\nSHUNGUANG'S OTHER SELF: if the white-haired side comes out, she heads straight for the person Shunguang is most fond of right now: ${who}. With them she's fully herself: very bold (closes the distance first, says exactly what she thinks, no hesitation or blushing), open, and teasing a lot.${top[0]==='user'?` Romantic feelings for ${uN()}: ${crush}.`:''}\n`; });
 // <<< shadow
+// >>> facts
+// ======================= hard facts: characters never contradict what's true about them =======================
+// 1) once per character, pull the fixed facts out of their sheet (cached); 2) show them for whoever's present;
+// 3) after each reply, a quick check finds statements that contradict those facts and corrects them in place.
+const FACTS_KEY='lw_facts_v1';
+let FACTS={}; try{ FACTS=JSON.parse(localStorage.getItem(FACTS_KEY)||'{}'); }catch(e){}
+function factKey(c){ return c.id+':'+hashStr(String(c.sheet||'')+String(c.brief||'')); }
+const _factBusy={};
+async function loadFacts(c){ const k=factKey(c); if(FACTS[k]||_factBusy[k]) return FACTS[k]; _factBusy[k]=1;
+  try{ const out=await callAI({model:CFG.bg, maxTokens:500, system:'Extract fixed physical and biographical facts. Reply with plain lines only, "label: value", max 18 lines. Only facts explicitly stated in the text. No opinions or personality.',
+      messages:[{role:'user',content:`Character: ${c.full}\n\n${String(c.sheet||'').slice(0,12000)}\n\nList their hard facts: eye color, hair (color, length, style), skin, height, species/race and animal features (ears, tail, wings, horns, fins), age, birthday, distinctive marks (scars, tattoos, beauty marks), voice, what they usually wear, job/role, family members, where they live, pets/companions, things they can't do (can't eat, can't swim...). Skip anything not stated.`}]});
+    const f=String(out||'').split('\n').map(l=>l.replace(/^[-*\s]+/,'').trim()).filter(l=>/^[^:]{2,40}:\s*\S/.test(l)).slice(0,18).join('\n');
+    if(f){ FACTS[k]=f; try{ localStorage.setItem(FACTS_KEY,JSON.stringify(FACTS)); }catch(e){} } return f; }catch(e){ return ''; } finally{ delete _factBusy[k]; } }
+function factsOf(c){ const f=FACTS[factKey(c)]; if(!f) loadFacts(c); return f||''; }
+function userFacts(){ try{ const P=persona(); return [P.name&&('name: '+P.name),P.age&&('age: '+P.age),P.height&&('height: '+P.height),P.look&&('appearance: '+String(P.look).slice(0,300))].filter(Boolean).join('\n'); }catch(e){ return ''; } }
+PROMPT_HOOKS.push(pres=>{ const L=pres.map(c=>{ const f=factsOf(c); return f?`${c.name}:\n${f.split('\n').map(x=>'  '+x).join('\n')}`:''; }).filter(Boolean); const uf=userFacts();
+  if(!L.length&&!uf) return ''; return `\nHARD FACTS (true, fixed; nobody may ever state or describe anything that contradicts them: right eye color, right hair, right height, right family, etc. If a character talks about their own looks or past, it must match. Measurements like height or size are for you only, never written as numbers in the story):\n${L.join('\n')}${uf?`\n${uN()}:\n${uf.split('\n').map(x=>'  '+x).join('\n')}`:''}\n`; });
+// warm the cache for everyone in the world in the background
+SCREEN_HOOKS.push(()=>{ try{ if(W&&SCREEN==='world') W.characters.slice(0,12).forEach((c,i)=>setTimeout(()=>factsOf(c),1500+i*2500)); }catch(e){} });
+// check each reply and fix contradictions
+const _factChecked=new WeakSet();
+REPLY_HOOKS.push(msg=>{ if(!msg||_factChecked.has(msg)||CFG.factCheck===false) return; _factChecked.add(msg); const pres=present(); const txt=String(msg.text||''); if(txt.length<40) return;
+  const facts=pres.map(c=>{ const f=factsOf(c); return f?`${c.name}:\n${f}`:''; }).filter(Boolean); const uf=userFacts(); if(uf) facts.push(`${uN()}:\n${uf}`); if(!facts.length) return;
+  setTimeout(async()=>{ try{
+    const out=await callAI({model:CFG.bg, maxTokens:400, system:'You are a strict continuity checker. Reply with JSON only.', messages:[{role:'user',content:`FACTS:\n${facts.join('\n\n')}\n\nTEXT:\n${txt.slice(-5000)}\n\nFind every statement in TEXT that directly contradicts FACTS (wrong eye color, hair, height, species, family, job, etc.), whether said in dialogue or narration. Ignore anything FACTS don't cover. Return JSON: {"fixes":[{"wrong":"exact substring copied from TEXT","right":"replacement with the same wording but corrected"}]}. Use the shortest exact substring that contains the error. If nothing contradicts, return {"fixes":[]}.`}]});
+    const m=String(out).match(/\{[\s\S]*\}/); if(!m) return; const j=JSON.parse(m[0]); let t=msg.text, n=0;
+    for(const f of (j.fixes||[]).slice(0,6)){ if(f&&f.wrong&&f.right&&f.wrong!==f.right&&t.includes(f.wrong)){ t=t.replace(f.wrong,f.right); n++; } }
+    if(n){ msg.text=t; if(msg.versions&&msg.versions.length) msg.versions[msg.vi??msg.versions.length-1]=t; msg.factFixed=(msg.factFixed||0)+n; save(); render(); }
+  }catch(e){ console.warn('factcheck',e); } },80); });
+// <<< facts
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5312,8 +5342,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.2.0';
 const CHANGELOG = [
+ {v:'1.2.0', d:'2026-11-20', notes:['Characters can\'t get facts about themselves wrong anymore. The app pulls each character\'s hard facts from their sheet once (eye color, hair, height, species features like ears, tail and wings, age, birthday, scars, family, job, what they can\'t do) and gives them to the story for everyone in the scene, along with your persona\'s. After every reply, a quick check looks for anything that contradicts those facts, in dialogue or narration, and fixes it right in the message. "With my beautiful blue eyes" becomes "red eyes" if her eyes are red.']},
  {v:'1.1.2', d:'2026-11-20', notes:['Shunguang\'s other self is very bold: she closes the distance first, says exactly what she thinks, holds eye contact until you look away, and never hesitates or blushes. Where Xiao\'Guang would stammer, she just smiles and says it.']},
  {v:'1.1.1', d:'2026-11-20', notes:['Shunguang\'s other self goes straight to the person Shunguang is most fond of and is completely herself with them. That could be you if you\'ve grown close, or Wise if not. She\'s very open: if Shunguang has romantic feelings for you, the other self admits it plainly, and if there aren\'t any, she won\'t pretend. Either way she teases a lot.']},
  {v:'1.1.0', d:'2026-11-20', notes:['Character profiles. Each character has a profile that fills in as you play: the story records what you actually learn about them (basics, looks, personality, likes, dislikes, habits, past, family and friends, work, dreams and fears, secrets). You get a small 📖 notice whenever you discover something new. See them in 🧰 Tools → 📖 Profiles, with how much of each person you\'ve uncovered, or at the bottom of anyone\'s relationship card. Facts only come from their real character info or what happened in your story, never made up. A character\'s goal now stays hidden until you know them well enough.']},
