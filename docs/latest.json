@@ -1,10 +1,10 @@
 {
- "version": "0.81.0",
+ "version": "0.82.0",
  "date": "2026-11-20",
  "notes": [
-  "Word moods, little lies and tells. People don't always say exactly what they mean now: they joke, tease, exaggerate, tell white lies to be kind, deny being embarrassed, and sometimes lie for real, each in character (Jane constantly, Seth and Zhu Yuan can barely manage it). The delivery shows the intent: a joking lie gets a grin or is given away a moment later, teasing has warmth, and the tone line says when a line is teasing or sarcastic. Everyone has a tell (Seth's ears go flat, Nicole calls it an \"investment,\" Roxy shows nothing at all). Catch someone three times and you've learned it: \ud83e\uddf0 Tools \u2192 \ud83c\udfad Tells. Also: Zhao's slight lisp on some s sounds, now and then."
+  "\ud83c\udfaf Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency's debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn't explode. Goals move a little every day whether you're there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone's progress in \ud83e\uddf0 Tools \u2192 \ud83c\udfaf Goals."
  ],
  "file": "index.html",
- "sha256": "b214809ada0c0526e736d056574f439671daf38acded8ed4f9598fc304d97beb",
+ "sha256": "9ba94d36709860c1fb69b032ed3810e4da9bc202575dd6729d0992844b49538c",
  "minShell": "0.5.0"
 }

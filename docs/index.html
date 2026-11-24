@@ -4181,6 +4181,49 @@ toolTab('tells','🎭 Tells',body=>{ const cs=W.characters.filter(c=>!isDead(c))
   <h3 style="margin:12px 0 8px">Tells you know</h3>${known.length?known.map(c=>{ const L=S.lies[c.id]; const by={}; L.forEach(x=>by[x.intent||'?']=(by[x.intent||'?']||0)+1); return `<div class="sr-row" style="cursor:default"><b>${esc(c.name)}</b>: ${esc(tellOf(c))}<div class="sr-m" style="margin:4px 0 0">${Object.entries(by).map(([k,v])=>`${esc(k)} ×${v}`).join(' · ')}</div>${L.slice(-3).reverse().map(x=>`<div class="small">${mmdd(x.t)}: ${esc(subUser(x.what||''))} <i>(${esc(x.intent)})</i></div>`).join('')}</div>`; }).join(''):'<div class="small">None yet.</div>'}
   ${learning.length?`<h3 style="margin:14px 0 8px">Getting there</h3>${learning.map(c=>`<div class="small" style="padding:2px 0">${esc(c.name)}: caught ${lieSeen(c.id)} of 3</div>`).join('')}`:''}`; });
 // <<< lies
+// >>> goals
+// ======================= personal goals that move along over weeks =======================
+const GOALS={
+ aria:['save up for proper livestream gear and start streaming','get through a whole dance routine without a single misstep'],
+ sunna:['finish a song she would sing solo','get through a show without her chant to calm down'],
+ nangong:['save enough to buy out a recording studio','get the Angels a headline slot at a real venue'],
+ cecilia:['write a new song of her own and perform it at 404'],
+ zhuyuan:['close the cold case nobody else will touch','take a real day off without checking the case board'],
+ qingyi:['recover a fragment of her lost memories'],
+ seth:['earn a commendation Severian can\'t ignore','pass the infiltration exam he holds the record for failing'],
+ jane:['get one full week of real sleep','find out who she was before all the aliases'],
+ cissia:['get officially moved in as Random Play\'s second-floor roommate','save enough that Chalky never goes hungry again'],
+ severian:['find a way to tell Seth the truth without putting him in danger'],
+ nicole:['pay off the agency\'s biggest debt','land a commission big enough to fix the office roof'],
+ anby:['try every limited burger in New Eridu this season','learn something real about her past'],
+ billy:['complete his Starlight Knight tape collection','get Monica\'s autograph'],
+ nekomata:['beat her own scratch card winning streak','get the Hares a proper home base'],
+ seed:['finish Seed Sr.\'s last garden'],soldier11:['finish a whole bowl of the spiciest noodles at Waterfall Soup','take a day off without being ordered to'],
+ trigger:['learn the whole of "Homecoming" by heart on the harmonica'],orphie:['work up the nerve to buy the dessert she really wants in front of Magus'],
+ yixuan:['find a fortune-telling method that actually works'],fufu:['make it to the end of the month without going over her food budget','be taken seriously as a senior by the whole city'],
+ shunguang:['see every corner of New Eridu she missed while training'],yinhu:['open a little restaurant of his own someday'],vivian:['finish and record her song for Phaethon','work fewer than five jobs in one day'],
+ velina:['keep a houseplant alive for a whole month'],norma:['build a Bangboo that doesn\'t explode','get through a week without a fire-suppression report'],
+ eldreda:['ask her sisters for help with something, out loud'],lindverne:['get Eldreda to stop carrying everything alone','pay Claret back. Some of it'],
+ dracaene:['finish the Rosetta Data recalculation'],claret:['forge Porcelloy without Flint blood'],roxy:['get one full night of sleep','collect every debt on Claret\'s ledger'],
+ sigrid:['live up to the legend everyone tells about her','find her way somewhere new without GPS'],
+ phoenix:['go a whole month without dying'],dialyn:['hit a perfect customer satisfaction score'],zhao:['close the quarter under budget'],promeia:['learn how to spend a day off'],banyue:['restore a damaged part of his core'],
+ belle:['beat Wise\'s high score at Godfinger'],wise:['get the electricity bill under control'],
+};
+const GENERIC_GOALS=['save up for something they\'ve wanted for ages','get better at a hobby they\'ve been neglecting','fix things with someone they fell out with','learn a new skill'];
+function goalOf(id){ S.goals=S.goals||{}; let g=S.goals[id]; if(!g){ const c=charById(id); if(!c) return null; const list=GOALS[id]||[GENERIC_GOALS[hashStr(id)%GENERIC_GOALS.length]]; g=S.goals[id]={i:0, text:list[0], p:hashStr(id+'g')%25, log:[], done:[]}; } return g; }
+function goalStep(id, d, why){ const g=goalOf(id); if(!g) return; const c=charById(id); const before=g.p; g.p=Math.max(0,Math.min(100,g.p+d)); if(why) g.log.push({t:S.clock,d,why:String(why).slice(0,120)}); if(g.log.length>20) g.log.shift();
+  for(const m of [25,50,75]) if(before<m&&g.p>=m) addMemory({who:[id], text:`Got ${m}% of the way toward: ${g.text}`, imp:2, src:'goal'});
+  if(before<100&&g.p>=100){ g.done.push({text:g.text,t:S.clock}); addMemory({who:[id], text:`Achieved a goal: ${g.text}`, imp:3, src:'goal'}); try{ moodShift(id,2,'achieved something they worked for'); }catch(e){} if(isContact&&isContact(id)) notice(`🎯 ${c.name} did it: ${g.text}!`);
+    const list=GOALS[id]||GENERIC_GOALS; g.i++; g.text=list[g.i%list.length]+(g.i>=list.length?' (again, aiming higher)':''); g.p=0; g.log=[]; } }
+function goalTick(){ if(!S||!W||SCREEN!=='world') return; const day=Math.floor(S.clock/DAYMS); if(S._gDay===day) return; const n=S._gDay==null?1:Math.min(7,day-S._gDay); S._gDay=day;
+  for(const c of W.characters){ if(isDead(c)) continue; for(let k=0;k<n;k++){ let d=Math.floor(Math.random()*4); try{ const v=mv(c.id); d+=v>=2?1:v<=-2?-1:0; if(illOf(c.id)) d=0; }catch(e){} if(Math.random()<.06) d=-(2+Math.floor(Math.random()*5)); if(d) goalStep(c.id,d,d<0?'a setback':''); } } }
+setInterval(()=>{ try{ goalTick(); }catch(e){} }, 30000);
+CONTROL_HOOKS.GOAL=arg=>{ const m=arg.match(/^\s*([^:+\-]+?)\s*([+-]\s*\d+)\s*(?::\s*(.*))?$/); if(!m) return; const c=charByName(m[1].trim()); if(!c) return; goalStep(c.id, Math.max(-15,Math.min(15,parseInt(m[2].replace(/\s/g,'')))), m[3]||''); };
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ const g=goalOf(c.id); if(!g) return ''; const st=g.p<10?'just started':g.p<35?'early on':g.p<65?'about halfway':g.p<90?'getting close':'almost there'; return `${c.name} is working toward: ${g.text} (${st}${g.done.length?`; already managed: ${g.done.slice(-1)[0].text}`:''})`; }).filter(Boolean);
+  return `\nPERSONAL GOALS (their own lives keep moving; they may mention progress or setbacks when it fits, not every scene):\n- ${L.join('\n- ')}\nIf ${uN()} actually helps or hinders someone's goal in the scene, add [[GOAL: Name +N: how]] or [[GOAL: Name -N: how]] (N from 3 to 15).\n`; });
+toolTab('goals','🎯 Goals',body=>{ const cs=W.characters.filter(c=>!isDead(c));
+  body.innerHTML=`<p class="small" style="margin-top:0">Everyone is working on something. Progress happens day by day whether you're there or not; helping (or getting in the way) moves it faster.</p>${cs.map(c=>{ const g=goalOf(c.id); return `<div class="sr-row" style="cursor:default"><div style="display:flex;gap:10px;align-items:center">${avHTML(c,28,false)}<div style="flex:1"><b>${esc(c.name)}</b>: ${esc(g.text)}</div><span class="small">${g.p}%</span></div><div class="dbar" style="margin-top:6px"><div class="dfill" style="width:${g.p}%"></div></div>${g.log.slice(-2).reverse().map(l=>`<div class="small">${l.d>0?'+':''}${l.d} · ${mmdd(l.t)} · ${esc(subUser(l.why))}</div>`).join('')}${g.done.length?`<div class="small" style="margin-top:4px">✅ ${g.done.map(d=>esc(d.text)).join(' · ')}</div>`:''}</div>`; }).join('')}`; });
+// <<< goals
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4650,8 +4693,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.81.0';
+const APP_VERSION = '0.82.0';
 const CHANGELOG = [
+ {v:'0.82.0', d:'2026-11-20', notes:['🎯 Personal goals. Everyone is working toward something of their own, based on who they are: Aria saving for livestream gear, Nicole paying off the agency\'s debt, Roxy trying to get one full night of sleep, Norma building a Bangboo that doesn\'t explode. Goals move a little every day whether you\'re there or not (faster in a good mood, stalled when sick, with the occasional setback), and they may bring up progress. Helping or getting in the way moves them more. When they make it, they celebrate and set a new one. See everyone\'s progress in 🧰 Tools → 🎯 Goals.']},
  {v:'0.81.0', d:'2026-11-20', notes:['Word moods, little lies and tells. People don\'t always say exactly what they mean now: they joke, tease, exaggerate, tell white lies to be kind, deny being embarrassed, and sometimes lie for real, each in character (Jane constantly, Seth and Zhu Yuan can barely manage it). The delivery shows the intent: a joking lie gets a grin or is given away a moment later, teasing has warmth, and the tone line says when a line is teasing or sarcastic. Everyone has a tell (Seth\'s ears go flat, Nicole calls it an "investment," Roxy shows nothing at all). Catch someone three times and you\'ve learned it: 🧰 Tools → 🎭 Tells. Also: Zhao\'s slight lisp on some s sounds, now and then.']},
  {v:'0.80.1', d:'2026-11-20', notes:['Owner build only: Ju Fufu is now a young adult (19), matching canon. The under-18 limits on her are lifted; she\'s still petite, loud and heroic, and still insists she\'s a fearsome senior disciple.']},
  {v:'0.80.0', d:'2026-11-20', notes:['Every character re-researched with Google AI Mode, several questions each (how they talk, little habits, texts and trust events, relationships, and what people commonly get wrong about them), and the findings added to their sheets. Fixes: Severian is strict, fair and quietly protective, not a cruel boss who only cares about money (the Demon Lord nickname is Cissia\'s exaggeration). Nangong is a calculating prodigy who keeps strangers at a polished distance, and her room is in (light pink walls, yellow sofa bed, the black octopus plushie). Public Security scenes are now written as a grounded workplace with dry humor instead of a sitcom, and a new rule across all stories keeps the writing from getting corny (no cheesy one-liners, gag endings or speeches about feelings).']},
