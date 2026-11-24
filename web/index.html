@@ -4572,6 +4572,42 @@ ${scene}`}]});
   }catch(e){ console.warn('catch',e); } },50); });
 PROMPT_HOOKS.push(()=>`\nCHARACTERS CAN ACT: anything a character would really want to do, they can just do, on their own initiative: give their number, text or call later, make plans, invite ${uN()} somewhere, buy or give things, pay, change clothes, leave, show up. Don't hold back an action because it "needs" the app; the app records it.\n`);
 // <<< catch
+// >>> shopping
+// ======================= characters shop for clothes they actually need =======================
+const DATEY=/\b(date|dinner with|party|club|concert|night out|celebration|birthday)\b/i, SWIMMY=/\b(swim|beach|pool|hot spring)\b/i;
+function kindFor(act){ act=String(act||''); return FORMAL.test(act)?'formal':SWIMMY.test(act)?'swim':WORKOUT.test(act)?'workout':DATEY.test(act)?'going-out':null; }
+function shopNeeds(c){ const wr=wardrobeOf(c); const n=k=>wr.filter(o=>o.kind===k&&!o.wrongSize).length; const need=[];
+  const soon=allEvents().filter(e=>e.who===c.id&&!e.shop&&e.date>=isoDate(S.clock)&&e.date<=isoDate(S.clock+4*DAYMS));
+  for(const e of soon){ const k=kindFor(e.act); if(!k) continue; const have=k==='going-out'?n('formal')+wr.filter(o=>/dress|going out|date|party|nice/i.test(o.name+' '+o.desc)).length:n(k); if(!have) need.push({kind:k==='going-out'?'formal':k, why:`for ${e.act} on ${wdName(parseStart(e.date,e.start))}`, urgent:true}); }
+  if(!n('sleep')) need.push({kind:'sleep',why:'nothing proper to sleep in',urgent:true});
+  if(!n('workout')&&(c.schedule||[]).some(s=>WORKOUT.test(s.act))) need.push({kind:'workout',why:'for training',urgent:true});
+  if(n('casual')<=2) need.push({kind:'casual',why:'tired of wearing the same thing',urgent:false});
+  return need; }
+function shopLoc(c){ const L=(W.locations||[]).find(l=>/\b(mall|boutique|department|clothing|clothes|apparel|fashion)\b/i.test(l))||(W.locations||[]).find(l=>/\b(shop|store|market)\b/i.test(l)&&!/coffee|cafe|food|noodle|ramen|arcade|video|game|book|flower|convenience|grocer|pharmac|hardware|pawn|141|repair|tool|pet/i.test(l));
+  return L||(String(S.chars[c.id].loc||c.loc||'').split(',')[0].trim()||'Downtown')+', a clothing store'; }
+function shopCost(k){ const sc=+currency().scale||1; return Math.round((k==='formal'?140:k==='sleep'?30:k==='swim'?45:k==='workout'?55:70)*sc*(0.7+Math.random()*0.6)); }
+function planShop(c){ if(isDead(c)) return; S.shopTrips=S.shopTrips||[]; const st=S.chars[c.id]; if(S.shopTrips.some(t=>t.who===c.id&&!t.done)) return; if(st.lastShop&&S.clock-st.lastShop<4*DAYMS) return;
+  const need=shopNeeds(c); const pick=need.find(x=>x.urgent)||(Math.random()<.2?need[0]:null); if(!pick) return; const cost=shopCost(pick.kind); if((walletOf(c.id).money||0)<cost) return;
+  for(let h=1;h<36;h++){ const t=Math.ceil((S.clock+h*HOUR)/HOUR)*HOUR; const hr=dt(t).h; if(hr<11||hr>18) continue; const sl=slotFor(c,t), sl2=slotFor(c,t+HOUR); if([sl,sl2].some(s=>s&&(s.event||BUSY_RX.test(s.act)||HARD_BUSY.test(s.act)||SLEEPY.test(s.act)))) continue;
+    const id='shop'+t.toString(36)+c.id; const loc=shopLoc(c); S.events=S.events||[]; S.events.push({id, who:c.id, date:isoDate(t), start:hhmm(t), end:hhmm(t+90*MIN), loc, act:`clothes shopping (${pick.kind} clothes, ${pick.why})`, shop:true});
+    S.shopTrips.push({id, who:c.id, kind:pick.kind, why:pick.why, end:t+90*MIN, cost, loc}); st.lastShop=S.clock; return; } }
+async function finishShop(tr){ tr.done=true; const c=charById(tr.who); if(!c||isDead(c)) return; let o={name:`new ${tr.kind} outfit`, desc:''};
+  try{ const out=await callAI({model:CFG.bg, maxTokens:200, system:'Return ONLY JSON {"name":"short outfit name","desc":"one sentence: pieces, colors, fit, fabric"}.', messages:[{role:'user',content:`${c.full} just bought a ${tr.kind} outfit (${tr.why}) at ${tr.loc}. Match their personal style, colors and budget from this sheet:\n${String(c.sheet||'').slice(0,2500)}`}]});
+    const m=String(out).match(/\{[\s\S]*\}/); if(m){ const j=JSON.parse(m[0]); if(j.name) o={name:String(j.name).slice(0,60), desc:String(j.desc||'').slice(0,200)}; } }catch(e){}
+  const item={name:o.name, kind:tr.kind==='swim'?'casual':tr.kind, desc:o.desc, bought:S.clock}; if(Math.random()<.12){ item.wrongSize=true; tr.returnAt=S.clock+(1+Math.random()*2)*DAYMS; }
+  wardrobeOf(c).push(item); try{ pay(c.id,'shop',tr.cost,`clothes: ${o.name}`); }catch(e){}
+  try{ addMemory({who:[c.id], text:`${c.name} went clothes shopping and bought ${o.name}${item.wrongSize?', but it turned out to be the wrong size':''}`, imp:1, src:'shop'}); }catch(e){} save(); }
+function shopTick(){ if(!S||!W||SCREEN!=='world') return; const d=isoDate(S.clock); if(S._shopDay!==d){ S._shopDay=d; for(const c of W.characters) try{ planShop(c); }catch(e){} }
+  for(const tr of S.shopTrips||[]){ if(!tr.done&&S.clock>=tr.end) finishShop(tr);
+    if(tr.returnAt&&S.clock>=tr.returnAt){ const c=charById(tr.who); delete tr.returnAt; if(c){ const wr=wardrobeOf(c); const i=wr.findIndex(o=>o.wrongSize); if(i>=0){ const it=wr.splice(i,1)[0]; walletOf(c.id).money+=tr.cost; try{ addMemory({who:[c.id], text:`${c.name} returned the ${it.name} (wrong size) and got the money back`, imp:1, src:'shop'}); }catch(e){} save(); } } } }
+  if((S.shopTrips||[]).length>40) S.shopTrips=S.shopTrips.filter(t=>!t.done||t.returnAt).slice(-40); }
+setInterval(()=>{ try{ shopTick(); }catch(e){ console.warn('shop',e); } },10000);
+PROMPT_HOOKS.push(pres=>{ const L=[]; for(const c of pres){ const tr=(S.shopTrips||[]).find(t=>t.who===c.id&&!t.done); const ws=wardrobeOf(c).filter(o=>o.wrongSize).map(o=>o.name);
+    if(tr) L.push(`${c.name} plans to go clothes shopping ${isoDate(tr.end)===isoDate(S.clock)?'today':'tomorrow'} around ${hhmm(tr.end-90*MIN)} (${tr.kind}, ${tr.why}); they may mention it or ask ${uN()} to come`);
+    else { const n=shopNeeds(c).filter(x=>x.urgent); if(n.length) L.push(`${c.name} has nothing ${n[0].kind} to wear ${n[0].why}; it's on their mind`); }
+    if(ws.length) L.push(`${c.name}'s new ${ws.join(', ')} doesn't fit right; they mean to return it`); }
+  return L.length?`\nCLOTHES ON THEIR MIND: ${L.join('; ')}. If ${uN()} goes shopping with them, they try things on and pick for themselves; record buys with [[BUY: Name: item: casual|work|sleep|workout|formal]].\n`:''; });
+// <<< shopping
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5041,8 +5077,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.94.0';
+const APP_VERSION = '0.95.0';
 const CHANGELOG = [
+ {v:'0.95.0', d:'2026-11-20', notes:['Characters shop for what they actually need. If someone has a date, party or formal event coming up and nothing fitting to wear, nothing to sleep or train in, or is tired of wearing the same few things, they plan a clothes-shopping trip in their free time (it shows on the Events calendar). They pay with their own money, buy something in their own style, and it goes into their wardrobe. Sometimes it\'s the wrong size and they return it a day or two later for a refund. In scenes they may mention it, or ask you to come along.']},
  {v:'0.94.0', d:'2026-11-20', notes:['Characters can do anything they\'d really want to: give you their number, make plans, invite you out, buy or give things, pay, text you, change clothes. They act on their own initiative. After every reply, a quick check catches anything the story did that wasn\'t recorded and puts it where it belongs: numbers go into your contacts, plans onto the Events calendar, promises, gifts and money where they go, wants onto their relationship card. It only records what clearly happened, never trust, injuries or relationship changes.']},
  {v:'0.93.2', d:'2026-11-20', notes:['Line endings: periods are now rare. A reply gets at most one, and only when the conversation is actually ending or a line is completely final. While a conversation is still going, the last person to speak ends with a comma when they\'re calm, or ... when they\'re nervous or the moment is tense or climactic.']},
  {v:'0.93.1', d:'2026-11-20', notes:['Delete chats. Every chat in Your chats now has a trash button. It deletes that story, 1-on-1, timeline, group story or group chat for good after you confirm. Deleting the one you\'re in takes you back Home.']},

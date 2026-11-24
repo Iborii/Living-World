@@ -1,10 +1,10 @@
 {
- "version": "0.94.0",
+ "version": "0.95.0",
  "date": "2026-11-20",
  "notes": [
-  "Characters can do anything they'd really want to: give you their number, make plans, invite you out, buy or give things, pay, text you, change clothes. They act on their own initiative. After every reply, a quick check catches anything the story did that wasn't recorded and puts it where it belongs: numbers go into your contacts, plans onto the Events calendar, promises, gifts and money where they go, wants onto their relationship card. It only records what clearly happened, never trust, injuries or relationship changes."
+  "Characters shop for what they actually need. If someone has a date, party or formal event coming up and nothing fitting to wear, nothing to sleep or train in, or is tired of wearing the same few things, they plan a clothes-shopping trip in their free time (it shows on the Events calendar). They pay with their own money, buy something in their own style, and it goes into their wardrobe. Sometimes it's the wrong size and they return it a day or two later for a refund. In scenes they may mention it, or ask you to come along."
  ],
  "file": "index.html",
- "sha256": "b103454943c14866048c71b9e054a8aa917835a28dc0a4a8cd1d3d2c0c14e581",
+ "sha256": "47bea4c00783d41781cd7470a9192deec8349ad144a5edd469ef16cff33c67dd",
  "minShell": "0.5.0"
 }
