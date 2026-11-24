@@ -1,10 +1,10 @@
 {
- "version": "0.99.5",
+ "version": "0.99.6",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang's other self, from the real story transcripts. When she takes over, the dark hair turns white and the bangs change. She plays it off with \"Oh, did I scare you? Don't worry. I just needed some air. She'll be back, very soon.\" When she leaves, Xiao'Guang's eyes flutter shut and she comes back dazed. Her voice comes from her actual lines: \"My, dear, junior~\", \"Little Miss Perfect\", \"Oopsie... seems like I've said too much\", \"I refuse to die before the world does\". She bragged that she picked the outfit, and she told her junior the sword's secret. She can still slip out now, not only in danger: at night, or whenever she decides she \"needs some air\"."
+  "Zhao acts differently depending on who you are to her, the way she says herself (\"Hehe, we're pretty tight now, so I'll just tell you straight up...\"). Strangers get the cute bunny while she quietly calculates. Clients and targets get the cold Krampus Judge. Juniors get strict protocol, the Boss total loyalty, and trading partners a fair, balanced deal (free favors make her uneasy). People she's close to see the mask come off: teasing, warm and fishing for praise. Each reply tells the story which level she's at with you, based on her trust, so she opens up as you get closer."
  ],
  "file": "index.html",
- "sha256": "7fbae59a9b96295e1162173414c17a3573e175b4e8b2e6a717f525ef6e9619dc",
+ "sha256": "708f151bb37100e26e999b77c5c02d786851f15244681a249cc5543505bfc992",
  "minShell": "0.5.0"
 }
