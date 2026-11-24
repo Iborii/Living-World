@@ -1,10 +1,10 @@
 {
- "version": "0.89.0",
+ "version": "0.90.0",
  "date": "2026-11-20",
  "notes": [
-  "Dating bars: once it's official, three small bars sit under their name in the with-you bar. They start black and fade into the character's color as your points grow, one bar per stage. Tap anyone's name there to open their relationship card: trust, mood, dating stage, points and how far to the next stage, recent ups and downs, what they've told you they want, their goal, inside jokes, secrets, promises and their tell. Tone: someone you mildly irritate may go a little tsundere, if it fits them."
+  "Your own place. In \ud83e\uddf0 Tools \u2192 \ud83c\udfe0 Home, set where you live (or tap Here). Decorate it there or in the story; anything you buy, hang or set up gets added. First-time visitors look around and react in character, regulars notice what's new, and a few neighbors live nearby: a sound through the wall now and then, a hallway run-in. It shows who's been over, and Home is at the top of the Move list."
  ],
  "file": "index.html",
- "sha256": "a9afd79c1eac3adddd5e0c4ad2555d7d1c449317676fe89b91d135d7c3c95a35",
+ "sha256": "6009856badacc3b34364484afb42aead40b7bfdb37df8f4136c7b0691f956e3d",
  "minShell": "0.5.0"
 }
