@@ -1,10 +1,10 @@
 {
- "version": "0.92.0",
+ "version": "0.93.0",
  "date": "2026-11-20",
  "notes": [
-  "The others have lives with each other. Off-screen, people fight (about chores, money, a joke that went too far) and make up a day or two later. Adults who get close can catch feelings, start seeing each other, sometimes in secret, and break up. You hear about it through gossip from whoever you spend time with, and in scenes it shows: two people being short with each other, a look between a secret couple. Romance is adults-only and never between family or mentor and student. See what you've heard in \ud83e\uddf0 Tools \u2192 \ud83d\udcac Around."
+  "Heights and gaps. Add your barefoot height to your persona, and every character now has a barefoot height (from their sheet, or community model measurements with heels removed). When people of very different heights kiss, hug, whisper or meet eyes, the story shows how it reaches: leaning down, tiptoes, a grabbed collar, sitting, kneeling, being lifted. Numbers never appear in the story. Time skips line up: write things like *time skip to the next morning*, *three hours later* or *skip to 6pm* and the clock and date really jump, the world catches up (schedules, hunger, sleep, phones), and the stamp has to match. Long skips the narrator writes move the date too. Grounded actions are on by default: what you write in *stars* is what you try, not a fact. You can only use what you're carrying, money you have and skills you have, you can't make things appear, and you can't decide what someone else does. Characters notice when things don't add up. Lap sitting means facing the same way, never straddling unless the scene says so. Taking charge: bold, flirty characters like Nangong will pout and steal the kiss if you keep playfully dodging. Reserved or mature ones like Velina won't. Never after a real no."
  ],
  "file": "index.html",
- "sha256": "ca0ac4f107eccbc8fe791d1055f9c556f086b414eed6bccd2e363ca4bd5fe9c6",
+ "sha256": "5f80547630fb1e22b75524de75d5e822454c9428dafaab0e07ab6ce616ac126d",
  "minShell": "0.5.0"
 }

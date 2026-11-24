@@ -1042,6 +1042,7 @@ body:has(.modal.on) #chatsFab{display:none}
     <div class="grid2">
       <div><label>Pronouns</label><input id="pmPron" list="pronList" placeholder="he/him, she/her, they/them…"><datalist id="pronList"><option>he/him</option><option>she/her</option><option>they/them</option></datalist></div>
       <div><label>Age (optional)</label><input id="pmAge" placeholder="e.g. 22"></div>
+      <div><label>Height, barefoot (optional)</label><input id="pmHeight" placeholder="e.g. 6'0&quot; or 183 cm"></div>
     </div>
     <div class="grid2"><div><label>Race</label><span id="pmRaceWrap"></span></div><div><label id="pmRaceXL">&nbsp;</label><input id="pmRaceX" style="display:none"></div></div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px"><div class="ph-av" id="pmPhAv" title="Phone profile picture" style="width:46px;height:46px;font-size:20px;cursor:pointer"></div><div class="small" style="line-height:1.35">Your phone profile picture (what characters see in their messages)<br><a href="#" id="pmPhDel">remove</a></div><input type="file" id="pmPhFile" accept="image/*" style="display:none"></div>
@@ -1356,7 +1357,7 @@ function savePersonas(){ try{ LS.setItem(PERSONA_KEY, JSON.stringify(PS)); }catc
 function persona(){ const id=(W&&S&&S.personaId)||PS.defaultId; return PS.list.find(p=>p.id===id)||PS.list.find(p=>p.id===PS.defaultId)||PS.list[0]||{name:'',pronouns:'',age:'',look:'',bg:'',color:PCOLORS[0]}; }
 function personaText(p){ p=p||persona(); const bits=[];
   bits.push(`The user plays ${p.name||'an unnamed person'}${p.pronouns?` (${p.pronouns})`:''}${p.age?`, age ${p.age}`:''}.`); if(p.gender) bits.push('Gender: '+p.gender+'. Treat this exactly as stated: characters see, address and refer to the user accordingly.'); if(p.race&&p.race!=='Human') bits.push('Race: '+((raceDefOf(p)||{}).name||p.race)+(p.animal?` (${p.animal})`:'')+'. Characters see and treat the user as this race (ears, tail, fur, size, or a construct body, as fits).');
-  if(p.look) bits.push('Appearance: '+p.look); if(p.bg) bits.push('Personality and background: '+p.bg); return bits.join('\n'); }
+  if(p.height) bits.push('Height (barefoot; describe by comparison, never the number): '+p.height); if(p.look) bits.push('Appearance: '+p.look); if(p.bg) bits.push('Personality and background: '+p.bg); return bits.join('\n'); }
 const uname = () => persona().name||'you';
 const subUser = s => String(s||'').replace(/\{\{user\}\}/g, uname()).replace(/\{\{char\}\}/g,'the characters');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -2367,8 +2368,10 @@ function syncClockFromStamp(text){
     if(loc && loc.length<120 && !/^\d/.test(loc) && loc!==S.user.loc){ S.user.loc=loc; for(const id of S.user.companions){ S.chars[id].loc=loc; } } }
   const m=text.match(/^\s*\|\s*(\d{1,2}):(\d{2})/); if(!m) return;
   const x=dt(S.clock); let target=Date.UTC(x.y,x.mo-1,x.d,+m[1],+m[2]);
+  const dm=st&&(st.split('|')[2]||'').match(/(\d{1,2})\/(\d{1,2})/);
+  if(dm){ let y=x.y; if(+dm[1]<x.mo-6) y++; const tg=Date.UTC(y,+dm[1]-1,+dm[2],+m[1],+m[2]); if(tg>S.clock&&tg-S.clock<=30*DAYMS){ if(tg-S.clock>2*HOUR&&typeof clockJump==='function') clockJump(tg); else S.clock=tg; return; } if(tg<=S.clock&&S.clock-tg<6*HOUR) return; }
   if(target<S.clock-6*60*MIN) target+=1440*MIN; // crossed midnight
-  if(target>S.clock && target-S.clock<12*60*MIN) S.clock=target;
+  if(target>S.clock && target-S.clock<20*60*MIN){ if(target-S.clock>2*HOUR&&typeof clockJump==='function') clockJump(target); else S.clock=target; }
 }
 let summarizing=false;
 async function maybeSummarize(){
@@ -4477,6 +4480,54 @@ toolTab('pairs','💬 Around',body=>{ const E=Object.entries(S.pairs||{}).filter
   const st=p=>[p.love?({crush:'a crush',dating:p.love.secret?'secretly together':'together','broke up':'broke up'})[p.love.s]:'',p.fight?'fighting':''].filter(Boolean).join(' · ')||'on good terms';
   body.innerHTML=`<p class="small" style="margin-top:0">What's going on between other people, as far as you've heard. Things happen off-screen too, and news reaches you through whoever you spend time with.</p>`+(E.length?E.map(e=>`<div class="sr-row" style="cursor:default"><b>${esc(e.a.name)} & ${esc(e.b.name)}</b> <span class="small">${st(e.p)}</span>${e.p.log.slice(-3).reverse().map(x=>`<div class="small">${mmdd(x.t)} · ${esc(x.text)}</div>`).join('')}</div>`).join(''):'<div class="small">You haven\'t heard anything yet.</div>'); });
 // <<< pairs
+// >>> heights
+// ======================= height gaps =======================
+// barefoot inches (to the crown, not ears) where the sheet doesn't say: community model measurements (heels removed) via Google AI Mode, 2026-11-24
+const HEIGHTS={nicole:63,anby:60,billy:73,nekomata:53,zhuyuan:67,qingyi:55,seth:67,jane:63,yixuan:66,trigger:66,soldier11:62,seed:59,orphie:59,belle:60,wise:66,yinhu:74,shunguang:59,cecilia:64,fufu:56,velina:67,norma:59,claret:58};
+function parseHt(txt){ txt=String(txt||''); const cands=[];
+  for(const m of txt.matchAll(/(\d)\s*(?:'|’|′|ft\.?|foot|feet)\s*(\d{1,2})?\s*(?:"|”|″|''|in\.?|inches)?/gi)){ const ft=+m[1], inch=+(m[2]||0); if(ft<2||ft>8||inch>11) continue; const i=ft*12+inch; const ctx=txt.slice(Math.max(0,m.index-90),m.index+m[0].length+60);
+    let w=/\b(height|tall|stands?|barefoot)\b/i.test(ctx)?2:0; if(/\bbarefoot|without (her |his |the )?(heels|boots|platforms?|shoes)|real height|actual height/i.test(ctx)) w+=3; if(/\b(heels|platform|boots|in shoes|with shoes|official)\b/i.test(ctx)&&!/barefoot|without/i.test(ctx)) w-=2; if(/\b(form|construct|hologram|bangboo|wingspan|sword|blade|weapon|tail|arm|robot)\b/i.test(ctx)) w-=1; cands.push({i,w,ix:m.index}); }
+  for(const m of txt.matchAll(/(\d{3})\s*cm\b/gi)){ const cm=+m[1]; if(cm<70||cm>250) continue; const ctx=txt.slice(Math.max(0,m.index-90),m.index+60); let w=/\b(height|tall|stands?)\b/i.test(ctx)?2:0; if(/barefoot|real height|actual height/i.test(ctx)) w+=3; cands.push({i:Math.round(cm/2.54),w,ix:m.index}); }
+  if(!cands.length) return null; cands.sort((a,b)=>b.w-a.w||a.ix-b.ix); return cands[0].w>0?cands[0].i:null; }
+function htOf(c){ if(c==='user'){ const P=persona(); const h=String(P.height||'').trim(); let v=null; if(h){ v=parseHt('height '+h); if(!v){ const n=parseFloat(h); if(n>=120&&n<=250) v=Math.round(n/2.54); else if(n>=40&&n<=100) v=Math.round(n); else if(n>=3&&n<=8) v=Math.round(n*12); } } return v||parseHt([P.look,P.bg].filter(Boolean).join('\n')); } if(c.heightIn) return c.heightIn; if(c._ht===undefined){ const v=parseHt(c.sheet||c.desc||''); c._ht=v||HEIGHTS[c.id]||null; } return c._ht; }
+function _unused(c){ if(c._ht===undefined) c._ht=parseHt(c.sheet||c.desc||''); return c._ht; }
+function ftin(i){ return `${Math.floor(i/12)}'${i%12}"`; }
+function gapWords(d){ const a=Math.abs(d); return a<3?'about eye level':a<6?'a little taller':a<10?'noticeably taller':a<16?'much taller':'towering over'; }
+function gapMoves(d){ const a=Math.abs(d); return a<3?'':a<6?'a slight tilt of the head or chin to meet eyes':a<10?'the taller one dips their head or the shorter one rises onto their toes; eye contact means looking up or down':a<16?'a kiss, a hug, a whisper or a forehead touch needs real effort: the taller one leans or bends way down, the shorter one stretches up on tiptoe, grabs a collar or shirt to pull them down, or one of them sits, kneels, crouches or stands on a step; a hug puts the shorter one\'s face in the taller one\'s chest':'the gap is huge: a kiss only happens if the taller one bends nearly in half, kneels or crouches, sits down, or lifts the shorter one up (or the shorter one climbs onto something); hugs land at chest or stomach height, hand-holding means one arm hangs and one reaches'; }
+PROMPT_HOOKS.push(pres=>{ const U=uN(); const ppl=[['user',U,htOf('user')],...pres.map(c=>[c.id,c.name,htOf(c)])].filter(x=>x[2]); if(ppl.length<2) return '';
+  const pairs=[]; for(let i=0;i<ppl.length;i++) for(let j=i+1;j<ppl.length;j++){ const [ia,na,ha]=ppl[i],[ib,nb,hb]=ppl[j]; const d=ha-hb; if(Math.abs(d)<3) continue; const [T,Sh]=d>0?[na,nb]:[nb,na]; pairs.push(`${T} is ${gapWords(d)} than ${Sh} (${Math.abs(d)} in): ${gapMoves(d)}`); }
+  return `\nHEIGHTS (barefoot; for you only, never put the numbers in the story): ${ppl.map(x=>`${x[1]} ${ftin(x[2])}`).join(', ')}.${pairs.length?`\nHEIGHT GAPS THAT MUST SHOW PHYSICALLY: every kiss, hug, whisper, forehead touch, eye contact, hand on a head or shoulder, carrying, and leaning on someone has to be staged for the real difference. Show HOW it reaches (who leans down, who goes on tiptoe, who pulls a collar, who sits or kneels, who gets lifted), and where faces and hands actually land; never write two very different heights kissing or meeting eyes as if they were the same size. Shoes and heels change it a little, sitting or lying down mostly erases it.\n- ${pairs.join('\n- ')}`:''}\n`; });
+// <<< heights
+// >>> timeskip
+// ======================= time skips that line up, and grounded *actions* =======================
+const NUMW={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,few:3,couple:2,several:4};
+function skipTarget(text){ const t=String(text||'').toLowerCase(); const now=dt(S.clock); const at=(dayAdd,h,m)=>Date.UTC(now.y,now.mo-1,now.d+dayAdd,h,m||0);
+  let m=t.match(/\b(\d+|an?|one|two|three|four|five|six|seven|eight|nine|ten|few|couple|several)\s*(?:of\s*)?(minute|min|hour|hr|day|week)s?\s*(?:later|pass|go by|went by|passed|skip)/);
+  if(m){ const n=+m[1]||NUMW[m[1]]||1; const u={minute:MIN,min:MIN,hour:HOUR,hr:HOUR,day:DAYMS,week:7*DAYMS}[m[2]]; return S.clock+n*u; }
+  m=t.match(/\b(?:next|following)\s*(morning|day|afternoon|evening|night)\b|\b(?:the\s*)?(?:next|following)\s*(?:day|morning)\b|\btomorrow\s*(morning|afternoon|evening|night)?/);
+  if(m&&/later|skip|fast.?forward|\*|wake|woke|until|till/.test(t)){ const w=m[1]||m[2]||'morning'; const H={morning:8,day:9,afternoon:14,evening:18,night:21}[w]||8; return at(1,H); }
+  m=t.match(/\b(?:skip|fast.?forward|time.?skip|later)\b[^*\n]{0,30}?\b(?:to|until|till)\s*(?:the\s*)?(morning|noon|afternoon|evening|night|midnight|(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)/);
+  if(m){ let h,mi=0; if(m[2]){ h=+m[2]; mi=+(m[3]||0); if(m[4]==='pm'&&h<12) h+=12; if(m[4]==='am'&&h===12) h=0; } else h={morning:8,noon:12,afternoon:14,evening:18,night:21,midnight:24}[m[1]]; let x=at(0,h,mi); if(x<=S.clock) x+=DAYMS; return x; }
+  if(/\b(time.?skip|fast.?forward)\b/.test(t)) return S.clock+3*HOUR; return null; }
+function clockJump(target){ const d=target-S.clock; if(!(d>0)) return; S.clock=target; const dm=d/MIN;
+  for(const f of ['bodyTick','sickTick','lifeTick','econTick']) try{ window[f]&&window[f](dm); }catch(e){}
+  try{ if(phonesOn()) phoneLifeTick(dm); }catch(e){} try{ livingTick(Math.min(dm,240)); }catch(e){} try{ if(S.user.companions.length===0||dm>=6*60) {} }catch(e){} updateSchedules(); try{ tickNeeds(); }catch(e){} }
+setTimeout(()=>{ const prev=window.SEND_FILTER; window.SEND_FILTER=text=>{ text=prev?prev(text):text; try{ const tg=skipTarget(text); if(tg&&tg>S.clock&&tg-S.clock<=30*DAYMS){ const from=S.clock; clockJump(tg); S._skip={from,to:tg,t:Date.now()}; } }catch(e){ console.warn('skip',e); } return text; }; },0);
+PROMPT_HOOKS.push(()=>{ let s=''; const k=S._skip; if(k&&Date.now()-k.t<120000){ const h=Math.round((k.to-k.from)/HOUR*10)/10; s+=`\nTIME SKIP: ${uN()} skipped ahead ${h>=24?(x=>x+(x===1?' day':' days'))(Math.round(h/24*10)/10):h+(h===1?' hour':' hours')}, from ${hhmm(k.from)} ${mmdd(k.from)} to ${hhmm(k.to)} ${mmdd(k.to)} (${wdName(k.to)}). The stamp at the top MUST show exactly ${hhmm(k.to)} and ${mmdd(k.to)}. Everyone kept living through the gap on their own schedules: anyone who was with ${uN()} has probably gone off, slept, worked or eaten unless the skip clearly kept them together; show where people actually are now, what they're wearing now, and how ${uN()}'s body feels after that much time. Don't decide what ${uN()} did during the gap beyond what they wrote.\n`; delete S._skip; }
+  s+=`\nTIME MUST ADD UP: the stamp time always matches what the story says happened. If the narration says hours passed, a nap happened, or "the next morning", the stamp jumps by that much (with the new date); a short exchange moves it only a few minutes. Never narrate a skip the stamp doesn't show, or a stamp jump the story doesn't explain.\n`;
+  s+=`\nGROUNDED ACTIONS (always on): what ${uN()} writes between *stars* is what they TRY to do, not a fact about the world. It only works if it's possible right now: they can only use items they're actually carrying, money they actually have, skills they actually have, and places they can actually reach; they can't make things, people, powers, knowledge or events appear by describing them, and they can't decide what anyone else does, says, feels or agrees to ("*she kisses me*" is a hope, the character decides). When part of an action can't happen, play it straight: their hand finds an empty pocket, the door is locked, the move doesn't land, the person reacts their own way. Characters react logically too: they notice when something doesn't add up and ask about it, remember what ${uN()} said and did before, and don't go along with things that make no sense for them. ${uN()}'s own choices, words and feelings are still theirs to decide.\n`;
+  return s; });
+// <<< timeskip
+// >>> closeness
+// ======================= lap sitting default + who takes charge =======================
+const TAKE_CHARGE={nangong:'bold', velina:'never', alice:'never'};
+PROMPT_HOOKS.push(pres=>{ const U=uN(); let s=`\nLAP SITTING: "sitting in/on someone's lap" means sitting sideways or facing the same way as them, back to their chest, unless the scene clearly says otherwise. Never turn it into straddling or facing each other on its own.\n`;
+  const adults=pres.filter(c=>!c.minor&&!c.protect); const L=[];
+  for(const c of adults){ const d=(S.dating||{})[c.id]; const t=S.chars[c.id]?.trust||0; if(!(d&&d.on)&&t<70) continue; const k=TAKE_CHARGE[c.id];
+    L.push(k==='bold'?`${c.name}: WILL take charge. Small but forward and flirty; if ${U} keeps playfully teasing or dodging something she wants (a little kiss, attention), she pouts, then grabs ${U}'s collar or face and takes it herself`:k==='never'?`${c.name}: won't take charge; too composed or reserved, she waits, asks, or lets it go with a look`:`${c.name}: decide from who they are (flirty and bold types may take what they want when teased too long; timid, shy or mature, composed types don't push, they pout, ask, or let it go)`); }
+  if(L.length) s+=`TAKING CHARGE (only when ${U} is clearly being PLAYFUL, teasing or dodging, never after a real no; they act, ${U}'s response stays ${U}'s):\n- ${L.join('\n- ')}\n`;
+  return s; });
+// <<< closeness
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4946,8 +4997,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.92.0';
+const APP_VERSION = '0.93.0';
 const CHANGELOG = [
+ {v:'0.93.0', d:'2026-11-20', notes:['Heights and gaps. Add your barefoot height to your persona, and every character now has a barefoot height (from their sheet, or community model measurements with heels removed). When people of very different heights kiss, hug, whisper or meet eyes, the story shows how it reaches: leaning down, tiptoes, a grabbed collar, sitting, kneeling, being lifted. Numbers never appear in the story. Time skips line up: write things like *time skip to the next morning*, *three hours later* or *skip to 6pm* and the clock and date really jump, the world catches up (schedules, hunger, sleep, phones), and the stamp has to match. Long skips the narrator writes move the date too. Grounded actions are on by default: what you write in *stars* is what you try, not a fact. You can only use what you\'re carrying, money you have and skills you have, you can\'t make things appear, and you can\'t decide what someone else does. Characters notice when things don\'t add up. Lap sitting means facing the same way, never straddling unless the scene says so. Taking charge: bold, flirty characters like Nangong will pout and steal the kiss if you keep playfully dodging. Reserved or mature ones like Velina won\'t. Never after a real no.']},
  {v:'0.92.0', d:'2026-11-20', notes:['The others have lives with each other. Off-screen, people fight (about chores, money, a joke that went too far) and make up a day or two later. Adults who get close can catch feelings, start seeing each other, sometimes in secret, and break up. You hear about it through gossip from whoever you spend time with, and in scenes it shows: two people being short with each other, a look between a secret couple. Romance is adults-only and never between family or mentor and student. See what you\'ve heard in 🧰 Tools → 💬 Around.']},
  {v:'0.91.0', d:'2026-11-20', notes:['Group reputation. Each group (Angels of Delusion, Cunning Hares, Public Security, Obol Squad, Krampus, Yunkui Summit, Phaethon, the Sunbringers) has its own view of you, from hostile to one of their own. It\'s separate from each person\'s trust, members who barely know you go by it, and word travels inside a group. Helping or embarrassing a group, or keeping or breaking its rules, moves it. See it in 🧰 Tools → 🏛 Groups.']},
  {v:'0.90.0', d:'2026-11-20', notes:['Your own place. In 🧰 Tools → 🏠 Home, set where you live (or tap Here). Decorate it there or in the story; anything you buy, hang or set up gets added. First-time visitors look around and react in character, regulars notice what\'s new, and a few neighbors live nearby: a sound through the wall now and then, a hallway run-in. It shows who\'s been over, and Home is at the top of the Move list.']},
@@ -5153,7 +5205,7 @@ function renderPersonaModal(){
   const p=PS.list.find(x=>x.id===pmEditing)||{name:'',pronouns:'',age:'',look:'',bg:'',color:PCOLORS[PS.list.length%PCOLORS.length]};
   pmColor=p.color||PCOLORS[0]; pmPhone=p.phoneImg||''; $('#pmName').value=p.name||''; $('#pmPron').value=p.pronouns||'';
   const gStd=['Male','Female','Transgender man','Transgender woman','Non-binary']; const g=p.gender||'';
-  $('#pmGender').value=!g?'':gStd.includes(g)?g:'__other'; $('#pmGenderOther').value=gStd.includes(g)?'':g; $('#pmGenderOther').style.display=$('#pmGender').value==='__other'?'':'none'; $('#pmAge').value=p.age||''; { $('#pmRaceWrap').innerHTML=raceSelectHTML('pmRace','',{placeholder:'Human (default)',noHuman:true}); $('#pmRace').onchange=pmRaceSync; raceSelectSet($('#pmRace'),$('#pmRaceX'),$('#pmRaceXL'),p.race==='Human'?{}:p); } $('#pmLook').value=p.look||''; $('#pmBg').value=p.bg||'';
+  $('#pmGender').value=!g?'':gStd.includes(g)?g:'__other'; $('#pmGenderOther').value=gStd.includes(g)?'':g; $('#pmGenderOther').style.display=$('#pmGender').value==='__other'?'':'none'; $('#pmAge').value=p.age||''; $('#pmHeight').value=p.height||''; { $('#pmRaceWrap').innerHTML=raceSelectHTML('pmRace','',{placeholder:'Human (default)',noHuman:true}); $('#pmRace').onchange=pmRaceSync; raceSelectSet($('#pmRace'),$('#pmRaceX'),$('#pmRaceXL'),p.race==='Human'?{}:p); } $('#pmLook').value=p.look||''; $('#pmBg').value=p.bg||'';
   $('#pmTitle').textContent=pmEditing?(p.name||'(unnamed)'):'New persona'; pmPaintAv();
   $('#pmColors').innerHTML=PCOLORS.map(c=>`<span data-c="${c}" style="background:${c}" class="${c===pmColor?'sel':''}"></span>`).join('');
   $('#pmColors').querySelectorAll('span').forEach(el=>el.onclick=()=>{ pmColor=el.dataset.c; $('#pmColors').querySelectorAll('span').forEach(s=>s.classList.toggle('sel',s===el)); pmPaintAv(); });
@@ -5174,7 +5226,7 @@ $('#pmSave').onclick=()=>{
   const name=$('#pmName').value.trim(); if(!name){ $('#pmMsg').textContent='Give your persona a name first.'; return; }
   const gsel=$('#pmGender').value; const gender=gsel==='__other'?$('#pmGenderOther').value.trim():gsel;
   if(!gender){ $('#pmMsg').textContent='Choose a gender first (it\'s required so characters treat you correctly).'; $('#pmGender').focus(); return; }
-  const data={name, gender, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), ...(()=>{ const r=raceSelectRead($('#pmRace'),$('#pmRaceX')); return {race:r.race||'Human', raceId:r.raceId, animal:r.animal}; })(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor, phoneImg:pmPhone};
+  const data={name, gender, pronouns:$('#pmPron').value.trim(), age:$('#pmAge').value.trim(), height:$('#pmHeight').value.trim(), ...(()=>{ const r=raceSelectRead($('#pmRace'),$('#pmRaceX')); return {race:r.race||'Human', raceId:r.raceId, animal:r.animal}; })(), look:$('#pmLook').value.trim(), bg:$('#pmBg').value.trim(), color:pmColor, phoneImg:pmPhone};
   if(pmEditing){ Object.assign(PS.list.find(x=>x.id===pmEditing),data); }
   else { const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),...data}; PS.list.push(p); pmEditing=p.id; if(!PS.defaultId) PS.defaultId=p.id; if(W&&S&&!S.personaId) S.personaId=p.id; }
   savePersonas(); renderPersonaModal(); $('#pmMsg').textContent='Saved.'; if(SCREEN==='world'){ render(); save(); } else renderHome();
