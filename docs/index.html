@@ -811,6 +811,37 @@ body:has(.modal.on) #chatsFab{display:none}
 .th{font-size:14px;font-style:italic;color:var(--muted);padding:6px 10px;border-left:2px solid var(--cc);background:color-mix(in srgb,var(--cc) 7%,transparent);border-radius:0 8px 8px 0}
 .th-who{font-style:normal;font-weight:600;color:var(--cc);font-size:12px;margin-right:4px}
 /* <<< thoughts */
+/* >>> floorplans */
+.fp{display:flex;flex-direction:column;gap:8px}
+.fp-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fp-top select{flex:1;min-width:170px}
+.fp-floors{display:flex;gap:4px;flex-wrap:wrap}
+.fp-fl{padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:13px;cursor:pointer}
+.fp-fl.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.fp-pal{display:flex;gap:4px;flex-wrap:wrap}
+.fp-pal button{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:12px;cursor:pointer}
+.fp-pal button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.fp-pal button:focus-visible,.fp-fl:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fp-wrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
+#fpSvg{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.fp-gl{fill:none;stroke:var(--line);stroke-width:.7}
+.fp-room{stroke-width:2}
+.fp-rn,.fp-sz{paint-order:stroke;stroke:var(--panel2);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.fp-rn{fill:var(--text);font:600 12px var(--font,sans-serif)}
+.fp-sz{fill:var(--muted);font:10px var(--font,sans-serif)}
+.fp-it{fill:var(--panel);stroke:var(--muted);stroke-width:1}
+.fp-it.door{fill:#a7774a;stroke:#6e4b2a}
+.fp-it.window{fill:#9fd3f0;stroke:#4a8fb8}
+.fp-it.rug{fill:color-mix(in srgb,var(--accent) 18%,transparent)}
+.fp-lb{fill:var(--text);font:9px var(--font,sans-serif)}
+.fp-selr{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:5 3;pointer-events:none}
+.fp-h{fill:var(--accent);stroke:var(--bg);stroke-width:1.5}
+.fp-new{fill:color-mix(in srgb,var(--accent) 15%,transparent);stroke:var(--accent);stroke-width:2}
+.fp-props{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:34px}
+.fp-tip{flex-basis:100%}
+.fp-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fp-prev{white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto;background:var(--panel2);padding:8px;border-radius:6px;margin:6px 0 0}
+/* <<< floorplans */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -4933,31 +4964,140 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c
 { const _or=openRel; openRel=function(id){ _or(id); const c=charById(id); const r=c&&rankOf(c); const h=document.querySelector('#relBody .rc-head > div:last-child'); if(r&&h&&!h.querySelector('.rk')) h.insertAdjacentHTML('beforeend',`<div class="rk small" style="margin-top:2px">${r==='Void Hunter'?'🜲 Void Hunter':r+'-rank'}</div>`); }; }
 // <<< ranks
 // >>> floorplans
-// ======================= floor plans the story follows =======================
-const FP_KEY='lw_floorplans_v1';
+// ======================= floor plans: a grid builder the story follows =======================
+const FP_KEY='lw_floorplans_v1', FP_W=40, FP_H=28, FP_C=20, FP_FT=2;
+const FP_T={door:['🚪','Door',2,1],window:['🪟','Window',2,1],stairs:['🪜','Stairs',2,4],bed:['🛏️','Bed',3,4],couch:['🛋️','Couch',4,2],table:['🍽️','Table',3,2],chair:['🪑','Chair',1,1],desk:['🖥️','Desk',3,1],tv:['📺','TV',2,1],fridge:['🧊','Fridge',1,1],stove:['🍳','Stove',2,1],sink:['🚰','Sink',1,1],counter:['🔪','Counter',4,1],toilet:['🚽','Toilet',1,1],shower:['🚿','Shower',2,2],bath:['🛁','Bathtub',2,3],wardrobe:['👗','Wardrobe',2,1],shelf:['📚','Shelf',3,1],mirror:['🪞','Mirror',3,1],rug:['🟫','Rug',3,2],piano:['🎹','Piano',3,2],amp:['🔊','Amp',1,1],mic:['🎤','Mic stand',1,1],plant:['🪴','Plant',1,1],lamp:['💡','Lamp',1,1],other:['📦','Other',1,1]};
 function fpAll(){ try{ return JSON.parse(localStorage.getItem(FP_KEY)||'{}'); }catch(e){ return {}; } }
 function fpSave(all){ try{ localStorage.setItem(FP_KEY,JSON.stringify(all)); }catch(e){} }
 function fpBuilding(loc){ return String(loc||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
 function fpRoom(loc){ const m=String(loc||'').match(/\(([^)]*)\)\s*$/); return m?m[1]:''; }
-function fpFor(loc){ const all=fpAll()[W.id]||{}; const b=fpBuilding(loc); if(all[b]) return {key:b,text:all[b]}; const k=Object.keys(all).find(x=>b.startsWith(x)||x.startsWith(b)); return k?{key:k,text:all[k]}:null; }
-function fpSet(key,text){ const all=fpAll(); all[W.id]=all[W.id]||{}; if(text&&text.trim()) all[W.id][key]=text.trim().slice(0,6000); else delete all[W.id][key]; fpSave(all); }
+function fpNorm(v){ const blank=()=>({name:'Floor 1',rooms:[],items:[]});
+  if(!v) return {floors:[blank()],notes:''}; if(typeof v==='string') return {floors:[blank()],notes:v};
+  if(!Array.isArray(v.floors)||!v.floors.length) v.floors=[blank()]; v.floors.forEach(f=>{ f.rooms=f.rooms||[]; f.items=f.items||[]; f.name=f.name||'Floor'; }); v.notes=v.notes||''; return v; }
+function fpGet(key){ return fpNorm((fpAll()[W.id]||{})[key]); }
+function fpEmpty(p){ return !p.notes.trim()&&p.floors.every(f=>!f.rooms.length&&!f.items.length); }
+function fpPut(key,p){ const all=fpAll(); all[W.id]=all[W.id]||{}; if(fpEmpty(p)) delete all[W.id][key]; else all[W.id][key]=p; fpSave(all); }
+function fpFor(loc){ const all=fpAll()[W.id]||{}; const b=fpBuilding(loc); if(!b) return null; const k=all[b]?b:Object.keys(all).find(x=>b.startsWith(x)||x.startsWith(b)); return k?{key:k,plan:fpNorm(all[k])}:null; }
+
+// ---- turning the drawing into words the AI can follow ----
+function fpThird(v,lo,len){ const t=(v-lo)/Math.max(len,1e-6); return t<1/3?0:t>2/3?2:1; }
+function fpZone(cx,cy,b){ return [['northwest','north','northeast'],['west','middle','east'],['southwest','south','southeast']][fpThird(cy,b.y,b.h)][fpThird(cx,b.x,b.w)]; }
+function fpBox(list){ if(!list.length) return {x:0,y:0,w:FP_W,h:FP_H}; const x=Math.min(...list.map(r=>r.x)), y=Math.min(...list.map(r=>r.y)); return {x,y,w:Math.max(...list.map(r=>r.x+r.w))-x,h:Math.max(...list.map(r=>r.y+r.h))-y}; }
+function fpIn(px,py,r){ return px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h; }
+function fpShared(a,b){ const ov=(a1,a2,b1,b2)=>Math.min(a2,b2)-Math.max(a1,b1);
+  if(a.x+a.w===b.x&&ov(a.y,a.y+a.h,b.y,b.y+b.h)>0) return 'east'; if(b.x+b.w===a.x&&ov(a.y,a.y+a.h,b.y,b.y+b.h)>0) return 'west';
+  if(a.y+a.h===b.y&&ov(a.x,a.x+a.w,b.x,b.x+b.w)>0) return 'south'; if(b.y+b.h===a.y&&ov(a.x,a.x+a.w,b.x,b.x+b.w)>0) return 'north'; return ''; }
+function fpWalls(it,r){ const cx=it.x+it.w/2, cy=it.y+it.h/2, o=[]; const inX=cx>=r.x&&cx<=r.x+r.w, inY=cy>=r.y&&cy<=r.y+r.h;
+  if(inX&&Math.abs(cy-r.y)<=1) o.push('north'); if(inX&&Math.abs(cy-(r.y+r.h))<=1) o.push('south'); if(inY&&Math.abs(cx-r.x)<=1) o.push('west'); if(inY&&Math.abs(cx-(r.x+r.w))<=1) o.push('east'); return o; }
+function fpRoomOf(f,i){ const cx=i.x+i.w/2, cy=i.y+i.h/2; return f.rooms.slice().reverse().find(r=>fpIn(cx,cy,r)); }
+function fpIName(i){ const t=(FP_T[i.type]||FP_T.other)[1].toLowerCase(); return i.label?(i.type==='other'?i.label:`${i.label} (${t})`):t; }
+function fpGap(a,b){ return Math.max(0,a.x-(b.x+b.w),b.x-(a.x+a.w),a.y-(b.y+b.h),b.y-(a.y+a.h)); }
+function fpDesc(i,r,f){ const v=i.y<=r.y?'north':i.y+i.h>=r.y+r.h?'south':'', h=i.x<=r.x?'west':i.x+i.w>=r.x+r.w?'east':''; const cx=i.x+i.w/2, cy=i.y+i.h/2; let where;
+  if(v&&h) where=`in the ${v}${h} corner`;
+  else if(v) where=`against the ${v} wall, ${['west end','middle','east end'][fpThird(cx,r.x,r.w)]}`;
+  else if(h) where=`against the ${h} wall, ${['north end','middle','south end'][fpThird(cy,r.y,r.h)]}`;
+  else { const z=fpZone(cx,cy,r); where=z==='middle'?'in the middle':`toward the ${z}`; }
+  const nb=f.items.filter(o=>o!==i&&o.type!=='door'&&o.type!=='window'&&fpRoomOf(f,o)===fpRoomOf(f,i)&&fpGap(i,o)<=0.5).map(fpIName).slice(0,2);
+  return `${fpIName(i)} ${where}${nb.length?', next to the '+nb.join(' and the '):''}${i.type==='stairs'&&!i.label?' (go to another floor)':''}`; }
+function fpText(p){ const L=[`Grid: one square = ${FP_FT} ft. Top of the plan is north.`];
+  p.floors.forEach(f=>{ if(!f.rooms.length&&!f.items.length) return; L.push((f.name||'Floor').toUpperCase()); const box=fpBox(f.rooms), rn=r=>r.name||'unnamed room';
+    const doors=f.items.filter(i=>i.type==='door'), wins=f.items.filter(i=>i.type==='window'), stuff=f.items.filter(i=>i.type!=='door'&&i.type!=='window');
+    f.rooms.forEach(r=>{ const parts=[`${r.w*FP_FT}×${r.h*FP_FT} ft`]; if(f.rooms.length>1) parts.push(`in the ${fpZone(r.x+r.w/2,r.y+r.h/2,box)} part of the floor`);
+      const links=[], walls=[], used=new Set();
+      f.rooms.forEach(o=>{ if(o===r) return; const w=fpShared(r,o); if(!w) return; const d=doors.find(dd=>fpWalls(dd,r).includes(w)&&fpWalls(dd,o).length); if(d) used.add(d); (d?links:walls).push(`${rn(o)} (${w} wall${d&&d.label?', '+d.label:''})`); });
+      if(links.length) parts.push('door into '+links.join(', ')); if(walls.length) parts.push('solid wall, no door, to '+walls.join(', '));
+      const outs=doors.filter(d=>!used.has(d)&&fpWalls(d,r).length&&!f.rooms.some(o=>o!==r&&fpWalls(d,o).length)).map(d=>`${fpWalls(d,r)[0]} wall${d.label?' ('+d.label+')':''}`);
+      if(outs.length) parts.push('door leading out on the '+outs.join(', '));
+      const wn=[...new Set(wins.filter(w=>fpWalls(w,r).length).map(w=>fpWalls(w,r)[0]))]; if(wn.length) parts.push(`window${wn.length>1?'s':''} on the ${wn.join(' and ')} wall${wn.length>1?'s':''}`); else parts.push('no windows');
+      const inside=stuff.filter(i=>fpRoomOf(f,i)===r).map(i=>fpDesc(i,r,f)); parts.push(inside.length?'inside: '+inside.join('; '):'nothing placed inside');
+      L.push(`- ${rn(r)}: ${parts.map(x=>x[0].toUpperCase()+x.slice(1)).join('. ')}.`); });
+    const loose=stuff.filter(i=>!fpRoomOf(f,i)); if(loose.length) L.push('- Not inside any room: '+loose.map(i=>fpDesc(i,box,f)).join('; ')+'.'); });
+  if(p.notes.trim()) L.push('NOTES: '+p.notes.trim()); return L.join('\n'); }
+
 PROMPT_HOOKS.push(()=>{ const p=fpFor(S.user.loc); if(!p) return ''; const room=fpRoom(S.user.loc);
-  return `\nFLOOR PLAN: ${p.key}${room?` (${uN()} is in: ${room})`:''}. Follow it exactly: where each room is, which rooms connect, doors, stairs, windows, what furniture and objects are where, and how far apart things are. People move through it realistically (you can't see or hear through walls unless the plan says so; going upstairs takes the stairs). Never invent rooms or move things that the plan places.\n${p.text}\n`; });
+  return `\nFLOOR PLAN: ${p.key}${room?` (${uN()} is in: ${room})`:''}. Follow it exactly: where each room is, which rooms connect and through which doors, solid walls, stairs, windows, what furniture is where and what it's next to, and how big rooms are. People move through it realistically (no walking through solid walls, no seeing or hearing through walls unless a door is open, going to another floor takes the stairs). Never invent rooms, doors or windows, and never move things the plan places.\n${fpText(p.plan)}\n`; });
+
 async function fpDraft(key){ const chars=W.characters.filter(c=>(c.schedule||[]).some(s=>fpBuilding(s.loc)===key)||fpBuilding(c.loc)===key).map(c=>c.name);
   const rooms=[...new Set(W.characters.flatMap(c=>(c.schedule||[]).map(s=>s.loc)).concat(W.locations||[]).filter(l=>fpBuilding(l)===key).map(fpRoom).filter(Boolean))];
-  const out=await callAI({model:CFG.bg, maxTokens:900, system:'You draft clear, practical floor plans for a roleplay. Plain text only.', messages:[{role:'user',content:`World: ${W.title}\n${String(W.setting||'').slice(0,1500)}\nPlace: ${key}\nRooms the story already uses: ${rooms.join(', ')||'none listed'}\nPeople who spend time here: ${chars.join(', ')||'unknown'}\n\nDraft a floor plan: floors, then each room with what's in it, where it is (north/south/left/right, which floor), which rooms connect by which doors, stairs, windows and exits, and rough sizes. Include every room listed above. Keep it short and concrete, one line per room. If the place exists in canon, follow what's known; otherwise keep it plausible and plain.`}]});
-  return String(out||'').trim(); }
-toolTab('floor','🏠 Floor plans',body=>{ const all=fpAll()[W.id]||{}; const here=fpBuilding(S.user.loc);
+  const out=await callAI({model:CFG.bg, maxTokens:2500, system:'You lay out floor plans on a grid for a roleplay. Reply with JSON only.', messages:[{role:'user',content:`World: ${W.title}\n${String(W.setting||'').slice(0,1500)}\nPlace: ${key}\nRooms the story already uses: ${rooms.join(', ')||'none listed'}\nPeople who spend time here: ${chars.join(', ')||'unknown'}\n\nLay out this place on a grid ${FP_W} squares wide (x 0-${FP_W-1}, west to east) and ${FP_H} tall (y 0-${FP_H-1}, north to south). One square = ${FP_FT} ft. Include every room listed above. If the place exists in canon, follow what's known; otherwise keep it plausible and plain.\nRules: rooms are rectangles {name,x,y,w,h}; rooms that share a wall touch exactly (one room's x+w equals the next one's x). Doors and windows are items centered on the wall line they sit in. Item types: ${Object.keys(FP_T).join(', ')} (use "other" with a label for anything else). Items may have a short label like "Aria's bed". Stairs exist on both floors at the same spot.\nReply with only: {"floors":[{"name":"Floor 1","rooms":[{"name":"","x":0,"y":0,"w":6,"h":5}],"items":[{"type":"door","label":"","x":5,"y":2,"w":2,"h":1}]}]}`}]});
+  const m=String(out||'').match(/\{[\s\S]*\}/); if(!m) return null; let j; try{ j=JSON.parse(m[0]); }catch(e){ return null; }
+  const n=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(+v||0)));
+  const fit=o=>{ o.w=n(o.w,1,FP_W); o.h=n(o.h,1,FP_H); o.x=n(o.x,0,FP_W-o.w); o.y=n(o.y,0,FP_H-o.h); return o; };
+  const floors=(j.floors||[]).slice(0,6).map((f,k)=>({name:String(f.name||`Floor ${k+1}`).slice(0,40),
+    rooms:(f.rooms||[]).slice(0,40).map(r=>fit({name:String(r.name||'').slice(0,60),x:r.x,y:r.y,w:r.w,h:r.h})),
+    items:(f.items||[]).slice(0,120).map(i=>{ const t=FP_T[i.type]?i.type:'other'; return fit({type:t,label:String(i.label||(t==='other'?i.type:'')||'').slice(0,60),x:i.x,y:i.y,w:i.w||FP_T[t][2],h:i.h||FP_T[t][3]}); })}));
+  return floors.length?floors:null; }
+
+// ---- the builder ----
+let FPE=null;
+toolTab('floor','🏠 Floor plans',body=>{
+  const all=fpAll()[W.id]||{}, here=fpBuilding(S.user.loc);
   const places=[...new Set([here,...Object.keys(all),...(W.locations||[]).map(fpBuilding)])].filter(Boolean).sort((a,b)=>(b===here)-(a===here)||((b in all)-(a in all))||a.localeCompare(b));
-  body.innerHTML=`<p class="small" style="margin-top:0">Write how a place is laid out: rooms, doors, stairs, furniture, what's where. Whenever you're there, the story follows it exactly. You can also have the AI draft one and then fix it.</p>
-  <label>Place</label><select id="fpSel">${places.map(p=>`<option ${p===here?'selected':''}>${esc(p)}${all[p]?' ✓':''}</option>`).join('')}</select>
-  <textarea id="fpTx" rows="14" style="width:100%;margin-top:8px;font-family:ui-monospace,monospace;font-size:13px" placeholder="FLOOR 1&#10;- Rehearsal room (back left): mirror wall on the north side, amp stack in the corner, piano by the window...&#10;- Hallway: connects the rehearsal room, the recording booth and the stairs...&#10;FLOOR 2&#10;- ..."></textarea>
-  <div style="display:flex;gap:8px;margin-top:8px"><button class="primary" id="fpSave">Save</button><button class="ghost" id="fpDraft">Draft with AI</button><button class="ghost" id="fpDel">Delete</button><span class="small" id="fpMsg" style="align-self:center"></span></div>`;
-  const sel=body.querySelector('#fpSel'), tx=body.querySelector('#fpTx'), msg=body.querySelector('#fpMsg'); const key=()=>sel.value.replace(/ ✓$/,'');
-  const load=()=>{ tx.value=(fpAll()[W.id]||{})[key()]||''; msg.textContent=''; }; load(); sel.onchange=load;
-  body.querySelector('#fpSave').onclick=()=>{ fpSet(key(),tx.value); msg.textContent='Saved. The story will follow it.'; };
-  body.querySelector('#fpDel').onclick=()=>{ if(confirm('Delete this floor plan?')){ fpSet(key(),''); load(); } };
-  body.querySelector('#fpDraft').onclick=async()=>{ msg.textContent='Drafting…'; try{ const d=await fpDraft(key()); if(d){ tx.value=d; msg.textContent='Draft ready. Check it, edit anything, then Save.'; } else msg.textContent='Couldn\'t draft one right now.'; }catch(e){ msg.textContent='Couldn\'t draft one right now.'; } }; });
+  const key0=FPE&&places.includes(FPE.key)?FPE.key:(here||places[0]||'');
+  body.innerHTML=`<div class="fp">
+  <div class="fp-top"><select id="fpSel">${places.map(p=>`<option value="${esc(p)}" ${p===key0?'selected':''}>${esc(p)}${all[p]?' ✓':''}</option>`).join('')}</select><span class="fp-floors" id="fpFloors"></span></div>
+  <div class="fp-pal" id="fpPal"></div>
+  <div class="fp-wrap"><svg id="fpSvg" viewBox="0 0 ${FP_W*FP_C} ${FP_H*FP_C}" role="img" aria-label="Floor plan grid"></svg></div>
+  <div class="fp-props" id="fpProps"></div>
+  <label class="small" for="fpNotes">Anything else the story should know about this place</label>
+  <textarea id="fpNotes" rows="2" placeholder="The bathroom door sticks. The rooftop is locked after 22:00."></textarea>
+  <div class="fp-act"><button class="ghost" id="fpDraft">Draft with AI</button><button class="ghost" id="fpClear">Clear this plan</button><span class="small" id="fpMsg"></span></div>
+  <details><summary class="small">What the AI reads</summary><pre class="fp-prev" id="fpPrev"></pre></details></div>`;
+  const $q=s=>body.querySelector(s), svg=$q('#fpSvg'), msg=$q('#fpMsg');
+  const st={key:key0, plan:fpGet(key0), fl:0, tool:'select', sel:null, drag:null}; FPE=st;
+  const cur=()=>st.plan.floors[st.fl], selObj=()=>st.sel&&cur()[st.sel.kind][st.sel.i];
+  const commit=()=>{ if(!st.key) return; fpPut(st.key,st.plan); $q('#fpPrev').textContent=fpText(st.plan); msg.textContent='Saved'; };
+  const fit=o=>{ o.w=Math.max(1,Math.min(FP_W,o.w)); o.h=Math.max(1,Math.min(FP_H,o.h)); o.x=Math.max(0,Math.min(FP_W-o.w,o.x)); o.y=Math.max(0,Math.min(FP_H-o.h,o.y)); };
+  const hue=i=>(i*67+200)%360;
+  function draw(){ const f=cur(), C=FP_C; let h=`<defs><pattern id="fpg" width="${C}" height="${C}" patternUnits="userSpaceOnUse"><path d="M${C} 0H0V${C}" class="fp-gl"/></pattern></defs><rect width="${FP_W*C}" height="${FP_H*C}" fill="url(#fpg)"/>`;
+    f.rooms.forEach((r,i)=>{ h+=`<rect class="fp-room" x="${r.x*C}" y="${r.y*C}" width="${r.w*C}" height="${r.h*C}" style="fill:hsla(${hue(i)},55%,55%,.16);stroke:hsl(${hue(i)},40%,50%)"/>`; });
+    f.items.forEach(i=>{ const t=FP_T[i.type]||FP_T.other, fs=Math.min(i.w,i.h)*C*.72; h+=`<g><rect class="fp-it ${i.type}" x="${i.x*C+1}" y="${i.y*C+1}" width="${i.w*C-2}" height="${i.h*C-2}" rx="3"/>${i.type==='door'||i.type==='window'?'':`<text x="${(i.x+i.w/2)*C}" y="${(i.y+i.h/2)*C}" font-size="${fs}" text-anchor="middle" dominant-baseline="central">${t[0]}</text>`}${i.label&&i.w>=2?`<text class="fp-lb" x="${(i.x+i.w/2)*C}" y="${(i.y+i.h)*C-3}" text-anchor="middle">${esc(i.label.slice(0,i.w*3))}</text>`:''}</g>`; });
+    f.rooms.forEach(r=>{ h+=`<text class="fp-rn" x="${(r.x+r.w/2)*C}" y="${r.y*C+15}" text-anchor="middle">${esc(r.name||'Unnamed room')}</text><text class="fp-sz" x="${(r.x+r.w/2)*C}" y="${r.y*C+27}" text-anchor="middle">${r.w*FP_FT}×${r.h*FP_FT} ft</text>`; });
+    const s=selObj(); if(s) h+=`<rect class="fp-selr" x="${s.x*C}" y="${s.y*C}" width="${s.w*C}" height="${s.h*C}"/><rect class="fp-h" x="${(s.x+s.w)*C-6}" y="${(s.y+s.h)*C-6}" width="12" height="12" rx="2"/>`;
+    const d=st.drag; if(d&&d.mode==='new'){ const x=Math.min(d.x0,d.x1), y=Math.min(d.y0,d.y1); h+=`<rect class="fp-new" x="${x*C}" y="${y*C}" width="${(Math.abs(d.x1-d.x0)+1)*C}" height="${(Math.abs(d.y1-d.y0)+1)*C}"/>`; }
+    svg.innerHTML=h; }
+  function pal(){ const b=[['select','↖','Move'],['room','▭','Room'],...Object.entries(FP_T).map(([k,v])=>[k,v[0],v[1]])];
+    $q('#fpPal').innerHTML=b.map(([k,ic,nm])=>`<button class="${st.tool===k?'on':''}" data-t="${k}" title="${nm}"><span>${ic}</span> ${nm}</button>`).join('');
+    $q('#fpPal').querySelectorAll('button').forEach(x=>x.onclick=()=>{ st.tool=x.dataset.t; pal(); props(); }); }
+  function floors(){ $q('#fpFloors').innerHTML=st.plan.floors.map((f,i)=>`<button class="fp-fl ${i===st.fl?'on':''}" data-i="${i}">${esc(f.name)}</button>`).join('')+`<button class="fp-fl" data-add="1">+ Floor</button>`;
+    $q('#fpFloors').querySelectorAll('button').forEach(x=>x.onclick=()=>{ if(x.dataset.add){ st.plan.floors.push({name:`Floor ${st.plan.floors.length+1}`,rooms:[],items:[]}); st.fl=st.plan.floors.length-1; commit(); } else st.fl=+x.dataset.i; st.sel=null; floors(); props(); draw(); }); }
+  function props(only){ const el=$q('#fpProps'), s=selObj();
+    if(only&&s){ const z=el.querySelector('.fp-dim'); if(z) z.textContent=`${s.w*FP_FT}×${s.h*FP_FT} ft`; return; }
+    if(!s){ const tip=st.tool==='room'?'Drag on the grid to draw a room.':st.tool==='select'?'Tap something to select it. Drag to move it (furniture moves with its room). Drag the corner square to resize.':`Tap the grid to place a ${FP_T[st.tool][1].toLowerCase()}. Put doors and windows right on a wall line.`;
+      el.innerHTML=`<label class="small">Floor name</label><input id="fpFlN" value="${esc(cur().name)}" style="width:140px">${st.plan.floors.length>1?'<button class="ghost" id="fpFlDel">Delete floor</button>':''}<span class="small fp-tip">${tip}</span>`;
+      el.querySelector('#fpFlN').oninput=e=>{ cur().name=e.target.value.slice(0,40); floors(); commit(); };
+      const dl=el.querySelector('#fpFlDel'); if(dl) dl.onclick=()=>{ if(!confirm(`Delete ${cur().name} and everything on it?`)) return; st.plan.floors.splice(st.fl,1); st.fl=0; commit(); floors(); props(); draw(); }; return; }
+    const room=st.sel.kind==='rooms';
+    el.innerHTML=`<input id="fpNm" placeholder="${room?'Room name, e.g. Kitchen':'Label (optional), e.g. Aria\'s bed'}" value="${esc(room?s.name:s.label)}" style="flex:1;min-width:150px"><span class="small fp-dim">${s.w*FP_FT}×${s.h*FP_FT} ft</span>${room?'':'<button class="ghost" id="fpRot">Rotate</button>'}<button class="ghost" id="fpDup">Duplicate</button><button class="ghost" id="fpDel">Delete</button>`;
+    el.querySelector('#fpNm').oninput=e=>{ s[room?'name':'label']=e.target.value.slice(0,60); draw(); commit(); };
+    const rot=el.querySelector('#fpRot'); if(rot) rot.onclick=()=>{ [s.w,s.h]=[s.h,s.w]; fit(s); draw(); props(); commit(); };
+    el.querySelector('#fpDup').onclick=()=>{ const c=JSON.parse(JSON.stringify(s)); c.x+=1; c.y+=1; fit(c); cur()[st.sel.kind].push(c); st.sel={kind:st.sel.kind,i:cur()[st.sel.kind].length-1}; draw(); props(); commit(); };
+    el.querySelector('#fpDel').onclick=del; }
+  function del(){ if(!st.sel) return; cur()[st.sel.kind].splice(st.sel.i,1); st.sel=null; draw(); props(); commit(); }
+  const pt=e=>{ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const q=p.matrixTransform(svg.getScreenCTM().inverse()); return {x:Math.max(0,Math.min(FP_W-.01,q.x/FP_C)),y:Math.max(0,Math.min(FP_H-.01,q.y/FP_C))}; };
+  const hit=(f,p)=>{ for(let i=f.items.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.items[i])) return {kind:'items',i}; for(let i=f.rooms.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.rooms[i])) return {kind:'rooms',i}; return null; };
+  svg.onpointerdown=e=>{ e.preventDefault(); const p=pt(e), f=cur(); try{ svg.setPointerCapture(e.pointerId); }catch(_){}
+    if(st.tool==='room'){ const x=Math.floor(p.x), y=Math.floor(p.y); st.drag={mode:'new',x0:x,y0:y,x1:x,y1:y}; draw(); return; }
+    if(st.tool!=='select'){ const t=FP_T[st.tool], it={type:st.tool,label:'',x:Math.round(p.x-t[2]/2),y:Math.round(p.y-t[3]/2),w:t[2],h:t[3]}; fit(it); f.items.push(it); st.sel={kind:'items',i:f.items.length-1}; st.drag={mode:'move',o:it,dx:p.x-it.x,dy:p.y-it.y,kids:[]}; commit(); draw(); props(); return; }
+    const s=selObj(); if(s&&Math.abs(p.x-(s.x+s.w))<.7&&Math.abs(p.y-(s.y+s.h))<.7){ st.drag={mode:'size',o:s}; return; }
+    st.sel=hit(f,p); if(st.sel){ const o=selObj(); const kids=st.sel.kind==='rooms'?f.items.filter(i=>fpRoomOf(f,i)===o).map(i=>({i,x:i.x,y:i.y})):[]; st.drag={mode:'move',o,dx:p.x-o.x,dy:p.y-o.y,ox:o.x,oy:o.y,kids}; } props(); draw(); };
+  svg.onpointermove=e=>{ const d=st.drag; if(!d) return; const p=pt(e);
+    if(d.mode==='new'){ d.x1=Math.floor(p.x); d.y1=Math.floor(p.y); }
+    else if(d.mode==='move'){ d.o.x=Math.round(p.x-d.dx); d.o.y=Math.round(p.y-d.dy); fit(d.o); d.kids.forEach(k=>{ k.i.x=k.x+d.o.x-d.ox; k.i.y=k.y+d.o.y-d.oy; fit(k.i); }); d.moved=true; }
+    else { d.o.w=Math.max(1,Math.round(p.x-d.o.x)); d.o.h=Math.max(1,Math.round(p.y-d.o.y)); fit(d.o); d.moved=true; }
+    draw(); if(d.mode!=='new') props(true); };
+  svg.onpointerup=svg.onpointercancel=()=>{ const d=st.drag; st.drag=null; if(!d) return; const f=cur();
+    if(d.mode==='new'){ const x=Math.min(d.x0,d.x1), y=Math.min(d.y0,d.y1), w=Math.abs(d.x1-d.x0)+1, h=Math.abs(d.y1-d.y0)+1;
+      if(w>=2&&h>=2){ f.rooms.push({name:'',x,y,w,h}); st.sel={kind:'rooms',i:f.rooms.length-1}; st.tool='select'; pal(); props(); commit(); draw(); const nm=$q('#fpNm'); if(nm) nm.focus(); } else draw(); return; }
+    if(d.moved) commit(); draw(); };
+  body.onkeydown=e=>{ if((e.key==='Delete'||e.key==='Backspace')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){ e.preventDefault(); del(); } };
+  const load=()=>{ st.plan=fpGet(st.key); st.fl=0; st.sel=null; $q('#fpNotes').value=st.plan.notes; $q('#fpPrev').textContent=fpText(st.plan); msg.textContent=''; floors(); pal(); props(); draw(); };
+  $q('#fpSel').onchange=e=>{ st.key=e.target.value; load(); };
+  $q('#fpNotes').oninput=e=>{ st.plan.notes=e.target.value.slice(0,3000); commit(); };
+  $q('#fpClear').onclick=()=>{ if(!confirm('Clear this whole floor plan?')) return; st.plan=fpNorm(null); commit(); load(); };
+  $q('#fpDraft').onclick=async()=>{ if(!fpEmpty(st.plan)&&!confirm('Replace your current layout with an AI draft? Your notes stay.')) return; msg.textContent='Drafting…';
+    try{ const fl=await fpDraft(st.key); if(!fl){ msg.textContent="Couldn't draft one right now. Try again."; return; } st.plan.floors=fl; commit(); const n=st.plan.notes; load(); st.plan.notes=n; msg.textContent='Draft ready. Move, rename or delete anything that looks wrong.'; }catch(e){ msg.textContent="Couldn't draft one right now. Try again."; } };
+  load(); });
 // <<< floorplans
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
@@ -5429,8 +5569,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const CHANGELOG = [
+ {v:'1.7.1', d:'2026-11-20', notes:['Floor plans are now a visual builder: draw rooms, place doors, windows, stairs and furniture on a grid, multiple floors']},
  {v:'1.7.0', d:'2026-11-20', notes:['Floor plans: write or AI-draft a layout per place; the story follows it whenever you\'re there']},
  {v:'1.6.2', d:'2026-11-20', notes:['Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power.']},
  {v:'1.6.1', d:'2026-11-20', notes:['Shunguang does a small nervous wiggle when she shows off an outfit to someone precious to her (shy little sway, tail swishing, fidgeting with a ribbon) while she waits to hear what they think, with her real Touch of Dawnlight lines ("Could you... hold the other end for me?"). Her white-haired side poses confidently instead.']},

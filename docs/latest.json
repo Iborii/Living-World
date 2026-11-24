@@ -1,10 +1,10 @@
 {
- "version": "1.7.0",
+ "version": "1.7.1",
  "date": "2026-11-20",
  "notes": [
-  "Floor plans: write or AI-draft a layout per place; the story follows it whenever you're there"
+  "Floor plans are now a visual builder: draw rooms, place doors, windows, stairs and furniture on a grid, multiple floors"
  ],
  "file": "index.html",
- "sha256": "caa709ac0ee762bf2448bd7ad026a13c72ac0fd7b7ff4036746dec4f55d764a1",
+ "sha256": "582b49b1f7e258fd75e6e456c0d1742723c41a7de49ff706ed8b396e398906dd",
  "minShell": "0.5.0"
 }
