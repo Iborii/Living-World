@@ -1,10 +1,10 @@
 {
- "version": "0.99.0",
+ "version": "0.99.1",
  "date": "2026-11-20",
  "notes": [
-  "Angels of Delusion and Yunkui Summit, remade from scratch. Every character has a new sheet built from fresh research, one by one, with Google AI Mode and the wiki. Each sheet starts with who they really are, then how they talk, then a \"what they would never do\" list to keep them in character, then habits, the canon events that actually happened, relationships and looks. Body details are now just height and bra size, never full measurements. New scene prompts, openings and example scenes too. Angels of Delusion: you're still the new assistant manager, your own person, not the Proxy. Nangong is the smug prodigy who's secretly paying for everything, Aria switches between bubbly idol and shy construct, Sunna hides behind the amps, and Cecilia hums \"hm?\". Yunkui Summit: you're now the sect's newest disciple, junior to everyone. Fufu is thrilled to finally boss a new junior around, Belle is thrilled not to be the youngest anymore, Shunguang calls you \"Little Junior\", and Yixuan barely opens her eyes. Stories you already started keep their original setup; start a new story to play the new versions."
+  "Shunguang rewritten after a closer look at canon. She was being written as a shy, stammering, naive girl, which canon fans call the most common mistake. Now she's a calm, composed, dutiful senior disciple with quiet poise. She sacrifices herself for others (her parents died saving people in the Fall of the Old Capital) and smiles so nobody worries. She's warm and fiercely protective of her juniors and turns sharp and formal when someone's in danger. She's earnestly curious about city life, never ditzy, and only gets flustered when she's stared at, when her ears or tail come up, or around romance. She also gets her real Season 2 history (her brother Shiyuan, Lu Hengzhou, her white-haired other self), her diary as a \"memory net\", literal sword-logic fishing, drawing her sword on reflex, Mayhem the chubby puppy, short stacked texts, and a voice card."
  ],
  "file": "index.html",
- "sha256": "589c5d2e4accb1d8d50203c78b2bbf99bb66f0a259000190a73d1985967fd2e5",
+ "sha256": "1263289e527a9f41da62a93fd4f27a85ee98db51387d2a9110873190fc6722f5",
  "minShell": "0.5.0"
 }
