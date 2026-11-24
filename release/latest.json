@@ -1,10 +1,10 @@
 {
- "version": "0.98.1",
+ "version": "0.98.2",
  "date": "2026-11-20",
  "notes": [
-  "Continuity: who said what. Every reply now comes with a list of the last spoken lines with their real speakers, plus the questions each person asked, and a firm rule never to pin a line, question or promise on the wrong person. If Sunna asks you something, she remembers she asked it and whether you answered. Your own messages are also clearly marked as yours in the story history, so your words don't get mixed up with the characters'."
+  "Belle isn't your ex anymore. That should have been gone already: it was taken out of her and Wise's character sheets, but it was still in the Yunkui Summit opening scene (\"her ex, they dated years ago\"), Wise's \"irritated she's glowing around her ex\" line, and the world's description. Now Belle is an old friend you lost touch with years ago, and Wise is a wary, protective brother keeping an eye on someone he barely knows. New Yunkui stories start this way. In a story you've already started, the opening that's already written stays as it is."
  ],
  "file": "index.html",
- "sha256": "5fd26176c553fd3d8c2fe8946ef24e7b70dd513dafc64d15cbcb0cfcf72a4585",
+ "sha256": "de7e2923b6d20024420434ebacb43f6fbc3865d3aabcd5280fac75d16388089f",
  "minShell": "0.5.0"
 }
