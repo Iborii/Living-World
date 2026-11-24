@@ -1,10 +1,10 @@
 {
- "version": "1.7.3",
+ "version": "1.7.4",
  "date": "2026-11-20",
  "notes": [
-  "Floor plans: ground layer. Set the ground for the whole floor, paint roads, sidewalks, paths, sand and water over it, and build rooms on top"
+  "Ju Fufu goes silent and locked in during instinct episodes: growls only, no talking until something snaps her out of it"
  ],
  "file": "index.html",
- "sha256": "9f0e59de0c146a2e1aaedb250521a67c0d2463508d2d74abf941d60518345686",
+ "sha256": "d64b6ce0dd6a4f316825b2db18827e3be64da0f4a3d3976e9015ab090bdbc984",
  "minShell": "0.5.0"
 }
