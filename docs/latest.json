@@ -1,10 +1,10 @@
 {
- "version": "1.3.0",
+ "version": "1.4.0",
  "date": "2026-11-20",
  "notes": [
-  "Characters have their own lives. They no longer act like they have endless free time for you. Every reply now says, for each person with you, whether they're supposed to be somewhere right now (work, shifts, gigs, rehearsal, training, class, duty), what their next real commitment is, and how long they've been with you. If they're skipping something they notice and leave. When a commitment is close they start wrapping up and checking the time. After a couple of hours together they want to go do their own things, and they say no to plans that clash. If someone ignores a commitment for over an hour, the app sends them off (dating partners get more leeway). Part-time gigs, training, practice and errands now count as being busy. Zhao and Shunguang show no outward signs of their periods at all. Shunguang: both sides share one memory, so whatever one does, the other lived too. The white-haired side sits boldly with her legs crossed while Xiao'Guang sits stiff with her knees together. If she has feelings for you and you act flustered, she gets bolder (touching your face, getting dangerously close), and in a relationship she may even kiss you as a teasing \"punishment\"."
+  "Schedules rebalanced. Angels of Delusion: about 25% of their waking day is idol work (streams, content shoots, setlists, fan letters, the Saturday show), about 15% is practice, and the rest is free time together: brunch, Godfinger, Coff Cafe, the pier, sleepovers at Sunna's, nights at the secret base. Sunna keeps her two Coff Cafe shifts. Yunkui Summit: about 10% productive, the rest lazing around the temple, snacks, napping, wandering. Norma's tinkering is all free time; only her ESD image campaign and teaching days take a slice. Everyone else got an estimate (Severian and Zhu Yuan are busy, Billy and Nekomata barely), and over-scheduled days are trimmed to it. Real jobs now count as busy even when they sound casual (Dialyn's phone shifts, Zhao's audits, Claret's forging). If you date someone, they want to give you their free time, though work and practice still come first."
  ],
  "file": "index.html",
- "sha256": "7576329441e97a1c9bfb3e7652ed9086af4dc6ea97982b961586462138c59b88",
+ "sha256": "836e87af48238b6007f2e91196a9ccc6567c25c6a98243f46770cb1bca8ec11a",
  "minShell": "0.5.0"
 }
