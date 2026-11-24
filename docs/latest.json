@@ -1,10 +1,10 @@
 {
- "version": "0.93.1",
+ "version": "0.93.2",
  "date": "2026-11-20",
  "notes": [
-  "Delete chats. Every chat in Your chats now has a trash button. It deletes that story, 1-on-1, timeline, group story or group chat for good after you confirm. Deleting the one you're in takes you back Home."
+  "Line endings: periods are now rare. A reply gets at most one, and only when the conversation is actually ending or a line is completely final. While a conversation is still going, the last person to speak ends with a comma when they're calm, or ... when they're nervous or the moment is tense or climactic."
  ],
  "file": "index.html",
- "sha256": "d904356a5c61da8b5529e1560529ed9ce38e19bf9f24d5b1caa2bf75141ecb3e",
+ "sha256": "8c621da78f7d7011ce8eccb2dff2e98289b568e7489f6668fdb2fa447ed32eb3",
  "minShell": "0.5.0"
 }
