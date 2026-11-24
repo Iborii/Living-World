@@ -782,6 +782,11 @@ body:has(.modal.on) #chatsFab{display:none}
 /* >>> cutoff */
 .bubble.typing-cur::after{content:"▍";opacity:.7;animation:blinkCur .8s steps(2) infinite}@keyframes blinkCur{50%{opacity:0}}
 /* <<< cutoff */
+/* >>> dating */
+.dbar{position:relative;height:10px;border-radius:6px;background:rgba(255,255,255,.08);margin-top:10px;overflow:hidden}
+.dfill{height:100%;background:linear-gradient(90deg,#e07a9a,#e8b45a);border-radius:6px;transition:width .6s}
+.dbar i{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,.5)}.dlab{display:flex;justify-content:space-between;margin-top:3px;font-size:11px}
+/* <<< dating */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -4072,6 +4077,56 @@ PROMPT_HOOKS.push(()=>`\nINTERRUPTING ${uN().toUpperCase()}: ${uN()}'s words com
 // typing starts when you send
 (()=>{ const _s=send; send=async function(){ const n=S?S.chat.length:0; const p=_s.apply(this,arguments); try{ const m=S.chat.slice(n).find(x=>x.role==='user'&&!x.hidden); if(m) typeStart(m); }catch(e){} return p; }; })();
 // <<< cutoff
+// >>> dating
+// ======================= dating: a relationship meter with three stages (0-60, 61-120, 121-180) =======================
+const DSTAGES=[{n:1,name:'Stage 1: Getting started',min:0,max:60},{n:2,name:'Stage 2: Locked in',min:61,max:120},{n:3,name:'Stage 3: Deep trust',min:121,max:180}];
+function dStage(p){ return p>120?DSTAGES[2]:p>60?DSTAGES[1]:DSTAGES[0]; }
+function dOf(id){ return (S.dating||{})[id]; }
+function dCan(c){ return c&&!c.minor&&!c.protect&&!isConstruct(c); }
+function dPace(c){ return 4+hashStr(c.id+'pace')%9; } // their own comfort rhythm, in days
+function dChange(id, delta, why){ const d=dOf(id); if(!d) return; const c=charById(id); const day=isoDate(S.clock);
+  if(delta>0){ if(d.gDay!==day){ d.gDay=day; d.gained=0; } const room=Math.max(0,4-(d.gained||0)); delta=Math.min(delta,room); if(!delta) return; d.gained+=delta; }
+  const before=d.pts, st0=dStage(before).n; d.pts=Math.max(-1,Math.min(180,d.pts+delta));
+  if(d.pts<0){ d.pts=0; d.strikes=(d.strikes||0)+1; if(d.strikes>=2) return dBreakup(id, why||'it fell apart'); notice(`💔 ${c.name} and you are on thin ice. One more blow at rock bottom and it's over.`,true); }
+  (d.log=d.log||[]).push({t:S.clock,d:delta,why:String(why||'').slice(0,120),pts:d.pts}); if(d.log.length>60) d.log.splice(0,d.log.length-60);
+  const st1=dStage(d.pts).n; if(st1>st0) notice(`💞 ${c.name} and you: ${dStage(d.pts).name}!`); else if(st1<st0) notice(`💔 ${c.name} and you slipped back to ${dStage(d.pts).name}.`,true);
+  else if(Math.abs(delta)>=3) notice(`${delta>0?'💞':'💔'} ${c.name} ${delta>0?'+':''}${delta}${why?`: ${why}`:''}`); }
+function dStart(id){ const c=charById(id); if(!dCan(c)) return; S.dating=S.dating||{}; if(S.dating[id]&&S.dating[id].on) return; S.dating[id]={on:true, pts:0, since:S.clock, log:[{t:S.clock,d:0,why:'started dating',pts:0}], intimate:[]};
+  addMemory({who:[id], text:`Started dating ${uN()}`, imp:3, src:'dating'}); notice(`💞 You and ${c.name} are dating now. ${DSTAGES[0].name}.`); }
+function dBreakup(id, why){ const d=dOf(id); if(!d||!d.on) return; const c=charById(id); d.on=false; d.ended=S.clock; d.endWhy=String(why||'').slice(0,160); S.exes=S.exes||{}; S.exes[id]={t:S.clock, why:d.endWhy, pts:d.pts};
+  const st=S.chars[id]; if(st){ st.trust=Math.max(0,st.trust-15); st.mood={word:'heartbroken',why:`broke up with ${uN()}`+(why?` (${why})`:''),t:S.clock}; }
+  addMemory({who:[id], text:`Broke up with ${uN()}${why?': '+why:''}`, imp:3, src:'dating'}); notice(`💔 ${c.name} and you broke up${why?`: ${why}`:''}.`,true); delete S.dating[id]; }
+CONTROL_HOOKS.DATING=arg=>{ const [n,ans]=arg.split(':').map(x=>x.trim()); const c=charByName(n); if(!c) return; if(/^(yes|accept|together|start)/i.test(ans||'yes')) dStart(c.id); else { addMemory({who:[c.id],text:`${uN()} asked me out and I said no`,imp:2,src:'dating'}); notice(`${c.name} turned you down.`); } };
+CONTROL_HOOKS.LOVE=arg=>{ const m=arg.match(/^\s*([^:+\-]+?)\s*([+-]\s*\d+)\s*(?::\s*(.*))?$/); if(!m) return; const c=charByName(m[1].trim()); if(!c||!dOf(c.id)) return; dChange(c.id, parseInt(m[2].replace(/\s/g,'')), m[3]||''); };
+CONTROL_HOOKS.BREAKUP=arg=>{ const [n,...w]=arg.split(':'); const c=charByName(n.trim()); if(c) dBreakup(c.id, w.join(':').trim()); };
+CONTROL_HOOKS.INTIMATE=arg=>{ const c=charByName(arg.split(':')[0].trim()); const d=c&&dOf(c.id); if(!d) return; (d.intimate=d.intimate||[]).push(S.clock); if(d.intimate.length>30) d.intimate.shift(); };
+// neglect: days without seeing or texting your partner cost points; random calls once you're locked in
+function datingTick(){ if(!S||!W||SCREEN!=='world'||!S.dating) return; const day=Math.floor(S.clock/DAYMS); if(S._dDay===day) return; S._dDay=day; const P=phone();
+  for(const id in S.dating){ const d=S.dating[id]; if(!d.on) continue; const c=charById(id); if(!c||isDead(c)){ continue; }
+    const seen=S.chat.slice(-400).some(m=>m.role==='assistant'&&S.clock-m.t<3*DAYMS&&new RegExp(`\\b${c.name}\\b`).test(m.text||''))||((P.threads||{})[id]||[]).some(m=>m.me&&S.clock-m.t<3*DAYMS);
+    if(!seen) dChange(id,-1,'you haven\'t been around in days');
+    if(dStage(d.pts).n>=2&&isContact(id)&&hasPhone(c)&&Math.random()<.3&&!P.pending[id]){ P.extra[id]=`You're dating ${uN()} (${dStage(d.pts).name.split(': ')[1].toLowerCase()}) and just felt like hearing from them, out of nowhere: call or text them, in character.`; P.pending[id]=S.clock+(1+Math.random()*8)*HOUR; } } }
+setInterval(()=>{ try{ datingTick(); }catch(e){} }, 30000);
+PROMPT_HOOKS.push(pres=>{ const L=[]; const D=S.dating||{};
+  for(const c of pres){ if(!dCan(c)) continue; const d=D[c.id]; const ex=(S.exes||{})[c.id];
+    if(!d){ if(ex) L.push(`${c.name} is ${uN()}'s ex (broke up ${mmdd(ex.t)}${ex.why?': '+ex.why:''}); it still stings.`); continue; }
+    const st=dStage(d.pts); const pace=dPace(c); const last=(d.intimate||[]).slice(-1)[0]; const ago=last?Math.round((S.clock-last)/DAYMS):null;
+    let r=`${c.name} is dating ${uN()}: ${st.name} (${d.pts}/180, together since ${mmdd(d.since)}). `;
+    if(st.n===1) r+=`Early and healthy: dates, getting to know each other, holding hands, kisses, but NO sex yet. If ${uN()} asks for or pushes toward sex, ${c.name} refuses and is hurt; it feels like ${uN()} only wants them for lust, not love: add [[LOVE: ${c.name} -15: pushed for sex too early]], and if it happens again or it clearly feels lust-only, they end it: [[BREAKUP: ${c.name}: only wanted my body]].`;
+    else if(st.n===2) r+=`Locked in: a steady, healthy relationship; they visit each other's homes now and then and call randomly. Sex is possible when both want it, at ${c.name}'s own pace (comfortable about once every ${pace} days or so; ${ago==null?'they haven\'t yet':`last time was ${ago} day${ago===1?'':'s'} ago`}). Pushing for more than that, or acting like it's all they're there for, gets the same reaction as asking too early: [[LOVE: ${c.name} -15: ...]] and possibly [[BREAKUP: ...]]. When it happens, add [[INTIMATE: ${c.name}]].`;
+    else r+=`Deep trust: they rely on each other completely, share real secrets and fears, talk about the future, and are comfortable in each other's space. Sex at ${c.name}'s own pace (about once every ${pace} days or so${ago==null?'':`; last time ${ago} day${ago===1?'':'s'} ago`}); pushing still hurts. When it happens, add [[INTIMATE: ${c.name}]].`;
+    L.push(r); }
+  const anyDating=Object.keys(D).length;
+  let s=`\nDATING: ${uN()} becomes someone's partner only by asking them out (or accepting their confession) in the story; the character decides honestly, from their trust and feelings. When an adult character says yes, add [[DATING: Name: yes]]; when they say no, [[DATING: Name: no]]. Never for anyone under 18 or protected.\n`;
+  if(anyDating) s+=`While dating, after any reply where the relationship clearly grows or gets hurt, add [[LOVE: Name +N: short reason]] or [[LOVE: Name -N: short reason]] (+1 to +3 for good moments like real attention, keeping promises, quality time, support; -2 to -10 for neglect, lies, cruelty, flirting with others, standing them up; -15 to -30 for cheating, betrayal, or doing something corrupt or cruel). Someone can end it with [[BREAKUP: Name: reason]].\n`;
+  if(L.length) s+=L.map(x=>'- '+x).join('\n')+'\n'; return s; });
+toolTab('dating','💞 Dating',body=>{ const D=S.dating||{}; const ids=Object.keys(D); const X=S.exes||{};
+  const bar=p=>`<div class="dbar"><div class="dfill" style="width:${Math.max(0,p)/180*100}%"></div><i style="left:33.33%"></i><i style="left:66.66%"></i></div><div class="small dlab"><span>Stage 1 · 0–60</span><span>Stage 2 · 61–120</span><span>Stage 3 · 121–180</span></div>`;
+  body.innerHTML=`<p class="small" style="margin-top:0">Ask someone out in the story; they decide. Once you're dating, good moments raise the points (at most +4 a day) and bad or corrupt things drop them. Hitting 0 puts you on thin ice; hitting it again ends it. Sex isn't on the table in Stage 1; in Stage 2 and 3 it follows their own pace, and pushing too hard is treated the same as asking too early.</p>
+  ${ids.length?ids.map(id=>{ const d=D[id], c=charById(id); if(!c) return ''; const st=dStage(d.pts); return `<div class="sr-row" style="cursor:default"><div style="display:flex;align-items:center;gap:10px">${avHTML(c,34,false)}<div style="flex:1"><b>${esc(c.full)}</b><div class="sr-m" style="margin:0">${st.name} · <b>${d.pts}</b>/180 · since ${mmdd(d.since)}</div></div></div>${bar(d.pts)}
+    <div style="margin-top:8px">${(d.log||[]).slice(-12).reverse().map(l=>`<div class="small" style="padding:2px 0"><b style="color:${l.d>0?'#6fcf97':l.d<0?'#e05a5a':'var(--muted)'}">${l.d>0?'+':''}${l.d}</b> · ${mmdd(l.t)} ${hhmm(l.t)} · ${esc(subUser(l.why||''))} <span style="opacity:.6">(${l.pts})</span></div>`).join('')}</div></div>`; }).join(''):'<div class="small">You\'re not dating anyone right now.</div>'}
+  ${Object.keys(X).length?`<h3 style="margin:16px 0 8px">Exes</h3>${Object.entries(X).map(([id,x])=>`<div class="small" style="padding:3px 0">💔 ${esc((charById(id)||{}).name||'?')} · ${mmdd(x.t)}${x.why?' · '+esc(subUser(x.why)):''}</div>`).join('')}`:''}`; });
+// <<< dating
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4541,8 +4596,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.77.0';
+const APP_VERSION = '0.78.0';
 const CHANGELOG = [
+ {v:'0.78.0', d:'2026-11-20', notes:['💞 Dating. Ask someone out in the story and they decide, based on how they really feel. Once you\'re together there\'s a relationship meter from 0 to 180 in three stages. Stage 1 (0–60, getting started): dates, getting to know each other, but no sex; asking too early hurts them and can end it, because it feels like lust, not love. Stage 2 (61–120, locked in): home visits now and then, random calls and texts, and sex becomes possible at their own pace; pushing past it gets the same reaction. Stage 3 (121–180): deep trust. Good moments raise the meter (up to +4 a day, about a month to reach Stage 2), bad or corrupt things drop it, and days without seeing them slowly cost points. Hit 0 and you\'re on thin ice; hit it again and it\'s over. 🧰 Tools → 💞 Dating shows the exact points, stage and every change. Only adults; never anyone under 18 or protected.']},
  {v:'0.77.0', d:'2026-11-20', notes:['Your messages now type out on screen as you "say" them, and the person you\'re talking to can cut you off mid-sentence, even mid-word ("So I was thinking we could go to the arc—"), then react only to what you actually got out. It happens only when it fits: impatient, excited or panicking characters, urgent moments, or you rambling. Line endings now carry tone: no end mark is normal talk, a period is serious, ! is excited or loud, ~ is playful or affectionate, and a dash means cut off or not done talking, in the story and in texts. Owner build: Vivian calls out of nowhere once she\'s devoted (and switches to a video call if you say you were in the shower), Claret\'s maintenance on Roxy keeps ending in compromising-looking tangles that are never what they look like, Aria gets mistaken for the wanted Remielle, Nangong flirts with men she\'s close to (sometimes for real, sometimes just teasing), and Norma\'s second outfit (overalls over a plain white shirt).']},
  {v:'0.76.1', d:'2026-11-20', notes:['Owner build only: Sigrid\'s outfit fixed: no cape or coat. She has a translucent, wing-like blue mantle at her left shoulder and floating white ribbon tails.']},
  {v:'0.76.0', d:'2026-11-20', notes:['Owner build only: Sigrid de L\'Azur joins Roscaelifer, researched with Google AI Mode and the wiki. The fifth-generation Deputy Director of the Airspace Patrol and Lindverne\'s adjutant, a Horse Thiren knight (ears that swivel, a tail that swishes), formal and earnest ("Glory guides us onward!"), secretly worried she doesn\'t live up to her own legend. She always keeps an eye on Lindverne: two steps behind on patrol, the next table over at lunch, turning up at Boom Scones with the paperwork. Off duty she knits, bakes, sneaks pancakes at Roarin\' Brekkies, gets lost following GPS, and has a loud, goofy laugh she\'s mortified by. Birthday April 23.']},
