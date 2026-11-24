@@ -1,10 +1,10 @@
 {
- "version": "0.80.0",
+ "version": "0.80.1",
  "date": "2026-11-20",
  "notes": [
-  "Every character re-researched with Google AI Mode, several questions each (how they talk, little habits, texts and trust events, relationships, and what people commonly get wrong about them), and the findings added to their sheets. Fixes: Severian is strict, fair and quietly protective, not a cruel boss who only cares about money (the Demon Lord nickname is Cissia's exaggeration). Nangong is a calculating prodigy who keeps strangers at a polished distance, and her room is in (light pink walls, yellow sofa bed, the black octopus plushie). Public Security scenes are now written as a grounded workplace with dry humor instead of a sitcom, and a new rule across all stories keeps the writing from getting corny (no cheesy one-liners, gag endings or speeches about feelings)."
+  "Owner build only: Ju Fufu is now a young adult (19), matching canon. The under-18 limits on her are lifted; she's still petite, loud and heroic, and still insists she's a fearsome senior disciple."
  ],
  "file": "index.html",
- "sha256": "efa88a192548d99e2627ab812c88e9018258479fe6fa5240422641dd6ba17e07",
+ "sha256": "3275d2796ab44022b0cb0874730bbb828245f59e86fe66da8ffb98345ccf7dd1",
  "minShell": "0.5.0"
 }
