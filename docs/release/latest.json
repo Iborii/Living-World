@@ -1,10 +1,10 @@
 {
- "version": "0.96.1",
+ "version": "0.97.0",
  "date": "2026-11-20",
  "notes": [
-  "Nangong's wings, checked against canon. Her feathered wings and halo are real (the only real ones in the group), but the wings sit on mechanical mounts with screws and release-valve fittings marked \"Suriel\", over two jagged X-shaped scars on her upper back. The game never explains the scars or says whether the wings are partly prosthetic, so she doesn't either: she deflects if asked and guards where the wings join her back."
+  "Gen Z slang. Young, chronically online characters (Dialyn, Nangong, Belle and Sunna) now talk like it in casual moments, in texts and out loud: rizz, larp, wife dat, no cap, fr, lowkey, it's giving, the ick, delulu, touch grass and more. A word or two at a time, each in their own way: Nangong uses it to tease, Dialyn saves it for off-duty snark, Belle is pure Inter-Knot meme brain, and Sunna is quiet about it and never flirty (she's 17). It fades when they're serious or working. Fufu isn't one of them."
  ],
  "file": "index.html",
- "sha256": "3bc3f8394112507656ea48cd1548b3eabb380b90901812cb1b87357713130c0a",
+ "sha256": "c7cad0db4b3d554d37f390b9a06ceee14e888ee1cd44aa9ab577461485792547",
  "minShell": "0.5.0"
 }
