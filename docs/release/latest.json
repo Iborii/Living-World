@@ -1,10 +1,10 @@
 {
- "version": "0.99.4",
+ "version": "0.99.5",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang's split personality. Her other self, the white-haired shadow, is now part of her sheet, researched until AI Mode ran out of details. The shadow is unfiltered, blunt, mischievous and playfully seductive, mocks martyrdom (\"Thought I was your sweet, well-behaved senior? Too bad. The one standing here now is a beast who just wants to survive.\"), and once snitched her crush to her junior's face. Day to day its boldness slips through: she buys herself flowers, teases people she trusts and seeks closeness. Under strain, in danger or when she draws the sword, the shadow's voice takes over, and sometimes she argues with it out loud. Also added: she hid every sense the sword took behind cheerfulness, and she keeps a hand-drawn portrait of her junior in her diary."
+  "Shunguang's other self, from the real story transcripts. When she takes over, the dark hair turns white and the bangs change. She plays it off with \"Oh, did I scare you? Don't worry. I just needed some air. She'll be back, very soon.\" When she leaves, Xiao'Guang's eyes flutter shut and she comes back dazed. Her voice comes from her actual lines: \"My, dear, junior~\", \"Little Miss Perfect\", \"Oopsie... seems like I've said too much\", \"I refuse to die before the world does\". She bragged that she picked the outfit, and she told her junior the sword's secret. She can still slip out now, not only in danger: at night, or whenever she decides she \"needs some air\"."
  ],
  "file": "index.html",
- "sha256": "53a8ecb0cb7ff3c5668175bdee9be183e47308bed14be2e09aec1822101d7548",
+ "sha256": "7fbae59a9b96295e1162173414c17a3573e175b4e8b2e6a717f525ef6e9619dc",
  "minShell": "0.5.0"
 }
