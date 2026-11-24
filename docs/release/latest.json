@@ -1,10 +1,10 @@
 {
- "version": "0.99.9",
+ "version": "1.0.0",
  "date": "2026-11-20",
  "notes": [
-  "Zhao's slur also hits \"-tion\" words: \"investigation\" comes out like \"inves-ta-gashin\"."
+  "Progressive story (Settings). Immersive mode: everyone, Bangboo, constructs and side characters included, shows up as ??? until you actually learn their name in the story. That means someone introducing themselves, someone calling them by name in front of you, a name tag, or saving their number. Until then the story describes them by what you can see (the girl with pink twin tails, the tall woman in the gold coat), and their name is hidden in the sidebar, the with-you bar and the feed. Using a name yourself, or having someone in your contacts, also counts. You get a small notice whenever you learn a name. Best turned on before starting a new story; stories already underway keep the names you know."
  ],
  "file": "index.html",
- "sha256": "764b509b90801ff5b3791a70317733aaf19a0a62f876e93b7d3f73c84e2a9a74",
+ "sha256": "51f16417e2b11f75ac2a2b691c3f0860cdc748a0c0b878c399029fe96356d753",
  "minShell": "0.5.0"
 }

@@ -4770,6 +4770,43 @@ const FIDELITY=`CHARACTER FIDELITY (strict): play every character ONLY from the 
 PROMPT_HOOKS.push(()=>'\n'+FIDELITY+'\n');
 { const _cv=charVoice; charVoice=function(c,...a){ return _cv(c,...a)+'\n'+FIDELITY; }; }
 // <<< fidelity
+// >>> progressive
+// ======================= Progressive story: nobody has a name until you learn it =======================
+function progOn(){ return !!CFG.progressive && !!S && !S.branch; }
+function knownIds(){ S.known=S.known||{}; return S.known; }
+function isKnown(id){ return !!knownIds()[id]; }
+function learnName(c,why){ if(!c||isKnown(c.id)) return; knownIds()[c.id]={t:S.clock,why:why||''}; if(progOn()) notice(`You learned a name: ${c.name}.`); }
+function initKnown(){ if(!S||S.known) return; S.known={}; const progressed=(S.chat||[]).filter(m=>m.role==='assistant').length>3;
+  if(progressed||!CFG.progressive){ for(const c of W.characters) S.known[c.id]={t:S.clock,why:'met before progressive mode'}; return; }
+  const op=String((W.opening&&W.opening.text)||''); for(const c of W.characters){ const ns=[c.name,...String(c.full||'').split(/\s+/)].filter(x=>x&&x.length>2).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    if(new RegExp("\\b(I am|I'm|my name is|call me|this is|meet)\\s+(\\w+\\s+)?("+ns+")\\b",'i').test(op)) S.known[c.id]={t:S.clock,why:'introduced in the opening'}; } }
+CONTROL_HOOKS.NAMED=arg=>{ for(const n of String(arg).split(/\s*[,&]\s*/)){ const c=charByName(n.trim()); if(c) learnName(c,'introduced'); } };
+REPLY_HOOKS.push(msg=>{ if(!S) return; initKnown(); const ix=S.chat.indexOf(msg); const u=[...S.chat.slice(0,ix)].reverse().find(m=>m.role==='user'&&!m.hidden);
+  if(u) for(const c of W.characters) if(!isKnown(c.id)&&new RegExp('\\b'+c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(u.text)) learnName(c,'you used it');
+  for(const c of W.characters) if(!isKnown(c.id)&&typeof isContact==='function'&&isContact(c.id)) learnName(c,'in your contacts'); });
+PROMPT_HOOKS.push(pres=>{ if(!progOn()) return ''; initKnown(); const unk=W.characters.filter(c=>!isKnown(c.id)); const unkHere=pres.filter(c=>!isKnown(c.id)); const U=uN();
+  return `\nPROGRESSIVE STORY (immersive mode, strict): ${U} only knows the names of people they've actually learned. Known: ${W.characters.filter(c=>isKnown(c.id)).map(c=>c.name).join(', ')||'nobody yet'}. NOT known yet: ${unk.map(c=>c.name).join(', ')||'none'}.
+- Anyone whose name ${U} hasn't learned is written as "???" in every speaker label ("???: \\"...\\"") and is never named in the narration; describe them by what ${U} can see instead (the girl with pink twin tails, the tall woman in the gold coat, the grumpy popcorn-cannon construct). This includes Bangboo, constructs, pets and side characters.
+- If several unknown people talk, keep the label "???" for all of them and make clear who's who through the narration around each line.
+- Characters can still use each other's names out loud; the moment ${U} hears a name clearly tied to a person (an introduction, someone calling them by name, a name tag, a business card, a contact saved), from then on use their name, and add [[NAMED: Name]] at the very end.
+- Never reveal a name ${U} hasn't heard just because you know it.${unkHere.length?`\n- Unknown people here right now: ${unkHere.map(c=>`${c.name} (write as ???)`).join(', ')}.`:''}\n`; });
+// mask names in the UI for people you don't know yet
+function maskNames(root){ if(!progOn()||!root) return; initKnown(); const unk=W.characters.filter(c=>!isKnown(c.id)); if(!unk.length) return;
+  const words=[...new Set(unk.flatMap(c=>[c.full,c.name]).filter(Boolean))].sort((a,b)=>b.length-a.length).map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  const re=new RegExp('\\b('+words.join('|')+')\\b','g'); const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT); const nodes=[]; while(tw.nextNode()) nodes.push(tw.currentNode);
+  for(const n of nodes){ if(n.parentElement&&n.parentElement.closest('textarea,input,script,style')) continue; if(re.test(n.nodeValue)){ re.lastIndex=0; n.nodeValue=n.nodeValue.replace(re,'???'); } re.lastIndex=0; }
+  root.querySelectorAll('[data-rel],[data-char],[data-id]').forEach(el=>{ const id=el.dataset.rel||el.dataset.char||el.dataset.id; if(id&&unk.some(c=>c.id===id)) el.querySelectorAll('.av,.avatar,.cav').forEach(a=>{ if(a.textContent.trim().length<=2) a.textContent='?'; }); }); }
+function maskAll(){ try{ ['#feed','#charCards','#statusbar','#viewbar','aside','#relBody','#toolsBody'].forEach(s=>document.querySelectorAll(s).forEach(maskNames)); }catch(e){} }
+{ const _r=render; render=function(...a){ const out=_r.apply(this,a); maskAll(); return out; }; }
+{ const _rf=renderFeed; renderFeed=function(...a){ const out=_rf.apply(this,a); try{ maskNames(document.querySelector('#feed')); }catch(e){} return out; }; }
+// setting toggle
+{ const _os=openSettings; openSettings=function(...a){ const out=_os.apply(this,a); let row=document.getElementById('progRow');
+  if(!row){ row=document.createElement('label'); row.id='progRow'; row.style.cssText='display:flex;gap:9px;align-items:flex-start;color:var(--text);font-size:14px;margin:12px 0;cursor:pointer';
+    row.innerHTML='<input type="checkbox" id="progOn" style="width:auto;margin-top:3px"><span><b>Progressive story</b><br><span class="small">Immersive mode: everyone, Bangboo included, shows up as ??? until you actually learn their name in the story. Works best from the start of a new story.</span></span>';
+    const box=document.querySelector('#settingsModal .box'); const anchor=document.getElementById('saveSettings'); (anchor&&anchor.parentElement&&box.contains(anchor.parentElement)?anchor.parentElement:box).insertAdjacentElement('beforebegin',row);
+    row.querySelector('#progOn').onchange=e=>{ CFG.progressive=e.target.checked; saveCfg(); if(S&&!S.known){ initKnown(); } if(S) { save(); render(); } }; }
+  row.querySelector('#progOn').checked=!!CFG.progressive; return out; }; }
+// <<< progressive
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5240,8 +5277,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.99.9';
+const APP_VERSION = '1.0.0';
 const CHANGELOG = [
+ {v:'1.0.0', d:'2026-11-20', notes:['Progressive story (Settings). Immersive mode: everyone, Bangboo, constructs and side characters included, shows up as ??? until you actually learn their name in the story. That means someone introducing themselves, someone calling them by name in front of you, a name tag, or saving their number. Until then the story describes them by what you can see (the girl with pink twin tails, the tall woman in the gold coat), and their name is hidden in the sidebar, the with-you bar and the feed. Using a name yourself, or having someone in your contacts, also counts. You get a small notice whenever you learn a name. Best turned on before starting a new story; stories already underway keep the names you know.']},
  {v:'0.99.9', d:'2026-11-20', notes:['Zhao\'s slur also hits "-tion" words: "investigation" comes out like "inves-ta-gashin".']},
  {v:'0.99.8', d:'2026-11-20', notes:['Characters stick to their info. Every story reply, text and group chat now has a strict rule to play characters only from what\'s written about them (sheet, voice card, history, relationships and what\'s happened in your story). No invented traits, quirks, catchphrases, backstory, family, likes or generic anime tropes. When the info doesn\'t cover something, they react in the smallest way that fits what is written. Story replies also run a bit less random now (temperature 0.75), which keeps voices steadier. Zhao: her small :3 rabbit mouth and big buck teeth are described now, and they soften some of her sounds: "Failume Heights" comes out like "Failume Heighsh", "that\'s" like "thash". Only now and then, and it nearly vanishes when she\'s being the careful Krampus Judge.']},
  {v:'0.99.7', d:'2026-11-20', notes:['Zhao\'s exact line is now in her sheet, from Season 2 Chapter 6. Visiting Yunkui with gifts, she was all sugar to Shunguang, and when the Proxy said she seemed different she answered: "Oh? Looks like you\'re still getting to know me. My attitude always depends on the relationship, you know." Her real backstory from that chapter is in too. Her father cast her out as a child for being "useless", which is why she thinks every relationship is a game of value, and the Proxy and Shunguang are slowly showing her otherwise.']},
