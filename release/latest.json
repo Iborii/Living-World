@@ -1,10 +1,10 @@
 {
- "version": "1.7.2",
+ "version": "1.7.3",
  "date": "2026-11-20",
  "notes": [
-  "Floor plans: walls, fences and city walls you draw, gates and doors that can be open, closed or locked, floor and ground types, and street/city scales"
+  "Floor plans: ground layer. Set the ground for the whole floor, paint roads, sidewalks, paths, sand and water over it, and build rooms on top"
  ],
  "file": "index.html",
- "sha256": "f1ebe89b0612f3934404a901c9733e5876f943e9ade5077e0fbd71418007c2d2",
+ "sha256": "9f0e59de0c146a2e1aaedb250521a67c0d2463508d2d74abf941d60518345686",
  "minShell": "0.5.0"
 }
