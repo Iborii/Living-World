@@ -1,10 +1,10 @@
 {
- "version": "0.97.2",
+ "version": "0.97.3",
  "date": "2026-11-20",
  "notes": [
-  "Slang that fits each personality. Each one now has their own short list of words. Nangong: delulu, rizz, wife dat, mid, caught in 4K and other lazy gamer teasing, never sassy. Aria calls her fans and friends \"Delulu\" (her real line: \"Hey there, Delulu\") and stays bubbly with bestie and let's gooo. Dialyn: snarky roasts like cooked, skill issue, ratio and \"I'd block them\". Belle: Inter-Knot meme talk like no cap, side quest and NPC. Sunna and Fufu don't use internet slang at all."
+  "Nangong's goals fixed. She has money (she makes it herself trading stocks and investing, and nobody knows if her family is rich too), so she isn't saving up for anything. Her goals now: keep secretly covering the group's costs without Sunna or Aria catching on, get the Angels and Sunna's songs a headline slot at a real venue, and figure out a dream of her own instead of a borrowed one. Her spending money also matches: about 150,000 Dennies on hand instead of 9,000, and existing stories are updated too."
  ],
  "file": "index.html",
- "sha256": "468274caf84d528516b80870aee9932d7be86cc58836168fb94c321a87193360",
+ "sha256": "741fe69b73a011a252e3a8a0f09e725a6a60d290c6d624145a4b4740746ec845",
  "minShell": "0.5.0"
 }

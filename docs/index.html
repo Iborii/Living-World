@@ -2894,7 +2894,7 @@ const FX_ALC=['','tipsy','buzzed','drunk','very drunk','wasted'];
 function currency(){ const c=(S&&S.currency)||(W&&W.currency); if(c&&c.many) return c; return (W&&isZZZ(W))?{one:'Denny',many:'Dennies',sym:'',scale:1}:{one:'dollar',many:'dollars',sym:'$',scale:1}; }
 function money(n){ const c=currency(); n=Math.round(+n||0); return c.sym?`${n<0?'-':''}${c.sym}${Math.abs(n).toLocaleString()}`:`${n.toLocaleString()} ${Math.abs(n)===1?c.one:c.many}`; }
 const priceOf=it=>Math.max(1,Math.round((it.price||1)*(+currency().scale||1)));
-const BUILTIN_MONEY={nangong:9000,aria:40,sunna:90,cecilia:600,cissia:30,severian:2400,jane:700,zhuyuan:900,qingyi:200,seth:350,yixuan:300,fufu:25,shunguang:120,belle:260,wise:300,yinhu:1400,vivian:160,phoenix:120,dialyn:300,anby:60,billy:15,nicole:5,nekomata:80,velina:3000,claret:180,roxy:90};
+const BUILTIN_MONEY={nangong:150000,aria:40,sunna:90,cecilia:600,cissia:30,severian:2400,jane:700,zhuyuan:900,qingyi:200,seth:350,yixuan:300,fufu:25,shunguang:120,belle:260,wise:300,yinhu:1400,vivian:160,phoenix:120,dialyn:300,anby:60,billy:15,nicole:5,nekomata:80,velina:3000,claret:180,roxy:90};
 function walletOf(who){ if(who==='user'){ if(S.user.money==null) S.user.money=Math.round(250*(+currency().scale||1)); return S.user; }
   const st=S.chars[who]; if(!st) return null; if(st.money==null){ const c=charById(who); st.money=Math.round((c&&c.money!=null?c.money:BUILTIN_MONEY[who]!=null?BUILTIN_MONEY[who]:120)*(+currency().scale||1)); } return st; }
 function moneyWord(n){ const s=+currency().scale||1; n=n/s; return n<20?'broke':n<80?'tight on money':n>3000?'well off':''; }
@@ -4210,7 +4210,7 @@ toolTab('tells','🎭 Tells',body=>{ const cs=W.characters.filter(c=>!isDead(c))
 const GOALS={
  aria:['save up for proper livestream gear and start streaming','get through a whole dance routine without a single misstep'],
  sunna:['finish a song she would sing solo','get through a show without her chant to calm down'],
- nangong:['save enough to buy out a recording studio','get the Angels a headline slot at a real venue'],
+ nangong:['keep quietly covering the group\'s costs without Sunna or Aria catching on','get the Angels (and Sunna\'s songs) a headline slot at a real venue','figure out a dream that\'s actually her own, not borrowed'],
  cecilia:['write a new song of her own and perform it at 404'],
  zhuyuan:['close the cold case nobody else will touch','take a real day off without checking the case board'],
  qingyi:['recover a fragment of her lost memories'],
@@ -4247,6 +4247,8 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ cons
   return `\nPERSONAL GOALS (their own lives keep moving; they may mention progress or setbacks when it fits, not every scene):\n- ${L.join('\n- ')}\nIf ${uN()} actually helps or hinders someone's goal in the scene, add [[GOAL: Name +N: how]] or [[GOAL: Name -N: how]] (N from 3 to 15).\n`; });
 toolTab('goals','🎯 Goals',body=>{ const cs=W.characters.filter(c=>!isDead(c));
   body.innerHTML=`<p class="small" style="margin-top:0">Everyone is working on something. Progress happens day by day whether you're there or not; helping (or getting in the way) moves it faster.</p>${cs.map(c=>{ const g=goalOf(c.id); return `<div class="sr-row" style="cursor:default"><div style="display:flex;gap:10px;align-items:center">${avHTML(c,28,false)}<div style="flex:1"><b>${esc(c.name)}</b>: ${esc(g.text)}</div><span class="small">${g.p}%</span></div><div class="dbar" style="margin-top:6px"><div class="dfill" style="width:${g.p}%"></div></div>${g.log.slice(-2).reverse().map(l=>`<div class="small">${l.d>0?'+':''}${l.d} · ${mmdd(l.t)} · ${esc(subUser(l.why))}</div>`).join('')}${g.done.length?`<div class="small" style="margin-top:4px">✅ ${g.done.map(d=>esc(d.text)).join(' · ')}</div>`:''}</div>`; }).join('')}`; });
+// one-time: Nangong's spending money matches canon (she makes millions trading; 9,000 was far too low)
+SCREEN_HOOKS.push(()=>{ try{ if(S&&W&&W.characters.some(c=>c.id==='nangong')&&!S._ngRich){ S._ngRich=1; const w=walletOf('nangong'); if((w.money||0)<150000) w.money=(w.money||0)+150000-9000; save(); } }catch(e){} });
 // <<< goals
 // >>> seek
 // ======================= people who care about you come find you on their own =======================
@@ -5119,8 +5121,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.97.2';
+const APP_VERSION = '0.97.3';
 const CHANGELOG = [
+ {v:'0.97.3', d:'2026-11-20', notes:['Nangong\'s goals fixed. She has money (she makes it herself trading stocks and investing, and nobody knows if her family is rich too), so she isn\'t saving up for anything. Her goals now: keep secretly covering the group\'s costs without Sunna or Aria catching on, get the Angels and Sunna\'s songs a headline slot at a real venue, and figure out a dream of her own instead of a borrowed one. Her spending money also matches: about 150,000 Dennies on hand instead of 9,000, and existing stories are updated too.']},
  {v:'0.97.2', d:'2026-11-20', notes:['Slang that fits each personality. Each one now has their own short list of words. Nangong: delulu, rizz, wife dat, mid, caught in 4K and other lazy gamer teasing, never sassy. Aria calls her fans and friends "Delulu" (her real line: "Hey there, Delulu") and stays bubbly with bestie and let\'s gooo. Dialyn: snarky roasts like cooked, skill issue, ratio and "I\'d block them". Belle: Inter-Knot meme talk like no cap, side quest and NPC. Sunna and Fufu don\'t use internet slang at all.']},
  {v:'0.97.1', d:'2026-11-20', notes:['Nangong\'s slang toned down: no sassy words (no "the ick", "it\'s giving", "ate", "slay" or "delulu"). She sticks to rizz, wife dat, mid, no cap, fr, lowkey, bet and a few others, and uses them to tease. Fufu still doesn\'t use internet slang.']},
  {v:'0.97.0', d:'2026-11-20', notes:['Gen Z slang. Young, chronically online characters (Dialyn, Nangong, Belle and Sunna) now talk like it in casual moments, in texts and out loud: rizz, larp, wife dat, no cap, fr, lowkey, it\'s giving, the ick, delulu, touch grass and more. A word or two at a time, each in their own way: Nangong uses it to tease, Dialyn saves it for off-duty snark, Belle is pure Inter-Knot meme brain, and Sunna is quiet about it and never flirty (she\'s 17). It fades when they\'re serious or working. Fufu isn\'t one of them.']},
