@@ -1,10 +1,10 @@
 {
- "version": "1.7.1",
+ "version": "1.7.2",
  "date": "2026-11-20",
  "notes": [
-  "Floor plans are now a visual builder: draw rooms, place doors, windows, stairs and furniture on a grid, multiple floors"
+  "Floor plans: walls, fences and city walls you draw, gates and doors that can be open, closed or locked, floor and ground types, and street/city scales"
  ],
  "file": "index.html",
- "sha256": "582b49b1f7e258fd75e6e456c0d1742723c41a7de49ff706ed8b396e398906dd",
+ "sha256": "f1ebe89b0612f3934404a901c9733e5876f943e9ade5077e0fbd71418007c2d2",
  "minShell": "0.5.0"
 }

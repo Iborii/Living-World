@@ -834,13 +834,23 @@ body:has(.modal.on) #chatsFab{display:none}
 .fp-it.window{fill:#9fd3f0;stroke:#4a8fb8}
 .fp-it.rug{fill:color-mix(in srgb,var(--accent) 18%,transparent)}
 .fp-lb{fill:var(--text);font:9px var(--font,sans-serif)}
-.fp-selr{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:5 3;pointer-events:none}
+.fp-selr{fill:none;stroke-linecap:round;stroke:var(--accent);stroke-width:2;stroke-dasharray:5 3;pointer-events:none}
 .fp-h{fill:var(--accent);stroke:var(--bg);stroke-width:1.5}
 .fp-new{fill:color-mix(in srgb,var(--accent) 15%,transparent);stroke:var(--accent);stroke-width:2}
 .fp-props{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:34px}
 .fp-tip{flex-basis:100%}
 .fp-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .fp-prev{white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto;background:var(--panel2);padding:8px;border-radius:6px;margin:6px 0 0}
+.fp-top select#fpScale{flex:0 1 auto;min-width:150px}
+.fp-wall{stroke:var(--text);stroke-linecap:round;opacity:.85}
+.fp-wall.citywall{stroke:#8a7f6e;opacity:1}
+.fp-wall.hedge{stroke:#4f8a3e;opacity:1}
+.fp-wall.glass{stroke:#9fd3f0;opacity:1}
+.fp-wall.fence,.fp-wall.railing{stroke:#b59a74;opacity:1}
+.fp-it.gate{fill:#5c6670;stroke:#2e3338}
+.fp-it.open{fill-opacity:.35}
+.fp-it.locked{stroke:var(--danger,#d55);stroke-width:2}
+.fp-more{font-style:italic;color:var(--muted)!important}
 /* <<< floorplans */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
@@ -4965,17 +4975,25 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>`- ${c
 // <<< ranks
 // >>> floorplans
 // ======================= floor plans: a grid builder the story follows =======================
-const FP_KEY='lw_floorplans_v1', FP_W=40, FP_H=28, FP_C=20, FP_FT=2;
-const FP_T={door:['🚪','Door',2,1],window:['🪟','Window',2,1],stairs:['🪜','Stairs',2,4],bed:['🛏️','Bed',3,4],couch:['🛋️','Couch',4,2],table:['🍽️','Table',3,2],chair:['🪑','Chair',1,1],desk:['🖥️','Desk',3,1],tv:['📺','TV',2,1],fridge:['🧊','Fridge',1,1],stove:['🍳','Stove',2,1],sink:['🚰','Sink',1,1],counter:['🔪','Counter',4,1],toilet:['🚽','Toilet',1,1],shower:['🚿','Shower',2,2],bath:['🛁','Bathtub',2,3],wardrobe:['👗','Wardrobe',2,1],shelf:['📚','Shelf',3,1],mirror:['🪞','Mirror',3,1],rug:['🟫','Rug',3,2],piano:['🎹','Piano',3,2],amp:['🔊','Amp',1,1],mic:['🎤','Mic stand',1,1],plant:['🪴','Plant',1,1],lamp:['💡','Lamp',1,1],other:['📦','Other',1,1]};
+const FP_KEY='lw_floorplans_v1', FP_W=40, FP_H=28, FP_C=20;
+const FP_SCALES={building:['Inside a building',2],block:['Street or block',10],city:['District or city',50]};
+const fpFt=p=>(FP_SCALES[p&&p.scale]||FP_SCALES.building)[1];
+const FP_SURF={'':['No floor set',''],wood:['Wood','#9a6b43'],tile:['Tile','#9fb4c0'],carpet:['Carpet','#8a6fa8'],concrete:['Concrete','#8c8c8c'],marble:['Marble','#d8d4cc'],stone:['Stone paving','#7d7468'],metal:['Metal grating','#9aa3ab'],asphalt:['Road / asphalt','#4a4d52'],grass:['Grass','#5d9b4c'],dirt:['Dirt path','#8b6a45'],sand:['Sand','#d6c08a'],water:['Water','#3f86c4']};
+const FP_WK={wall:['Wall',5,''],citywall:['City wall',9,''],fence:['Fence',3,'6 4'],railing:['Railing',2,'2 3'],hedge:['Hedge',6,''],glass:['Glass wall',3,'']};
+const FP_STATES=['','open','closed','locked'];
+const FP_T={door:['🚪','Door',2,1],gate:['⛓️','Gate',3,1],window:['🪟','Window',2,1],stairs:['🪜','Stairs',2,4],bed:['🛏️','Bed',3,4],couch:['🛋️','Couch',4,2],table:['🍽️','Table',3,2],chair:['🪑','Chair',1,1],desk:['🖥️','Desk',3,1],tv:['📺','TV',2,1],fridge:['🧊','Fridge',1,1],stove:['🍳','Stove',2,1],sink:['🚰','Sink',1,1],counter:['🔪','Counter',4,1],toilet:['🚽','Toilet',1,1],shower:['🚿','Shower',2,2],bath:['🛁','Bathtub',2,3],wardrobe:['👗','Wardrobe',2,1],shelf:['📚','Shelf',3,1],mirror:['🪞','Mirror',3,1],rug:['🟫','Rug',3,2],piano:['🎹','Piano',3,2],amp:['🔊','Amp',1,1],mic:['🎤','Mic stand',1,1],plant:['🪴','Plant',1,1],lamp:['💡','Lamp',1,1],
+  building:['🏢','Building',4,4],house:['🏠','House',3,3],stall:['🏪','Stall / shop',2,2],tree:['🌳','Tree',1,1],flowers:['🌷','Flower bed',2,1],rock:['🪨','Rock',1,1],bench:['🪑','Bench',2,1],streetlight:['🏮','Streetlight',1,1],fountain:['⛲','Fountain',2,2],statue:['🗿','Statue',1,1],sign:['🪧','Sign',1,1],bin:['🗑️','Trash can',1,1],vending:['🥤','Vending machine',1,1],busstop:['🚏','Bus stop',2,1],subway:['🚇','Subway entrance',2,2],car:['🚗','Car',2,1],bridge:['🌉','Bridge',4,2],tent:['⛺','Tent',2,2],
+  other:['📦','Other',1,1]};
+const FP_BOTH=new Set(['door','gate','window','stairs','plant','lamp','sign','bin','vending','other']), FP_OUT=new Set(['building','house','stall','tree','flowers','rock','bench','streetlight','fountain','statue','busstop','subway','car','bridge','tent']);
 function fpAll(){ try{ return JSON.parse(localStorage.getItem(FP_KEY)||'{}'); }catch(e){ return {}; } }
 function fpSave(all){ try{ localStorage.setItem(FP_KEY,JSON.stringify(all)); }catch(e){} }
 function fpBuilding(loc){ return String(loc||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
 function fpRoom(loc){ const m=String(loc||'').match(/\(([^)]*)\)\s*$/); return m?m[1]:''; }
-function fpNorm(v){ const blank=()=>({name:'Floor 1',rooms:[],items:[]});
-  if(!v) return {floors:[blank()],notes:''}; if(typeof v==='string') return {floors:[blank()],notes:v};
-  if(!Array.isArray(v.floors)||!v.floors.length) v.floors=[blank()]; v.floors.forEach(f=>{ f.rooms=f.rooms||[]; f.items=f.items||[]; f.name=f.name||'Floor'; }); v.notes=v.notes||''; return v; }
+function fpNorm(v){ const blank=()=>({name:'Floor 1',rooms:[],items:[],walls:[]});
+  if(!v) return {floors:[blank()],notes:'',scale:'building'}; if(typeof v==='string') return {floors:[blank()],notes:v,scale:'building'};
+  if(!Array.isArray(v.floors)||!v.floors.length) v.floors=[blank()]; v.floors.forEach(f=>{ f.rooms=f.rooms||[]; f.items=f.items||[]; f.walls=f.walls||[]; f.name=f.name||'Floor'; }); v.notes=v.notes||''; v.scale=FP_SCALES[v.scale]?v.scale:'building'; return v; }
 function fpGet(key){ return fpNorm((fpAll()[W.id]||{})[key]); }
-function fpEmpty(p){ return !p.notes.trim()&&p.floors.every(f=>!f.rooms.length&&!f.items.length); }
+function fpEmpty(p){ return !p.notes.trim()&&p.floors.every(f=>!f.rooms.length&&!f.items.length&&!f.walls.length); }
 function fpPut(key,p){ const all=fpAll(); all[W.id]=all[W.id]||{}; if(fpEmpty(p)) delete all[W.id][key]; else all[W.id][key]=p; fpSave(all); }
 function fpFor(loc){ const all=fpAll()[W.id]||{}; const b=fpBuilding(loc); if(!b) return null; const k=all[b]?b:Object.keys(all).find(x=>b.startsWith(x)||x.startsWith(b)); return k?{key:k,plan:fpNorm(all[k])}:null; }
 
@@ -4989,8 +5007,13 @@ function fpShared(a,b){ const ov=(a1,a2,b1,b2)=>Math.min(a2,b2)-Math.max(a1,b1);
   if(a.y+a.h===b.y&&ov(a.x,a.x+a.w,b.x,b.x+b.w)>0) return 'south'; if(b.y+b.h===a.y&&ov(a.x,a.x+a.w,b.x,b.x+b.w)>0) return 'north'; return ''; }
 function fpWalls(it,r){ const cx=it.x+it.w/2, cy=it.y+it.h/2, o=[]; const inX=cx>=r.x&&cx<=r.x+r.w, inY=cy>=r.y&&cy<=r.y+r.h;
   if(inX&&Math.abs(cy-r.y)<=1) o.push('north'); if(inX&&Math.abs(cy-(r.y+r.h))<=1) o.push('south'); if(inY&&Math.abs(cx-r.x)<=1) o.push('west'); if(inY&&Math.abs(cx-(r.x+r.w))<=1) o.push('east'); return o; }
+function fpSegD(px,py,w){ const dx=w.x2-w.x1, dy=w.y2-w.y1, L=dx*dx+dy*dy||1e-9; const t=Math.max(0,Math.min(1,((px-w.x1)*dx+(py-w.y1)*dy)/L)); return Math.hypot(px-(w.x1+t*dx),py-(w.y1+t*dy)); }
+function fpAlong(w,r){ const ov=(a1,a2,b1,b2)=>Math.min(Math.max(a1,a2),b2)-Math.max(Math.min(a1,a2),b1);
+  if(w.y1===w.y2&&ov(w.x1,w.x2,r.x,r.x+r.w)>0){ if(w.y1===r.y) return 'north'; if(w.y1===r.y+r.h) return 'south'; }
+  if(w.x1===w.x2&&ov(w.y1,w.y2,r.y,r.y+r.h)>0){ if(w.x1===r.x) return 'west'; if(w.x1===r.x+r.w) return 'east'; } return ''; }
+function fpTag(d){ return [d.label,d.state].filter(Boolean).join(', '); }
 function fpRoomOf(f,i){ const cx=i.x+i.w/2, cy=i.y+i.h/2; return f.rooms.slice().reverse().find(r=>fpIn(cx,cy,r)); }
-function fpIName(i){ const t=(FP_T[i.type]||FP_T.other)[1].toLowerCase(); return i.label?(i.type==='other'?i.label:`${i.label} (${t})`):t; }
+function fpIName(i){ const t=(FP_T[i.type]||FP_T.other)[1].toLowerCase(); const st2=i.state?', '+i.state:''; return i.label?(i.type==='other'?i.label+(i.state?` (${i.state})`:''):`${i.label} (${t}${st2})`):t+(i.state?` (${i.state})`:''); }
 function fpGap(a,b){ return Math.max(0,a.x-(b.x+b.w),b.x-(a.x+a.w),a.y-(b.y+b.h),b.y-(a.y+a.h)); }
 function fpDesc(i,r,f){ const v=i.y<=r.y?'north':i.y+i.h>=r.y+r.h?'south':'', h=i.x<=r.x?'west':i.x+i.w>=r.x+r.w?'east':''; const cx=i.x+i.w/2, cy=i.y+i.h/2; let where;
   if(v&&h) where=`in the ${v}${h} corner`;
@@ -4999,33 +5022,44 @@ function fpDesc(i,r,f){ const v=i.y<=r.y?'north':i.y+i.h>=r.y+r.h?'south':'', h=
   else { const z=fpZone(cx,cy,r); where=z==='middle'?'in the middle':`toward the ${z}`; }
   const nb=f.items.filter(o=>o!==i&&o.type!=='door'&&o.type!=='window'&&fpRoomOf(f,o)===fpRoomOf(f,i)&&fpGap(i,o)<=0.5).map(fpIName).slice(0,2);
   return `${fpIName(i)} ${where}${nb.length?', next to the '+nb.join(' and the '):''}${i.type==='stairs'&&!i.label?' (go to another floor)':''}`; }
-function fpText(p){ const L=[`Grid: one square = ${FP_FT} ft. Top of the plan is north.`];
-  p.floors.forEach(f=>{ if(!f.rooms.length&&!f.items.length) return; L.push((f.name||'Floor').toUpperCase()); const box=fpBox(f.rooms), rn=r=>r.name||'unnamed room';
-    const doors=f.items.filter(i=>i.type==='door'), wins=f.items.filter(i=>i.type==='window'), stuff=f.items.filter(i=>i.type!=='door'&&i.type!=='window');
-    f.rooms.forEach(r=>{ const parts=[`${r.w*FP_FT}×${r.h*FP_FT} ft`]; if(f.rooms.length>1) parts.push(`in the ${fpZone(r.x+r.w/2,r.y+r.h/2,box)} part of the floor`);
+function fpText(p){ const FT=fpFt(p), L=[`${FP_SCALES[p.scale][0]} plan. Grid: one square = ${FT} ft. Top of the plan is north.`];
+  p.floors.forEach(f=>{ if(!f.rooms.length&&!f.items.length&&!f.walls.length) return; L.push((f.name||'Floor').toUpperCase()); const box=fpBox(f.rooms), rn=r=>r.name||'unnamed room';
+    const doors=f.items.filter(i=>i.type==='door'||i.type==='gate'), wins=f.items.filter(i=>i.type==='window'), stuff=f.items.filter(i=>!['door','gate','window'].includes(i.type));
+    f.rooms.forEach(r=>{ const parts=[`${r.w*FT}×${r.h*FT} ft`]; if(r.floor) parts.push(`${['grass','dirt','sand','water','asphalt'].includes(r.floor)?'ground':'floor'}: ${FP_SURF[r.floor][0].toLowerCase()}`); if(f.rooms.length>1) parts.push(`in the ${fpZone(r.x+r.w/2,r.y+r.h/2,box)} part of the floor`);
       const links=[], walls=[], used=new Set();
-      f.rooms.forEach(o=>{ if(o===r) return; const w=fpShared(r,o); if(!w) return; const d=doors.find(dd=>fpWalls(dd,r).includes(w)&&fpWalls(dd,o).length); if(d) used.add(d); (d?links:walls).push(`${rn(o)} (${w} wall${d&&d.label?', '+d.label:''})`); });
-      if(links.length) parts.push('door into '+links.join(', ')); if(walls.length) parts.push('solid wall, no door, to '+walls.join(', '));
-      const outs=doors.filter(d=>!used.has(d)&&fpWalls(d,r).length&&!f.rooms.some(o=>o!==r&&fpWalls(d,o).length)).map(d=>`${fpWalls(d,r)[0]} wall${d.label?' ('+d.label+')':''}`);
-      if(outs.length) parts.push('door leading out on the '+outs.join(', '));
-      const wn=[...new Set(wins.filter(w=>fpWalls(w,r).length).map(w=>fpWalls(w,r)[0]))]; if(wn.length) parts.push(`window${wn.length>1?'s':''} on the ${wn.join(' and ')} wall${wn.length>1?'s':''}`); else parts.push('no windows');
+      const OUTG=['grass','dirt','sand','water','asphalt','stone'], open=[], isOut=x=>p.scale!=='building'||OUTG.includes(x.floor);
+      f.rooms.forEach(o=>{ if(o===r) return; const w=fpShared(r,o); if(!w) return; const d=doors.find(dd=>fpWalls(dd,r).includes(w)&&fpWalls(dd,o).length); if(d) used.add(d);
+        const wall=f.walls.find(x=>fpAlong(x,r)===w);
+        if(!d&&!wall&&isOut(r)&&isOut(o)) open.push(`${rn(o)} (${w} side)`);
+        else (d?links:walls).push(`${rn(o)} (${w} side${d&&fpTag(d)?', '+fpTag(d):''}${wall&&!d?', '+(wall.label||FP_WK[wall.kind][0].toLowerCase()):''})`); });
+      if(open.length) parts.push('opens straight onto '+open.join(', '));
+      if(links.length) parts.push('doorway or gate into '+links.join(', ')); if(walls.length) parts.push('no way through to '+walls.join(', '));
+      const outs=doors.filter(d=>!used.has(d)&&fpWalls(d,r).length&&!f.rooms.some(o=>o!==r&&fpWalls(d,o).length)).map(d=>`${fpWalls(d,r)[0]} side${fpTag(d)?' ('+fpTag(d)+')':''}`);
+      if(outs.length) parts.push('door or gate leading out on the '+outs.join(', '));
+      const wn=[...new Set(wins.filter(w=>fpWalls(w,r).length).map(w=>fpWalls(w,r)[0]))]; if(wn.length) parts.push(`window${wn.length>1?'s':''} on the ${wn.join(' and ')} side${wn.length>1?'s':''}`); else if(p.scale==='building') parts.push('no windows');
       const inside=stuff.filter(i=>fpRoomOf(f,i)===r).map(i=>fpDesc(i,r,f)); parts.push(inside.length?'inside: '+inside.join('; '):'nothing placed inside');
       L.push(`- ${rn(r)}: ${parts.map(x=>x[0].toUpperCase()+x.slice(1)).join('. ')}.`); });
-    const loose=stuff.filter(i=>!fpRoomOf(f,i)); if(loose.length) L.push('- Not inside any room: '+loose.map(i=>fpDesc(i,box,f)).join('; ')+'.'); });
+    const loose=stuff.filter(i=>!fpRoomOf(f,i)); if(loose.length) L.push('- Not inside any area: '+loose.map(i=>fpDesc(i,fpBox(f.rooms.length?f.rooms:[{x:0,y:0,w:FP_W,h:FP_H}]),f)).join('; ')+'.');
+    const wb=fpBox(f.rooms.length?f.rooms.concat(f.walls.map(w=>({x:Math.min(w.x1,w.x2),y:Math.min(w.y1,w.y2),w:Math.abs(w.x2-w.x1),h:Math.abs(w.y2-w.y1)}))):[{x:0,y:0,w:FP_W,h:FP_H}]);
+    f.walls.forEach(w=>{ const k=FP_WK[w.kind]||FP_WK.wall, a=fpZone(w.x1,w.y1,wb), b=fpZone(w.x2,w.y2,wb);
+      const al=f.rooms.map(r=>{ const s2=fpAlong(w,r); return s2?`the ${s2} side of ${rn(r)}`:''; }).filter(Boolean);
+      const gs=doors.filter(d=>fpSegD(d.x+d.w/2,d.y+d.h/2,w)<=1).map(fpIName);
+      L.push(`- ${w.label?w.label+' ('+k[0].toLowerCase()+')':k[0]}: ${Math.round(Math.hypot(w.x2-w.x1,w.y2-w.y1)*FT)} ft long, runs from the ${a} to the ${b}${al.length?', along '+al.join(' and '):''}. ${gs.length?'Ways through: '+gs.join(', ')+'. Nowhere else.':'No way through it.'}`); }); });
   if(p.notes.trim()) L.push('NOTES: '+p.notes.trim()); return L.join('\n'); }
 
 PROMPT_HOOKS.push(()=>{ const p=fpFor(S.user.loc); if(!p) return ''; const room=fpRoom(S.user.loc);
-  return `\nFLOOR PLAN: ${p.key}${room?` (${uN()} is in: ${room})`:''}. Follow it exactly: where each room is, which rooms connect and through which doors, solid walls, stairs, windows, what furniture is where and what it's next to, and how big rooms are. People move through it realistically (no walking through solid walls, no seeing or hearing through walls unless a door is open, going to another floor takes the stairs). Never invent rooms, doors or windows, and never move things the plan places.\n${fpText(p.plan)}\n`; });
+  return `\nFLOOR PLAN: ${p.key}${room?` (${uN()} is in: ${room})`:''}. Follow it exactly: where each room is, which rooms connect and through which doors, solid walls, stairs, windows, what furniture is where and what it's next to, and how big rooms are. People move through it realistically (no walking through walls, fences or city walls except at their doors and gates, locked ones stay shut unless someone unlocks them, no seeing or hearing through walls unless a door is open, going to another floor takes the stairs). Never invent rooms, doors, gates, walls or windows, and never move things the plan places.\n${fpText(p.plan)}\n`; });
 
-async function fpDraft(key){ const chars=W.characters.filter(c=>(c.schedule||[]).some(s=>fpBuilding(s.loc)===key)||fpBuilding(c.loc)===key).map(c=>c.name);
+async function fpDraft(key,scale){ scale=FP_SCALES[scale]?scale:'building'; const FT=FP_SCALES[scale][1]; const chars=W.characters.filter(c=>(c.schedule||[]).some(s=>fpBuilding(s.loc)===key)||fpBuilding(c.loc)===key).map(c=>c.name);
   const rooms=[...new Set(W.characters.flatMap(c=>(c.schedule||[]).map(s=>s.loc)).concat(W.locations||[]).filter(l=>fpBuilding(l)===key).map(fpRoom).filter(Boolean))];
-  const out=await callAI({model:CFG.bg, maxTokens:2500, system:'You lay out floor plans on a grid for a roleplay. Reply with JSON only.', messages:[{role:'user',content:`World: ${W.title}\n${String(W.setting||'').slice(0,1500)}\nPlace: ${key}\nRooms the story already uses: ${rooms.join(', ')||'none listed'}\nPeople who spend time here: ${chars.join(', ')||'unknown'}\n\nLay out this place on a grid ${FP_W} squares wide (x 0-${FP_W-1}, west to east) and ${FP_H} tall (y 0-${FP_H-1}, north to south). One square = ${FP_FT} ft. Include every room listed above. If the place exists in canon, follow what's known; otherwise keep it plausible and plain.\nRules: rooms are rectangles {name,x,y,w,h}; rooms that share a wall touch exactly (one room's x+w equals the next one's x). Doors and windows are items centered on the wall line they sit in. Item types: ${Object.keys(FP_T).join(', ')} (use "other" with a label for anything else). Items may have a short label like "Aria's bed". Stairs exist on both floors at the same spot.\nReply with only: {"floors":[{"name":"Floor 1","rooms":[{"name":"","x":0,"y":0,"w":6,"h":5}],"items":[{"type":"door","label":"","x":5,"y":2,"w":2,"h":1}]}]}`}]});
+  const out=await callAI({model:CFG.bg, maxTokens:2500, system:'You lay out floor plans on a grid for a roleplay. Reply with JSON only.', messages:[{role:'user',content:`World: ${W.title}\n${String(W.setting||'').slice(0,1500)}\nPlace: ${key}\nRooms the story already uses: ${rooms.join(', ')||'none listed'}\nPeople who spend time here: ${chars.join(', ')||'unknown'}\n\nLay out this place on a grid ${FP_W} squares wide (x 0-${FP_W-1}, west to east) and ${FP_H} tall (y 0-${FP_H-1}, north to south). One square = ${FT} ft (${FP_SCALES[scale][0].toLowerCase()} scale). Include every room listed above. If the place exists in canon, follow what's known; otherwise keep it plausible and plain.\nRules: rooms and outdoor areas (streets, plazas, parks) are rectangles {name,x,y,w,h,floor}, floor one of: ${Object.keys(FP_SURF).filter(Boolean).join(', ')}; rooms that share a wall touch exactly (one room's x+w equals the next one's x). Walls, fences and city walls are straight lines {kind,label,x1,y1,x2,y2} on grid lines, kind one of: ${Object.keys(FP_WK).join(', ')}. Doors, gates and windows are items centered on the wall line they sit in; doors and gates may have "state": open, closed or locked. Item types: ${Object.keys(FP_T).join(', ')} (use "other" with a label for anything else). Items may have a short label like "Aria's bed". Stairs exist on both floors at the same spot.\nReply with only: {"floors":[{"name":"Floor 1","rooms":[{"name":"","x":0,"y":0,"w":6,"h":5}],"items":[{"type":"door","label":"","state":"","x":5,"y":2,"w":2,"h":1}],"walls":[]}]}`}]});
   const m=String(out||'').match(/\{[\s\S]*\}/); if(!m) return null; let j; try{ j=JSON.parse(m[0]); }catch(e){ return null; }
   const n=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(+v||0)));
   const fit=o=>{ o.w=n(o.w,1,FP_W); o.h=n(o.h,1,FP_H); o.x=n(o.x,0,FP_W-o.w); o.y=n(o.y,0,FP_H-o.h); return o; };
   const floors=(j.floors||[]).slice(0,6).map((f,k)=>({name:String(f.name||`Floor ${k+1}`).slice(0,40),
-    rooms:(f.rooms||[]).slice(0,40).map(r=>fit({name:String(r.name||'').slice(0,60),x:r.x,y:r.y,w:r.w,h:r.h})),
-    items:(f.items||[]).slice(0,120).map(i=>{ const t=FP_T[i.type]?i.type:'other'; return fit({type:t,label:String(i.label||(t==='other'?i.type:'')||'').slice(0,60),x:i.x,y:i.y,w:i.w||FP_T[t][2],h:i.h||FP_T[t][3]}); })}));
+    rooms:(f.rooms||[]).slice(0,40).map(r=>fit({name:String(r.name||'').slice(0,60),floor:FP_SURF[r.floor]?r.floor:'',x:r.x,y:r.y,w:r.w,h:r.h})),
+    walls:(f.walls||[]).slice(0,60).map(w=>({kind:FP_WK[w.kind]?w.kind:'wall',label:String(w.label||'').slice(0,60),x1:n(w.x1,0,FP_W),y1:n(w.y1,0,FP_H),x2:n(w.x2,0,FP_W),y2:n(w.y2,0,FP_H)})).filter(w=>w.x1!==w.x2||w.y1!==w.y2),
+    items:(f.items||[]).slice(0,120).map(i=>{ const t=FP_T[i.type]?i.type:'other'; return fit({type:t,label:String(i.label||(t==='other'?i.type:'')||'').slice(0,60),state:FP_STATES.includes(i.state)&&/door|gate/.test(t)?i.state:'',x:i.x,y:i.y,w:i.w||FP_T[t][2],h:i.h||FP_T[t][3]}); })}));
   return floors.length?floors:null; }
 
 // ---- the builder ----
@@ -5035,68 +5069,96 @@ toolTab('floor','🏠 Floor plans',body=>{
   const places=[...new Set([here,...Object.keys(all),...(W.locations||[]).map(fpBuilding)])].filter(Boolean).sort((a,b)=>(b===here)-(a===here)||((b in all)-(a in all))||a.localeCompare(b));
   const key0=FPE&&places.includes(FPE.key)?FPE.key:(here||places[0]||'');
   body.innerHTML=`<div class="fp">
-  <div class="fp-top"><select id="fpSel">${places.map(p=>`<option value="${esc(p)}" ${p===key0?'selected':''}>${esc(p)}${all[p]?' ✓':''}</option>`).join('')}</select><span class="fp-floors" id="fpFloors"></span></div>
+  <div class="fp-top"><select id="fpSel" aria-label="Place">${places.map(p=>`<option value="${esc(p)}" ${p===key0?'selected':''}>${esc(p)}${all[p]?' ✓':''}</option>`).join('')}</select>
+   <select id="fpScale" aria-label="Scale">${Object.entries(FP_SCALES).map(([k,v])=>`<option value="${k}">${v[0]} (1 square = ${v[1]} ft)</option>`).join('')}</select><span class="fp-floors" id="fpFloors"></span></div>
   <div class="fp-pal" id="fpPal"></div>
   <div class="fp-wrap"><svg id="fpSvg" viewBox="0 0 ${FP_W*FP_C} ${FP_H*FP_C}" role="img" aria-label="Floor plan grid"></svg></div>
   <div class="fp-props" id="fpProps"></div>
   <label class="small" for="fpNotes">Anything else the story should know about this place</label>
-  <textarea id="fpNotes" rows="2" placeholder="The bathroom door sticks. The rooftop is locked after 22:00."></textarea>
+  <textarea id="fpNotes" rows="2" placeholder="The bathroom door sticks. The east gate is locked after 22:00."></textarea>
   <div class="fp-act"><button class="ghost" id="fpDraft">Draft with AI</button><button class="ghost" id="fpClear">Clear this plan</button><span class="small" id="fpMsg"></span></div>
   <details><summary class="small">What the AI reads</summary><pre class="fp-prev" id="fpPrev"></pre></details></div>`;
   const $q=s=>body.querySelector(s), svg=$q('#fpSvg'), msg=$q('#fpMsg');
-  const st={key:key0, plan:fpGet(key0), fl:0, tool:'select', sel:null, drag:null}; FPE=st;
-  const cur=()=>st.plan.floors[st.fl], selObj=()=>st.sel&&cur()[st.sel.kind][st.sel.i];
+  const st={key:key0, plan:fpGet(key0), fl:0, tool:'select', sel:null, drag:null, allObj:false}; FPE=st;
+  const FT=()=>fpFt(st.plan), cur=()=>st.plan.floors[st.fl], selObj=()=>st.sel&&cur()[st.sel.kind][st.sel.i];
   const commit=()=>{ if(!st.key) return; fpPut(st.key,st.plan); $q('#fpPrev').textContent=fpText(st.plan); msg.textContent='Saved'; };
-  const fit=o=>{ o.w=Math.max(1,Math.min(FP_W,o.w)); o.h=Math.max(1,Math.min(FP_H,o.h)); o.x=Math.max(0,Math.min(FP_W-o.w,o.x)); o.y=Math.max(0,Math.min(FP_H-o.h,o.y)); };
-  const hue=i=>(i*67+200)%360;
+  const fit=o=>{ if('x1' in o){ ['x1','x2'].forEach(k=>o[k]=Math.max(0,Math.min(FP_W,o[k]))); ['y1','y2'].forEach(k=>o[k]=Math.max(0,Math.min(FP_H,o[k]))); return; }
+    o.w=Math.max(1,Math.min(FP_W,o.w)); o.h=Math.max(1,Math.min(FP_H,o.h)); o.x=Math.max(0,Math.min(FP_W-o.w,o.x)); o.y=Math.max(0,Math.min(FP_H-o.h,o.y)); };
+  const hue=i=>(i*67+200)%360, dim=o=>'x1' in o?`${Math.round(Math.hypot(o.x2-o.x1,o.y2-o.y1)*FT())} ft long`:`${o.w*FT()}×${o.h*FT()} ft`;
   function draw(){ const f=cur(), C=FP_C; let h=`<defs><pattern id="fpg" width="${C}" height="${C}" patternUnits="userSpaceOnUse"><path d="M${C} 0H0V${C}" class="fp-gl"/></pattern></defs><rect width="${FP_W*C}" height="${FP_H*C}" fill="url(#fpg)"/>`;
-    f.rooms.forEach((r,i)=>{ h+=`<rect class="fp-room" x="${r.x*C}" y="${r.y*C}" width="${r.w*C}" height="${r.h*C}" style="fill:hsla(${hue(i)},55%,55%,.16);stroke:hsl(${hue(i)},40%,50%)"/>`; });
-    f.items.forEach(i=>{ const t=FP_T[i.type]||FP_T.other, fs=Math.min(i.w,i.h)*C*.72; h+=`<g><rect class="fp-it ${i.type}" x="${i.x*C+1}" y="${i.y*C+1}" width="${i.w*C-2}" height="${i.h*C-2}" rx="3"/>${i.type==='door'||i.type==='window'?'':`<text x="${(i.x+i.w/2)*C}" y="${(i.y+i.h/2)*C}" font-size="${fs}" text-anchor="middle" dominant-baseline="central">${t[0]}</text>`}${i.label&&i.w>=2?`<text class="fp-lb" x="${(i.x+i.w/2)*C}" y="${(i.y+i.h)*C-3}" text-anchor="middle">${esc(i.label.slice(0,i.w*3))}</text>`:''}</g>`; });
-    f.rooms.forEach(r=>{ h+=`<text class="fp-rn" x="${(r.x+r.w/2)*C}" y="${r.y*C+15}" text-anchor="middle">${esc(r.name||'Unnamed room')}</text><text class="fp-sz" x="${(r.x+r.w/2)*C}" y="${r.y*C+27}" text-anchor="middle">${r.w*FP_FT}×${r.h*FP_FT} ft</text>`; });
-    const s=selObj(); if(s) h+=`<rect class="fp-selr" x="${s.x*C}" y="${s.y*C}" width="${s.w*C}" height="${s.h*C}"/><rect class="fp-h" x="${(s.x+s.w)*C-6}" y="${(s.y+s.h)*C-6}" width="12" height="12" rx="2"/>`;
+    f.rooms.forEach((r,i)=>{ const sc=r.floor&&FP_SURF[r.floor][1]; h+=`<rect class="fp-room" x="${r.x*C}" y="${r.y*C}" width="${r.w*C}" height="${r.h*C}" style="fill:${sc?sc+'66':`hsla(${hue(i)},55%,55%,.16)`};stroke:${sc?sc:`hsl(${hue(i)},40%,50%)`}"/>`; });
+    f.walls.forEach(w=>{ const k=FP_WK[w.kind]||FP_WK.wall; h+=`<line class="fp-wall ${w.kind}" x1="${w.x1*C}" y1="${w.y1*C}" x2="${w.x2*C}" y2="${w.y2*C}" stroke-width="${k[1]}" ${k[2]?`stroke-dasharray="${k[2]}"`:''}/>`; });
+    f.items.forEach(i=>{ const t=FP_T[i.type]||FP_T.other, fs=Math.min(i.w,i.h)*C*.72, flat=/^(door|gate|window)$/.test(i.type);
+      h+=`<g><rect class="fp-it ${i.type}${i.state?' '+i.state:''}" x="${i.x*C+1}" y="${i.y*C+1}" width="${i.w*C-2}" height="${i.h*C-2}" rx="3"/>${flat?(i.state==='locked'?`<text x="${(i.x+i.w/2)*C}" y="${(i.y+i.h/2)*C}" font-size="11" text-anchor="middle" dominant-baseline="central">🔒</text>`:''):`<text x="${(i.x+i.w/2)*C}" y="${(i.y+i.h/2)*C}" font-size="${fs}" text-anchor="middle" dominant-baseline="central">${t[0]}</text>`}${i.label&&i.w>=2?`<text class="fp-lb" x="${(i.x+i.w/2)*C}" y="${(i.y+i.h)*C-3}" text-anchor="middle">${esc(i.label.slice(0,i.w*3))}</text>`:''}</g>`; });
+    f.rooms.forEach(r=>{ h+=`<text class="fp-rn" x="${(r.x+r.w/2)*C}" y="${r.y*C+(r.h>2?26:15)}" text-anchor="middle">${esc(r.name||'Unnamed area')}</text><text class="fp-sz" x="${(r.x+r.w/2)*C}" y="${r.y*C+(r.h>2?38:27)}" text-anchor="middle">${r.w*FT()}×${r.h*FT()} ft</text>`; });
+    f.walls.forEach(w=>{ if(w.label) h+=`<text class="fp-sz" x="${(w.x1+w.x2)/2*C}" y="${(w.y1+w.y2)/2*C-7}" text-anchor="middle">${esc(w.label)}</text>`; });
+    const s=selObj(); if(s){ if('x1' in s) h+=`<line class="fp-selr" x1="${s.x1*C}" y1="${s.y1*C}" x2="${s.x2*C}" y2="${s.y2*C}"/><circle class="fp-h" cx="${s.x1*C}" cy="${s.y1*C}" r="6"/><circle class="fp-h" cx="${s.x2*C}" cy="${s.y2*C}" r="6"/>`;
+      else h+=`<rect class="fp-selr" x="${s.x*C}" y="${s.y*C}" width="${s.w*C}" height="${s.h*C}"/><rect class="fp-h" x="${(s.x+s.w)*C-6}" y="${(s.y+s.h)*C-6}" width="12" height="12" rx="2"/>`; }
     const d=st.drag; if(d&&d.mode==='new'){ const x=Math.min(d.x0,d.x1), y=Math.min(d.y0,d.y1); h+=`<rect class="fp-new" x="${x*C}" y="${y*C}" width="${(Math.abs(d.x1-d.x0)+1)*C}" height="${(Math.abs(d.y1-d.y0)+1)*C}"/>`; }
+    if(d&&d.mode==='wall') h+=`<line class="fp-wall" x1="${d.x1*C}" y1="${d.y1*C}" x2="${d.x2*C}" y2="${d.y2*C}" stroke-width="5"/>`;
     svg.innerHTML=h; }
-  function pal(){ const b=[['select','↖','Move'],['room','▭','Room'],...Object.entries(FP_T).map(([k,v])=>[k,v[0],v[1]])];
-    $q('#fpPal').innerHTML=b.map(([k,ic,nm])=>`<button class="${st.tool===k?'on':''}" data-t="${k}" title="${nm}"><span>${ic}</span> ${nm}</button>`).join('');
-    $q('#fpPal').querySelectorAll('button').forEach(x=>x.onclick=()=>{ st.tool=x.dataset.t; pal(); props(); }); }
+  function pal(){ const inside=st.plan.scale==='building';
+    const objs=Object.entries(FP_T).filter(([k])=>st.allObj||FP_BOTH.has(k)||(inside?!FP_OUT.has(k):FP_OUT.has(k)));
+    const b=[['select','↖','Move'],['room','▭',inside?'Room':'Area'],['wall','▬','Wall / fence'],...objs.map(([k,v])=>[k,v[0],v[1]])];
+    $q('#fpPal').innerHTML=b.map(([k,ic,nm])=>`<button class="${st.tool===k?'on':''}" data-t="${k}" title="${nm}"><span>${ic}</span> ${nm}</button>`).join('')+`<button class="fp-more" data-more="1">${st.allObj?'Fewer objects':'All objects'}</button>`;
+    $q('#fpPal').querySelectorAll('button').forEach(x=>x.onclick=()=>{ if(x.dataset.more){ st.allObj=!st.allObj; } else st.tool=x.dataset.t; pal(); props(); }); }
   function floors(){ $q('#fpFloors').innerHTML=st.plan.floors.map((f,i)=>`<button class="fp-fl ${i===st.fl?'on':''}" data-i="${i}">${esc(f.name)}</button>`).join('')+`<button class="fp-fl" data-add="1">+ Floor</button>`;
-    $q('#fpFloors').querySelectorAll('button').forEach(x=>x.onclick=()=>{ if(x.dataset.add){ st.plan.floors.push({name:`Floor ${st.plan.floors.length+1}`,rooms:[],items:[]}); st.fl=st.plan.floors.length-1; commit(); } else st.fl=+x.dataset.i; st.sel=null; floors(); props(); draw(); }); }
+    $q('#fpFloors').querySelectorAll('button').forEach(x=>x.onclick=()=>{ if(x.dataset.add){ st.plan.floors.push({name:`Floor ${st.plan.floors.length+1}`,rooms:[],items:[],walls:[]}); st.fl=st.plan.floors.length-1; commit(); } else st.fl=+x.dataset.i; st.sel=null; floors(); props(); draw(); }); }
   function props(only){ const el=$q('#fpProps'), s=selObj();
-    if(only&&s){ const z=el.querySelector('.fp-dim'); if(z) z.textContent=`${s.w*FP_FT}×${s.h*FP_FT} ft`; return; }
-    if(!s){ const tip=st.tool==='room'?'Drag on the grid to draw a room.':st.tool==='select'?'Tap something to select it. Drag to move it (furniture moves with its room). Drag the corner square to resize.':`Tap the grid to place a ${FP_T[st.tool][1].toLowerCase()}. Put doors and windows right on a wall line.`;
-      el.innerHTML=`<label class="small">Floor name</label><input id="fpFlN" value="${esc(cur().name)}" style="width:140px">${st.plan.floors.length>1?'<button class="ghost" id="fpFlDel">Delete floor</button>':''}<span class="small fp-tip">${tip}</span>`;
+    if(only&&s){ const z=el.querySelector('.fp-dim'); if(z) z.textContent=dim(s); return; }
+    if(!s){ const tip={room:'Drag on the grid to draw a room or area. Give it a floor or ground (grass, road, water…) once it\'s drawn.',wall:'Drag along the grid lines to draw a wall, fence or city wall. Then put gates or doors on it: nothing gets through anywhere else.',select:'Tap something to select it. Drag to move it (things inside an area move with it). Drag the corner or end handles to resize.'}[st.tool]||`Tap the grid to place a ${FP_T[st.tool][1].toLowerCase()}.${/door|gate|window/.test(st.tool)?' Put it right on a wall line.':''}`;
+      el.innerHTML=`<label class="small" for="fpFlN">Floor name</label><input id="fpFlN" value="${esc(cur().name)}" style="width:140px">${st.plan.floors.length>1?'<button class="ghost" id="fpFlDel">Delete floor</button>':''}<span class="small fp-tip">${tip}</span>`;
       el.querySelector('#fpFlN').oninput=e=>{ cur().name=e.target.value.slice(0,40); floors(); commit(); };
       const dl=el.querySelector('#fpFlDel'); if(dl) dl.onclick=()=>{ if(!confirm(`Delete ${cur().name} and everything on it?`)) return; st.plan.floors.splice(st.fl,1); st.fl=0; commit(); floors(); props(); draw(); }; return; }
-    const room=st.sel.kind==='rooms';
-    el.innerHTML=`<input id="fpNm" placeholder="${room?'Room name, e.g. Kitchen':'Label (optional), e.g. Aria\'s bed'}" value="${esc(room?s.name:s.label)}" style="flex:1;min-width:150px"><span class="small fp-dim">${s.w*FP_FT}×${s.h*FP_FT} ft</span>${room?'':'<button class="ghost" id="fpRot">Rotate</button>'}<button class="ghost" id="fpDup">Duplicate</button><button class="ghost" id="fpDel">Delete</button>`;
-    el.querySelector('#fpNm').oninput=e=>{ s[room?'name':'label']=e.target.value.slice(0,60); draw(); commit(); };
+    const kind=st.sel.kind, isDoor=kind==='items'&&/^(door|gate)$/.test(s.type);
+    const ph={rooms:'Name, e.g. Kitchen, Main Street, Market Plaza',walls:'Label (optional), e.g. Old city wall',items:'Label (optional), e.g. Aria\'s bed, North Gate'}[kind];
+    el.innerHTML=`<input id="fpNm" placeholder="${ph}" value="${esc(kind==='rooms'?s.name:s.label)}" style="flex:1;min-width:170px">
+      ${kind==='rooms'?`<select id="fpSurf" aria-label="Floor or ground">${Object.entries(FP_SURF).map(([k,v])=>`<option value="${k}" ${k===(s.floor||'')?'selected':''}>${k?v[0]:'Floor / ground…'}</option>`).join('')}</select>`:''}
+      ${kind==='walls'?`<select id="fpWk" aria-label="Wall type">${Object.entries(FP_WK).map(([k,v])=>`<option value="${k}" ${k===s.kind?'selected':''}>${v[0]}</option>`).join('')}</select>`:''}
+      ${isDoor?`<select id="fpSt" aria-label="Open, closed or locked">${FP_STATES.map(k=>`<option value="${k}" ${k===(s.state||'')?'selected':''}>${k?k[0].toUpperCase()+k.slice(1):'Not set'}</option>`).join('')}</select>`:''}
+      <span class="small fp-dim">${dim(s)}</span>${kind==='items'?'<button class="ghost" id="fpRot">Rotate</button>':''}<button class="ghost" id="fpDup">Duplicate</button><button class="ghost" id="fpDel">Delete</button>`;
+    el.querySelector('#fpNm').oninput=e=>{ s[kind==='rooms'?'name':'label']=e.target.value.slice(0,60); draw(); commit(); };
+    const on=(id,k)=>{ const x=el.querySelector(id); if(x) x.onchange=e=>{ s[k]=e.target.value; draw(); commit(); }; };
+    on('#fpSurf','floor'); on('#fpWk','kind'); on('#fpSt','state');
     const rot=el.querySelector('#fpRot'); if(rot) rot.onclick=()=>{ [s.w,s.h]=[s.h,s.w]; fit(s); draw(); props(); commit(); };
-    el.querySelector('#fpDup').onclick=()=>{ const c=JSON.parse(JSON.stringify(s)); c.x+=1; c.y+=1; fit(c); cur()[st.sel.kind].push(c); st.sel={kind:st.sel.kind,i:cur()[st.sel.kind].length-1}; draw(); props(); commit(); };
+    el.querySelector('#fpDup').onclick=()=>{ const c=JSON.parse(JSON.stringify(s)); if('x1' in c){ c.x1++; c.x2++; c.y1++; c.y2++; } else { c.x++; c.y++; } fit(c); cur()[kind].push(c); st.sel={kind,i:cur()[kind].length-1}; draw(); props(); commit(); };
     el.querySelector('#fpDel').onclick=del; }
   function del(){ if(!st.sel) return; cur()[st.sel.kind].splice(st.sel.i,1); st.sel=null; draw(); props(); commit(); }
   const pt=e=>{ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const q=p.matrixTransform(svg.getScreenCTM().inverse()); return {x:Math.max(0,Math.min(FP_W-.01,q.x/FP_C)),y:Math.max(0,Math.min(FP_H-.01,q.y/FP_C))}; };
-  const hit=(f,p)=>{ for(let i=f.items.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.items[i])) return {kind:'items',i}; for(let i=f.rooms.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.rooms[i])) return {kind:'rooms',i}; return null; };
+  const near=(p,x,y)=>Math.abs(p.x-x)<.7&&Math.abs(p.y-y)<.7;
+  const hit=(f,p)=>{ for(let i=f.items.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.items[i])) return {kind:'items',i}; for(let i=f.walls.length-1;i>=0;i--) if(fpSegD(p.x,p.y,f.walls[i])<.45) return {kind:'walls',i}; for(let i=f.rooms.length-1;i>=0;i--) if(fpIn(p.x,p.y,f.rooms[i])) return {kind:'rooms',i}; return null; };
   svg.onpointerdown=e=>{ e.preventDefault(); const p=pt(e), f=cur(); try{ svg.setPointerCapture(e.pointerId); }catch(_){}
     if(st.tool==='room'){ const x=Math.floor(p.x), y=Math.floor(p.y); st.drag={mode:'new',x0:x,y0:y,x1:x,y1:y}; draw(); return; }
+    if(st.tool==='wall'){ const x=Math.round(p.x), y=Math.round(p.y); st.drag={mode:'wall',x1:x,y1:y,x2:x,y2:y}; draw(); return; }
     if(st.tool!=='select'){ const t=FP_T[st.tool], it={type:st.tool,label:'',x:Math.round(p.x-t[2]/2),y:Math.round(p.y-t[3]/2),w:t[2],h:t[3]}; fit(it); f.items.push(it); st.sel={kind:'items',i:f.items.length-1}; st.drag={mode:'move',o:it,dx:p.x-it.x,dy:p.y-it.y,kids:[]}; commit(); draw(); props(); return; }
-    const s=selObj(); if(s&&Math.abs(p.x-(s.x+s.w))<.7&&Math.abs(p.y-(s.y+s.h))<.7){ st.drag={mode:'size',o:s}; return; }
-    st.sel=hit(f,p); if(st.sel){ const o=selObj(); const kids=st.sel.kind==='rooms'?f.items.filter(i=>fpRoomOf(f,i)===o).map(i=>({i,x:i.x,y:i.y})):[]; st.drag={mode:'move',o,dx:p.x-o.x,dy:p.y-o.y,ox:o.x,oy:o.y,kids}; } props(); draw(); };
+    const s=selObj();
+    if(s&&'x1' in s){ if(near(p,s.x2,s.y2)){ st.drag={mode:'end',o:s,a:'2'}; return; } if(near(p,s.x1,s.y1)){ st.drag={mode:'end',o:s,a:'1'}; return; } }
+    else if(s&&near(p,s.x+s.w,s.y+s.h)){ st.drag={mode:'size',o:s}; return; }
+    st.sel=hit(f,p); if(st.sel){ const o=selObj();
+      if(st.sel.kind==='walls') st.drag={mode:'wmove',o,px:p.x,py:p.y,c:{...o}};
+      else { const kids=st.sel.kind==='rooms'?f.items.filter(i=>fpRoomOf(f,i)===o).map(i=>({i,x:i.x,y:i.y})):[]; st.drag={mode:'move',o,dx:p.x-o.x,dy:p.y-o.y,ox:o.x,oy:o.y,kids}; } }
+    props(); draw(); };
   svg.onpointermove=e=>{ const d=st.drag; if(!d) return; const p=pt(e);
     if(d.mode==='new'){ d.x1=Math.floor(p.x); d.y1=Math.floor(p.y); }
+    else if(d.mode==='wall'){ d.x2=Math.round(p.x); d.y2=Math.round(p.y); }
+    else if(d.mode==='end'){ d.o['x'+d.a]=Math.round(p.x); d.o['y'+d.a]=Math.round(p.y); d.moved=true; }
+    else if(d.mode==='wmove'){ const dx=Math.round(p.x-d.px), dy=Math.round(p.y-d.py); Object.assign(d.o,{x1:d.c.x1+dx,x2:d.c.x2+dx,y1:d.c.y1+dy,y2:d.c.y2+dy}); fit(d.o); d.moved=true; }
     else if(d.mode==='move'){ d.o.x=Math.round(p.x-d.dx); d.o.y=Math.round(p.y-d.dy); fit(d.o); d.kids.forEach(k=>{ k.i.x=k.x+d.o.x-d.ox; k.i.y=k.y+d.o.y-d.oy; fit(k.i); }); d.moved=true; }
     else { d.o.w=Math.max(1,Math.round(p.x-d.o.x)); d.o.h=Math.max(1,Math.round(p.y-d.o.y)); fit(d.o); d.moved=true; }
-    draw(); if(d.mode!=='new') props(true); };
+    draw(); if(d.mode!=='new'&&d.mode!=='wall') props(true); };
   svg.onpointerup=svg.onpointercancel=()=>{ const d=st.drag; st.drag=null; if(!d) return; const f=cur();
     if(d.mode==='new'){ const x=Math.min(d.x0,d.x1), y=Math.min(d.y0,d.y1), w=Math.abs(d.x1-d.x0)+1, h=Math.abs(d.y1-d.y0)+1;
-      if(w>=2&&h>=2){ f.rooms.push({name:'',x,y,w,h}); st.sel={kind:'rooms',i:f.rooms.length-1}; st.tool='select'; pal(); props(); commit(); draw(); const nm=$q('#fpNm'); if(nm) nm.focus(); } else draw(); return; }
+      if(w>=2&&h>=2){ f.rooms.push({name:'',floor:'',x,y,w,h}); st.sel={kind:'rooms',i:f.rooms.length-1}; st.tool='select'; pal(); props(); commit(); draw(); const nm=$q('#fpNm'); if(nm) nm.focus(); } else draw(); return; }
+    if(d.mode==='wall'){ if(d.x1!==d.x2||d.y1!==d.y2){ const last=f.walls[f.walls.length-1]; f.walls.push({kind:last?last.kind:'wall',label:'',x1:d.x1,y1:d.y1,x2:d.x2,y2:d.y2}); st.sel={kind:'walls',i:f.walls.length-1}; commit(); props(); } draw(); return; }
     if(d.moved) commit(); draw(); };
   body.onkeydown=e=>{ if((e.key==='Delete'||e.key==='Backspace')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){ e.preventDefault(); del(); } };
-  const load=()=>{ st.plan=fpGet(st.key); st.fl=0; st.sel=null; $q('#fpNotes').value=st.plan.notes; $q('#fpPrev').textContent=fpText(st.plan); msg.textContent=''; floors(); pal(); props(); draw(); };
+  const load=()=>{ st.plan=fpGet(st.key); st.fl=0; st.sel=null; $q('#fpScale').value=st.plan.scale; $q('#fpNotes').value=st.plan.notes; $q('#fpPrev').textContent=fpText(st.plan); msg.textContent=''; floors(); pal(); props(); draw(); };
   $q('#fpSel').onchange=e=>{ st.key=e.target.value; load(); };
+  $q('#fpScale').onchange=e=>{ st.plan.scale=e.target.value; commit(); pal(); props(); draw(); };
   $q('#fpNotes').oninput=e=>{ st.plan.notes=e.target.value.slice(0,3000); commit(); };
-  $q('#fpClear').onclick=()=>{ if(!confirm('Clear this whole floor plan?')) return; st.plan=fpNorm(null); commit(); load(); };
+  $q('#fpClear').onclick=()=>{ if(!confirm('Clear this whole floor plan?')) return; const sc=st.plan.scale; st.plan=fpNorm(null); st.plan.scale=sc; commit(); fpPut(st.key,st.plan); load(); };
   $q('#fpDraft').onclick=async()=>{ if(!fpEmpty(st.plan)&&!confirm('Replace your current layout with an AI draft? Your notes stay.')) return; msg.textContent='Drafting…';
-    try{ const fl=await fpDraft(st.key); if(!fl){ msg.textContent="Couldn't draft one right now. Try again."; return; } st.plan.floors=fl; commit(); const n=st.plan.notes; load(); st.plan.notes=n; msg.textContent='Draft ready. Move, rename or delete anything that looks wrong.'; }catch(e){ msg.textContent="Couldn't draft one right now. Try again."; } };
+    try{ const fl=await fpDraft(st.key,st.plan.scale); if(!fl){ msg.textContent="Couldn't draft one right now. Try again."; return; } st.plan.floors=fl; commit(); load(); msg.textContent='Draft ready. Move, rename or delete anything that looks wrong.'; }catch(e){ msg.textContent="Couldn't draft one right now. Try again."; } };
   load(); });
 // <<< floorplans
 // ======================= Obsidian vault: a read-only record of every story =======================
@@ -5569,8 +5631,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.2';
 const CHANGELOG = [
+ {v:'1.7.2', d:'2026-11-20', notes:['Floor plans: walls, fences and city walls you draw, gates and doors that can be open, closed or locked, floor and ground types, and street/city scales']},
  {v:'1.7.1', d:'2026-11-20', notes:['Floor plans are now a visual builder: draw rooms, place doors, windows, stairs and furniture on a grid, multiple floors']},
  {v:'1.7.0', d:'2026-11-20', notes:['Floor plans: write or AI-draft a layout per place; the story follows it whenever you\'re there']},
  {v:'1.6.2', d:'2026-11-20', notes:['Cecilia is S-rank. How she fights has never been shown, so the story keeps it that way: if danger comes she handles it calmly and capably, but never with a made-up weapon, technique or power.']},
