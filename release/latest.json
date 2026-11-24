@@ -1,10 +1,10 @@
 {
- "version": "0.97.6",
+ "version": "0.98.0",
  "date": "2026-11-20",
  "notes": [
-  "No more periods after every sentence, in every message. Inside spoken lines, sentences now run on with commas the way people actually talk: \"Hey. Come in. Nangong said you were coming.\" becomes \"Hey, come in, Nangong said you were coming\". Only the very last spoken line of a reply keeps a period, because that's the conversation ending. Names and \"I\" stay capitalized, and \"...\", ! and ? are left alone. Texts work the same way. Stories and texts you already have are cleaned up once when you open them."
+  "Characters sound like themselves. The voice examples were only ever read as one long block buried in the middle of the instructions, so they barely registered, and several worlds had just a few lines per person (Cecilia and Vivian had none). Now every character has their own voice card, researched one by one with Google AI Mode and the wiki: how they talk, their verbal tics and catchphrases, what they call people, and sample lines. Some examples: Soldier 11 invents a new odd codename for you every time, Qingyi has her hot water and \"sleep mode\", Seed gives everyone scent nicknames, and Severian talks in clipped, formal sentences. Aria switches between bubbly idol mode and her soft, shy self, Cecilia calls the trio \"the little angels\", and Orphie and Magus speak as two separate voices. The cards sit right next to the scene for whoever is present, together with each person's own lines pulled from your example scenes, and they're used in texts too."
  ],
  "file": "index.html",
- "sha256": "7a707c9023ae7f7e35379c86d0f55517f62ae5dc24070b901d677ade94a75c7a",
+ "sha256": "784730eaee10296e210eb496015cb8bde340f927d5e9fa6a26e969ea4d116723",
  "minShell": "0.5.0"
 }
