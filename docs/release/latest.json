@@ -1,10 +1,10 @@
 {
- "version": "0.99.2",
+ "version": "0.99.3",
  "date": "2026-11-20",
  "notes": [
-  "Shunguang now knows her favorite title: being called \"Senior\" or \"Senior Sister\" by a junior makes her quietly ecstatic, though she tries to look dignified."
+  "Shunguang and the word \"Senior\", done properly from her actual introduction scene. The first time Belle and Wise called her Senior she completely lost it: \"Wait... are you... saying! I have a junior now?\", panting \"Breathe... calm yourself...\", then \"*gasp* Breathe! Focus!\" when they said it again, and debating out loud whether \"Senior Shunguang\" or \"Second Senior Sister\" sounds more impressive. Now it lights her up every time, and a brand-new junior gets the full meltdown."
  ],
  "file": "index.html",
- "sha256": "e0d0e4caa97ac2fa3dfc508901a64faf69b73af376b632a62f23e5a91240c388",
+ "sha256": "7afefc0fe675fa2b85e3595c7793b5339ba4dd708a36ea46d536ef7ca7053c4b",
  "minShell": "0.5.0"
 }
