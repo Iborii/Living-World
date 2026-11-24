@@ -1,10 +1,10 @@
 {
- "version": "1.1.0",
+ "version": "1.1.1",
  "date": "2026-11-20",
  "notes": [
-  "Character profiles. Each character has a profile that fills in as you play: the story records what you actually learn about them (basics, looks, personality, likes, dislikes, habits, past, family and friends, work, dreams and fears, secrets). You get a small \ud83d\udcd6 notice whenever you discover something new. See them in \ud83e\uddf0 Tools \u2192 \ud83d\udcd6 Profiles, with how much of each person you've uncovered, or at the bottom of anyone's relationship card. Facts only come from their real character info or what happened in your story, never made up. A character's goal now stays hidden until you know them well enough."
+  "Shunguang's other self goes straight to the person Shunguang is most fond of and is completely herself with them. That could be you if you've grown close, or Wise if not. She's very open: if Shunguang has romantic feelings for you, the other self admits it plainly, and if there aren't any, she won't pretend. Either way she teases a lot."
  ],
  "file": "index.html",
- "sha256": "635ae94ee918b7eba2631c23672403fed05a506a0c2ed9636bff4865772eca40",
+ "sha256": "928090d05a4b1012918aa479de5425231fe2ff94d5c06db5d94814b08320a7e1",
  "minShell": "0.5.0"
 }
