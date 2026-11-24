@@ -1,10 +1,10 @@
 {
- "version": "0.95.0",
+ "version": "0.96.0",
  "date": "2026-11-20",
  "notes": [
-  "Characters shop for what they actually need. If someone has a date, party or formal event coming up and nothing fitting to wear, nothing to sleep or train in, or is tired of wearing the same few things, they plan a clothes-shopping trip in their free time (it shows on the Events calendar). They pay with their own money, buy something in their own style, and it goes into their wardrobe. Sometimes it's the wrong size and they return it a day or two later for a refund. In scenes they may mention it, or ask you to come along."
+  "Thiren instincts. Every Thiren's animal side slips out on its own, set off by what's around them. Nekomata wiggles her butt before she pounces, swipes with her claws, knocks things over when bored and catnaps anywhere. Ju Fufu claws at things for 20+ minutes if nobody stops her, chases paper in the wind and anything rolling, gets pulled off course by the smell of meat, and can't keep her voice down. Zhao curls into a ball to sleep and secretly hates meat. Yinhu puts food first. Seth's ears swivel toward gossip and he hisses when mad. Jane is nocturnal and hoards shiny things. Cissia chases warm sunbeams and flicks her tongue. Sigrid's ears and tail, Shunguang's sensitive ears and Nangong's wings react on their own. Off-screen, free Thirens sometimes get caught up in one too. Researched one by one with Google AI Mode and the wiki."
  ],
  "file": "index.html",
- "sha256": "47bea4c00783d41781cd7470a9192deec8349ad144a5edd469ef16cff33c67dd",
+ "sha256": "faccbd4a8f07f98230f25699762dc326c60a335a1459a682867a92c03a286542",
  "minShell": "0.5.0"
 }
