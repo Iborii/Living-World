@@ -1,10 +1,10 @@
 {
- "version": "0.98.3",
+ "version": "0.99.0",
  "date": "2026-11-20",
  "notes": [
-  "Scene prompts no longer get stuck on day one. Each world's scene prompt was sent with every reply forever, so days later the AI was still being told \"today is your first day\" (Angels of Delusion) or \"the three of them are walking up the temple stairs right now\" (Yunkui Summit), and characters kept acting like you'd just met. Now the scene prompt only counts as \"right now\" for the opening, meaning the first few replies on the first day. After that it turns into background: \"how this story started, X days ago\". The \"where everyone is\" and \"what happens next\" parts are dropped, and the AI is told people know you now based on what actually happened since. Works for every world, 1-on-1s and custom scenes, and for stories you've already started."
+  "Angels of Delusion and Yunkui Summit, remade from scratch. Every character has a new sheet built from fresh research, one by one, with Google AI Mode and the wiki. Each sheet starts with who they really are, then how they talk, then a \"what they would never do\" list to keep them in character, then habits, the canon events that actually happened, relationships and looks. Body details are now just height and bra size, never full measurements. New scene prompts, openings and example scenes too. Angels of Delusion: you're still the new assistant manager, your own person, not the Proxy. Nangong is the smug prodigy who's secretly paying for everything, Aria switches between bubbly idol and shy construct, Sunna hides behind the amps, and Cecilia hums \"hm?\". Yunkui Summit: you're now the sect's newest disciple, junior to everyone. Fufu is thrilled to finally boss a new junior around, Belle is thrilled not to be the youngest anymore, Shunguang calls you \"Little Junior\", and Yixuan barely opens her eyes. Stories you already started keep their original setup; start a new story to play the new versions."
  ],
  "file": "index.html",
- "sha256": "d659b45971dce8b53ea1bc8df85b89678876709745f3b1ca5dd76b569f644fe2",
+ "sha256": "589c5d2e4accb1d8d50203c78b2bbf99bb66f0a259000190a73d1985967fd2e5",
  "minShell": "0.5.0"
 }
