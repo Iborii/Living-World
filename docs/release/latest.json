@@ -1,10 +1,10 @@
 {
- "version": "0.78.0",
+ "version": "0.78.1",
  "date": "2026-11-20",
  "notes": [
-  "\ud83d\udc9e Dating. Ask someone out in the story and they decide, based on how they really feel. Once you're together there's a relationship meter from 0 to 180 in three stages. Stage 1 (0\u201360, getting started): dates, getting to know each other, but no sex; asking too early hurts them and can end it, because it feels like lust, not love. Stage 2 (61\u2013120, locked in): home visits now and then, random calls and texts, and sex becomes possible at their own pace; pushing past it gets the same reaction. Stage 3 (121\u2013180): deep trust. Good moments raise the meter (up to +4 a day, about a month to reach Stage 2), bad or corrupt things drop it, and days without seeing them slowly cost points. Hit 0 and you're on thin ice; hit it again and it's over. \ud83e\uddf0 Tools \u2192 \ud83d\udc9e Dating shows the exact points, stage and every change. Only adults; never anyone under 18 or protected."
+  "Owner build only: corrections after checking with Google AI Mode. Aria getting mistaken for Remielle is a fan joke, so it stays as something that sometimes happens (they look alike) without claiming it's canon; Claret's maintenance on Roxy now ties to the canon reason (her Porcelloy Heart runs on Claret's blood)."
  ],
  "file": "index.html",
- "sha256": "f6d5601d9808ec1840f08ecde411cf9677b933fc211c48b8ff8d927480642a2c",
+ "sha256": "c02bd79d78142c398916f92970f4a3652405ced833f5998b5483d312421b0ac2",
  "minShell": "0.5.0"
 }
