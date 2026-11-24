@@ -1,10 +1,10 @@
 {
- "version": "0.93.2",
+ "version": "0.94.0",
  "date": "2026-11-20",
  "notes": [
-  "Line endings: periods are now rare. A reply gets at most one, and only when the conversation is actually ending or a line is completely final. While a conversation is still going, the last person to speak ends with a comma when they're calm, or ... when they're nervous or the moment is tense or climactic."
+  "Characters can do anything they'd really want to: give you their number, make plans, invite you out, buy or give things, pay, text you, change clothes. They act on their own initiative. After every reply, a quick check catches anything the story did that wasn't recorded and puts it where it belongs: numbers go into your contacts, plans onto the Events calendar, promises, gifts and money where they go, wants onto their relationship card. It only records what clearly happened, never trust, injuries or relationship changes."
  ],
  "file": "index.html",
- "sha256": "bf9e073f10989256d0d56619d4ea03123b4f0893c4d384715d2af5fa5df7451c",
+ "sha256": "b103454943c14866048c71b9e054a8aa917835a28dc0a4a8cd1d3d2c0c14e581",
  "minShell": "0.5.0"
 }

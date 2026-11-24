@@ -4532,6 +4532,46 @@ PROMPT_HOOKS.push(pres=>{ const U=uN(); let s=`\nLAP SITTING: "sitting in/on som
   if(L.length) s+=`TAKING CHARGE (only when ${U} is clearly being PLAYFUL, teasing or dodging, never after a real no; they act, ${U}'s response stays ${U}'s):\n- ${L.join('\n- ')}\n`;
   return s; });
 // <<< closeness
+// >>> catch
+// ======================= characters can do anything: catch actions the narrator forgot to tag =======================
+const CATCH_OK=['NUMBER','PLAN','PROMISE','GIVE','PAY','GET','LOSE','BUY','RETURN','ATE','OUTFIT','WANT','SECRET','NICKNAME','DECOR','TEXT','WASH'];
+let LAST_TAGS=[];
+{ const _ac=applyControls; applyControls=function(t){ try{ LAST_TAGS=[...String(t).matchAll(/^\s*\[\[(\w+):\s*([^\]]*)\]\]\s*$/gm)].map(m=>m[1].toUpperCase()+':'+m[2].split(':')[0].trim().toLowerCase()); }catch(e){} return _ac(t); }; }
+const _caught=new WeakSet();
+REPLY_HOOKS.push(msg=>{ if(!msg||_caught.has(msg)||CFG.catchActions===false) return; _caught.add(msg); const tagged=LAST_TAGS.slice(); const ix=S.chat.indexOf(msg);
+  const u=[...S.chat.slice(0,ix)].reverse().find(m=>m.role==='user'&&!m.hidden); const scene=String(msg.text||'').slice(-4000); if(scene.length<40) return;
+  const names=W.characters.map(c=>c.name).join(', '); const U=uN();
+  setTimeout(async()=>{ try{
+    const out=await callAI({model:CFG.bg, maxTokens:400, system:'You read one roleplay reply and list the concrete actions in it that the app must record. Output ONLY control lines, one per line, or NONE. Never invent anything that did not clearly happen in the text.', messages:[{role:'user',content:
+`Characters: ${names}. The user is ${U} (write "user").
+Record only things that clearly HAPPENED in this reply (not ideas, jokes or maybes), using exactly these formats:
+[[NUMBER: Name]]  a character gave ${U} their phone number (or ${U} gave theirs and they saved it)
+[[PLAN: Name: what: when (e.g. Friday 18:00, tomorrow 9am): place]]  a plan was actually agreed with a day/time
+[[PROMISE: Name to Name: what]]  a real promise (use "user" for ${U})
+[[GIVE: Name: user: item]] or [[GIVE: user: Name: item]]  an item changed hands
+[[PAY: Name: user: amount: for what]] or [[PAY: user: Name: amount: for what]]  money changed hands
+[[GET: item]] / [[LOSE: item]]  ${U} got or lost an item another way
+[[BUY: Name: item: casual|work|sleep|workout|formal]]  a character bought clothes
+[[ATE: Name]] or [[ATE: user]]  someone ate a real meal
+[[OUTFIT: Name: what they're wearing now]]  someone changed clothes
+[[WANT: Name: what they want]]  a character told ${U} a real wish or desire
+[[SECRET: Name: the secret]]  a character told ${U} a real secret
+[[NICKNAME: Name calls Name: nickname]]  a new nickname stuck
+[[DECOR: item]]  ${U} put something new in their own place
+[[TEXT: Name: message]]  a character sent ${U} a text in the scene
+[[WASH: Name]] or [[WASH: user]]  someone showered or bathed
+Already recorded (skip these): ${tagged.join('; ')||'nothing'}
+
+${U}'s message: ${String(u?.text||'').slice(0,800)}
+
+The reply:
+${scene}`}]});
+    const lines=String(out||'').split('\n').map(l=>l.trim()).filter(l=>/^\[\[(\w+):[^\]]+\]\]$/.test(l)).filter(l=>{ const m=l.match(/^\[\[(\w+):\s*([^\]]*)\]\]$/); const C=m[1].toUpperCase(); if(!CATCH_OK.includes(C)) return false; const k=C+':'+m[2].split(':')[0].trim().toLowerCase(); return !tagged.includes(k); }).slice(0,8);
+    if(!lines.length) return; const keepLoc=S.user.loc, keepLast=S.user.lastLoc, keepC=[...S.user.companions];
+    applyControls(lines.join('\n')); S.user.loc=keepLoc; S.user.lastLoc=keepLast; S.user.companions=keepC; save(); render();
+  }catch(e){ console.warn('catch',e); } },50); });
+PROMPT_HOOKS.push(()=>`\nCHARACTERS CAN ACT: anything a character would really want to do, they can just do, on their own initiative: give their number, text or call later, make plans, invite ${uN()} somewhere, buy or give things, pay, change clothes, leave, show up. Don't hold back an action because it "needs" the app; the app records it.\n`);
+// <<< catch
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5001,8 +5041,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.93.2';
+const APP_VERSION = '0.94.0';
 const CHANGELOG = [
+ {v:'0.94.0', d:'2026-11-20', notes:['Characters can do anything they\'d really want to: give you their number, make plans, invite you out, buy or give things, pay, text you, change clothes. They act on their own initiative. After every reply, a quick check catches anything the story did that wasn\'t recorded and puts it where it belongs: numbers go into your contacts, plans onto the Events calendar, promises, gifts and money where they go, wants onto their relationship card. It only records what clearly happened, never trust, injuries or relationship changes.']},
  {v:'0.93.2', d:'2026-11-20', notes:['Line endings: periods are now rare. A reply gets at most one, and only when the conversation is actually ending or a line is completely final. While a conversation is still going, the last person to speak ends with a comma when they\'re calm, or ... when they\'re nervous or the moment is tense or climactic.']},
  {v:'0.93.1', d:'2026-11-20', notes:['Delete chats. Every chat in Your chats now has a trash button. It deletes that story, 1-on-1, timeline, group story or group chat for good after you confirm. Deleting the one you\'re in takes you back Home.']},
  {v:'0.93.0', d:'2026-11-20', notes:['Heights and gaps. Add your barefoot height to your persona, and every character now has a barefoot height (from their sheet, or community model measurements with heels removed). When people of very different heights kiss, hug, whisper or meet eyes, the story shows how it reaches: leaning down, tiptoes, a grabbed collar, sitting, kneeling, being lifted. Numbers never appear in the story. Time skips line up: write things like *time skip to the next morning*, *three hours later* or *skip to 6pm* and the clock and date really jump, the world catches up (schedules, hunger, sleep, phones), and the stamp has to match. Long skips the narrator writes move the date too. Grounded actions are on by default: what you write in *stars* is what you try, not a fact. You can only use what you\'re carrying, money you have and skills you have, you can\'t make things appear, and you can\'t decide what someone else does. Characters notice when things don\'t add up. Lap sitting means facing the same way, never straddling unless the scene says so. Taking charge: bold, flirty characters like Nangong will pout and steal the kiss if you keep playfully dodging. Reserved or mature ones like Velina won\'t. Never after a real no.']},
