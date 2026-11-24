@@ -1,10 +1,10 @@
 {
- "version": "0.97.3",
+ "version": "0.97.4",
  "date": "2026-11-20",
  "notes": [
-  "Nangong's goals fixed. She has money (she makes it herself trading stocks and investing, and nobody knows if her family is rich too), so she isn't saving up for anything. Her goals now: keep secretly covering the group's costs without Sunna or Aria catching on, get the Angels and Sunna's songs a headline slot at a real venue, and figure out a dream of her own instead of a borrowed one. Her spending money also matches: about 150,000 Dennies on hand instead of 9,000, and existing stories are updated too."
+  "Nangong's goal is canon now: her only real goal is making her friends happy. Every goal she has is about Sunna and Aria: getting Sunna's song onto the stage she dreams of, making their next show one they'll remember, and quietly keeping money worries off them. Existing stories switch over too."
  ],
  "file": "index.html",
- "sha256": "741fe69b73a011a252e3a8a0f09e725a6a60d290c6d624145a4b4740746ec845",
+ "sha256": "e991e5ffad20139881024f299fdd6469462f913dee54569dc704acf80e071f1a",
  "minShell": "0.5.0"
 }
