@@ -803,6 +803,9 @@ body:has(.modal.on) #chatsFab{display:none}
 .rc-item{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}.rc-item i,.rc-log i{color:var(--muted);font-size:12px;font-style:normal;margin-left:4px}
 .rc-log{margin-top:6px;font-size:13px}.rc-log .up{color:#6c6}.rc-log .dn{color:#e66}.rc-log span{display:inline-block;min-width:30px;font-variant-numeric:tabular-nums}
 /* <<< relcard */
+/* >>> profiles */
+.pf-cat{margin:8px 0 4px}.pf-cat>b{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
+/* <<< profiles */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -4386,7 +4389,7 @@ function openRel(id){ const c=charById(id); if(!c) return; const st=S.chars[id];
     <div class="rc-row"><span>Together since</span><b>${mmdd(d.since)}</b></div>${d.strikes?`<div class="rc-row"><span>On thin ice</span><b>${d.strikes} strike${d.strikes>1?'s':''}</b></div>`:''}${!d.on&&d.endWhy?`<div class="rc-row"><span>Ended</span><b>${esc(d.endWhy)}</b></div>`:''}
     ${(d.log||[]).length?`<div class="rc-log">${d.log.slice(-8).reverse().map(x=>`<div><span class="${x.d>0?'up':x.d<0?'dn':''}">${x.d>0?'+':''}${x.d||''}</span> ${esc(x.why||'')} <i>${mmdd(x.t)}</i></div>`).join('')}</div>`:''}`); }
   const W_=wantsOf(id); h+=relSec('What they want',W_.length?W_.slice().reverse().map(w=>`<div class="rc-item">${esc(w.text)} <i>${mmdd(w.t)}</i></div>`).join(''):'<div class="small">They haven\'t told you yet.</div>');
-  h+=relSec('Their goal',tryv(()=>{ const g=goalOf(id); return g?`<div class="rc-item">${esc(g.text)} · ${g.p}%</div>`:''; }));
+  h+=relSec('Their goal',tryv(()=>{ const g=goalOf(id); if(st.trust<60&&!((S.profile||{})[id]||[]).some(x=>x.cat==='Dreams and fears')) return '<div class="small">You don\'t know them well enough yet.</div>'; return g?`<div class="rc-item">${esc(g.text)} · ${g.p}%</div>`:''; }));
   h+=relSec('Inside jokes and nicknames',(S.jokes||[]).filter(j=>j.who.includes(id)).slice(-6).map(j=>`<div class="rc-item">${esc(j.text)}</div>`).join(''));
   h+=relSec('Secrets',(S.secrets||[]).filter(s=>(s.owner===id&&s.knownBy.includes('user'))||(s.owner==='user'&&s.knownBy.includes(id))).map(s=>`<div class="rc-item">${s.owner==='user'?'You told them: ':''}${esc(s.text)}</div>`).join(''));
   h+=relSec('Promises',(S.promises||[]).filter(p=>p.from===id||p.to===id).slice(-5).map(p=>`<div class="rc-item">${p.from==='user'?'You':esc(c.name)}: ${esc(p.text)} <i>${esc(p.status)}</i></div>`).join(''));
@@ -4807,6 +4810,30 @@ function maskAll(){ try{ ['#feed','#charCards','#statusbar','#viewbar','aside','
     row.querySelector('#progOn').onchange=e=>{ CFG.progressive=e.target.checked; saveCfg(); if(S&&!S.known){ initKnown(); } if(S) { save(); render(); } }; }
   row.querySelector('#progOn').checked=!!CFG.progressive; return out; }; }
 // <<< progressive
+// >>> profiles
+// ======================= character profiles you fill in as you get to know them =======================
+const PROF_CATS=['Basics','Looks','Personality','Likes','Dislikes','Habits','Past','Family and friends','Work','Dreams and fears','Secrets'];
+function profOf(id){ S.profile=S.profile||{}; return S.profile[id]=S.profile[id]||[]; }
+function profAdd(c,cat,text,quiet){ text=String(text||'').trim().replace(/\s+/g,' ').slice(0,220); if(!c||!text) return false; const L=profOf(c.id);
+  const norm=s=>s.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ').filter(w=>w.length>3); const nw=new Set(norm(text));
+  if(L.some(x=>{ const ow=norm(x.text); const hit=ow.filter(w=>nw.has(w)).length; return hit>=Math.max(2,Math.min(ow.length,nw.size)*0.6); })) return false;
+  cat=PROF_CATS.find(k=>k.toLowerCase()===String(cat||'').toLowerCase().trim())||PROF_CATS.find(k=>k.toLowerCase().startsWith(String(cat||'').toLowerCase().trim().slice(0,4)))||'Personality';
+  L.push({t:S.clock,cat,text}); if(L.length>120) L.shift(); if(!quiet){ const nm=(typeof progOn==='function'&&progOn()&&!isKnown(c.id))?'???':c.name; notice(`📖 ${nm}'s profile: ${text}`); } return true; }
+CONTROL_HOOKS.LEARN=arg=>{ const p=String(arg).split(':'); if(p.length<3) return; const c=charByName(p[0].trim()); if(!c) return; profAdd(c,p[1],p.slice(2).join(':')); };
+if(typeof CATCH_OK!=='undefined') CATCH_OK.push('LEARN');
+PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ const k=profOf(c.id); return `${c.name}: ${k.length?k.slice(-12).map(x=>x.text).join('; '):'nothing yet beyond what they can see'}`; });
+  return `\nWHAT ${uN().toUpperCase()} HAS LEARNED ABOUT THEM SO FAR (their profile notes):\n- ${L.join('\n- ')}\nWhen ${uN()} genuinely learns something NEW about a character in this scene (they say it, show it clearly, someone tells ${uN()}, or ${uN()} notices it), add [[LEARN: Name: category: the fact in a short sentence]] at the very end. Categories: ${PROF_CATS.join(', ')}. Only facts from their character info or what actually happened in the story; never invent one. One or two per reply at most, and only real discoveries.\n`; });
+function profHTML(id){ const L=profOf(id); if(!L.length) return '<div class="small">Nothing yet. Spend time with them and you\'ll learn who they are.</div>';
+  return PROF_CATS.filter(k=>L.some(x=>x.cat===k)).map(k=>`<div class="pf-cat"><b>${k}</b>${L.filter(x=>x.cat===k).map(x=>`<div class="rc-item">${esc(x.text)} <i>${mmdd(x.t)}</i></div>`).join('')}</div>`).join(''); }
+// add to the relationship card
+{ const _or=openRel; openRel=function(id){ _or(id); const b=document.getElementById('relBody'); if(!b) return; const n=profOf(id).length;
+  b.insertAdjacentHTML('beforeend',`<div class="rc-sec"><h4>📖 Profile · ${n} thing${n===1?'':'s'} you know</h4>${profHTML(id)}</div>`); try{ maskNames(b); }catch(e){} }; }
+toolTab('profiles','📖 Profiles',body=>{ const rows=W.characters.map(c=>{ const n=profOf(c.id).length; const met=(S.firsts&&S.firsts[c.id])||n||S.chars[c.id].trust>((W.opening.trust||{})[c.id]??30);
+    const nm=(typeof progOn==='function'&&progOn()&&!isKnown(c.id))?'???':c.full;
+    return `<div class="sr-row" data-prof="${c.id}" style="display:flex;gap:10px;align-items:center"><span class="cav" style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:${c.color}">${nm==='???'?'?':esc(c.name[0])}</span><span style="flex:1"><b>${esc(nm)}</b><div class="small">${n?`${n} thing${n===1?'':'s'} learned`:(met?'Just met':'Not met yet')}</div></span><span class="small">${Math.min(100,Math.round(n/40*100))}%</span></div>`; }).join('');
+  body.innerHTML=`<p class="small" style="margin-top:0">What you've actually learned about each person in this story. It fills in as you spend time with them: what they like, their habits, their past, their secrets.</p>${rows}`;
+  body.querySelectorAll('[data-prof]').forEach(r=>r.onclick=()=>{ closeTools(); openRel(r.dataset.prof); }); });
+// <<< profiles
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5277,8 +5304,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const CHANGELOG = [
+ {v:'1.1.0', d:'2026-11-20', notes:['Character profiles. Each character has a profile that fills in as you play: the story records what you actually learn about them (basics, looks, personality, likes, dislikes, habits, past, family and friends, work, dreams and fears, secrets). You get a small 📖 notice whenever you discover something new. See them in 🧰 Tools → 📖 Profiles, with how much of each person you\'ve uncovered, or at the bottom of anyone\'s relationship card. Facts only come from their real character info or what happened in your story, never made up. A character\'s goal now stays hidden until you know them well enough.']},
  {v:'1.0.0', d:'2026-11-20', notes:['Progressive story (Settings). Immersive mode: everyone, Bangboo, constructs and side characters included, shows up as ??? until you actually learn their name in the story. That means someone introducing themselves, someone calling them by name in front of you, a name tag, or saving their number. Until then the story describes them by what you can see (the girl with pink twin tails, the tall woman in the gold coat), and their name is hidden in the sidebar, the with-you bar and the feed. Using a name yourself, or having someone in your contacts, also counts. You get a small notice whenever you learn a name. Best turned on before starting a new story; stories already underway keep the names you know.']},
  {v:'0.99.9', d:'2026-11-20', notes:['Zhao\'s slur also hits "-tion" words: "investigation" comes out like "inves-ta-gashin".']},
  {v:'0.99.8', d:'2026-11-20', notes:['Characters stick to their info. Every story reply, text and group chat now has a strict rule to play characters only from what\'s written about them (sheet, voice card, history, relationships and what\'s happened in your story). No invented traits, quirks, catchphrases, backstory, family, likes or generic anime tropes. When the info doesn\'t cover something, they react in the smallest way that fits what is written. Story replies also run a bit less random now (temperature 0.75), which keeps voices steadier. Zhao: her small :3 rabbit mouth and big buck teeth are described now, and they soften some of her sounds: "Failume Heights" comes out like "Failume Heighsh", "that\'s" like "thash". Only now and then, and it nearly vanishes when she\'s being the careful Krampus Judge.']},

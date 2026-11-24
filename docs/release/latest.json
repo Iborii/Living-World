@@ -1,10 +1,10 @@
 {
- "version": "1.0.0",
+ "version": "1.1.0",
  "date": "2026-11-20",
  "notes": [
-  "Progressive story (Settings). Immersive mode: everyone, Bangboo, constructs and side characters included, shows up as ??? until you actually learn their name in the story. That means someone introducing themselves, someone calling them by name in front of you, a name tag, or saving their number. Until then the story describes them by what you can see (the girl with pink twin tails, the tall woman in the gold coat), and their name is hidden in the sidebar, the with-you bar and the feed. Using a name yourself, or having someone in your contacts, also counts. You get a small notice whenever you learn a name. Best turned on before starting a new story; stories already underway keep the names you know."
+  "Character profiles. Each character has a profile that fills in as you play: the story records what you actually learn about them (basics, looks, personality, likes, dislikes, habits, past, family and friends, work, dreams and fears, secrets). You get a small \ud83d\udcd6 notice whenever you discover something new. See them in \ud83e\uddf0 Tools \u2192 \ud83d\udcd6 Profiles, with how much of each person you've uncovered, or at the bottom of anyone's relationship card. Facts only come from their real character info or what happened in your story, never made up. A character's goal now stays hidden until you know them well enough."
  ],
  "file": "index.html",
- "sha256": "51f16417e2b11f75ac2a2b691c3f0860cdc748a0c0b878c399029fe96356d753",
+ "sha256": "635ae94ee918b7eba2631c23672403fed05a506a0c2ed9636bff4865772eca40",
  "minShell": "0.5.0"
 }
