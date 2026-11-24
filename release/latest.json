@@ -1,10 +1,10 @@
 {
- "version": "0.99.8",
+ "version": "0.99.9",
  "date": "2026-11-20",
  "notes": [
-  "Characters stick to their info. Every story reply, text and group chat now has a strict rule to play characters only from what's written about them (sheet, voice card, history, relationships and what's happened in your story). No invented traits, quirks, catchphrases, backstory, family, likes or generic anime tropes. When the info doesn't cover something, they react in the smallest way that fits what is written. Story replies also run a bit less random now (temperature 0.75), which keeps voices steadier. Zhao: her small :3 rabbit mouth and big buck teeth are described now, and they soften some of her sounds: \"Failume Heights\" comes out like \"Failume Heighsh\", \"that's\" like \"thash\". Only now and then, and it nearly vanishes when she's being the careful Krampus Judge."
+  "Zhao's slur also hits \"-tion\" words: \"investigation\" comes out like \"inves-ta-gashin\"."
  ],
  "file": "index.html",
- "sha256": "283fc6e3f0bee5688e98a6f958ee9d3a5df3e161fe8718f06c66fa2f431837a1",
+ "sha256": "224d6bd3263d985dd714af4c8ef32a5ca6a80b06fc64e935b9e92dc279aadcb1",
  "minShell": "0.5.0"
 }
