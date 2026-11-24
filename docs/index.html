@@ -4634,15 +4634,19 @@ setInterval(()=>{ try{ if(!S||!W||SCREEN!=='world') return; const k=Math.floor(S
     if(SLEEPY.test(st.act||'')) continue; if(Math.random()<.25){ const a=L[Math.floor(Math.random()*L.length)]; if(/sun/.test(a)&&(dt(S.clock).h<9||dt(S.clock).h>17)) continue; setDoing(c,a); } } }catch(e){} },15000);
 // <<< instinct
 // >>> genz
-// ======================= Gen Z slang for young, chronically online characters =======================
-// under 23 and always online (user's call + Google AI Mode check, 2026-11-24). NOT Fufu (small-town, offline).
-const GENZ_WORDS={nangong:'rizz, larp, "wife that" (as "wife dat"), mid, no cap, fr, lowkey/highkey, bet, W/L, NPC, caught in 4K, main character, rent free, bruh'};
-const GENZ={dialyn:'snarky; saves it for off-duty, texts and roasting coworkers; never in her customer-service voice',
- nangong:'teasing and flirty with it ("rizz", "wife dat", "mid"); plays it cool, uses it to tease. Never sassy slang: no "the ick", "it\'s giving", "ate", "slay", "periodt", "delulu" or similar',
- belle:'meme-brained Proxy energy from living on Inter-Knot; casual and quick ("no cap", "fr", "lowkey", "L/W", "touch grass")',
- sunna:'quiet and shy, so it comes out small and mostly in texts or with close friends ("lowkey", "fr", "slay", "it\'s giving"); she is 17, so nothing flirty'};
-function genzLine(c){ const g=GENZ[c.id]; if(!g) return ''; const base='larp, no cap, fr, lowkey/highkey, bet, slay, ate, mid, the ick, delulu, it\'s giving, rent free, main character, touch grass, ratio, W/L, bruh, sus, bussin, NPC, caught in 4K'; const words=GENZ_WORDS[c.id]?GENZ_WORDS[c.id]+' (only these)':(c.minor?'':'rizz, "wife that" (as "wife dat"), ')+base;
-  return `\nGEN Z SPEAK: ${c.name} is young and chronically online, so internet slang is just how they talk in casual moments: words like ${words}. Their way: ${g}. Sprinkle it naturally (a word or two, not every line), in their own voice; it fades when they're serious, upset or at work.`; }
+// ======================= Gen Z slang, picked per personality =======================
+// young + chronically online (user's call, checked with Google AI Mode 2026-11-24). NOT Fufu (airheaded, offline) or Sunna (shy, doesn't talk like this).
+// "Delulu(s)" is canon: the Angels of Delusion's fans are called Delulus, and Aria's line "Hey there, Delulu".
+const GENZ={
+ nangong:{words:'delulu (her fans are the Delulus), rizz, wife dat, mid, larp, no cap, lowkey, bet, caught in 4K, rent free, NPC, W/L, lemme',
+   way:'cool, lazy-teasing gamer/streamer banter (she\'s "NotOctopus" online). Uses it to tease and flirt ("that\'s some mid rizz", "wife dat", "caught in 4K"). Never sassy-girl slang like "the ick", "it\'s giving", "ate", "slay" or "periodt"'},
+ aria:{words:'Delulu/Delulus (what she calls fans and friends: "Hey there, Delulu~"), bestie, let\'s gooo, W, no cap, main character, vibe check',
+   way:'bubbly, loud idol-stream energy, mostly cheerful and hyped; never mean or sassy'},
+ dialyn:{words:'larp, rizz, mid, L, ratio, cooked, cope, skill issue, NPC, touch grass, bruh, block (as in "I\'d block them"), 1-star',
+   way:'snarky roasts of coworkers, callers and higher-ups, mostly off-duty and in texts; dry, not bubbly. Never in her polite customer-service voice'},
+ belle:{words:'no cap, fr, lowkey, bet, W/L, NPC, side quest, skill issue, touch grass, main character, rizz (teasing Wise), cooked',
+   way:'cheerful Inter-Knot meme brain and movie nerd; quick, playful, a bit chaotic; teases Wise'}};
+function genzLine(c){ const g=GENZ[c.id]; if(!g) return ''; return `\nGEN Z SPEAK: ${c.name} is young and chronically online, so a little internet slang slips into casual talk. Their words (only these): ${g.words}. Their way: ${g.way}. A word now and then, not every line, in their own voice; it fades when they're serious, upset or working.`; }
 { const _cv=charVoice; charVoice=function(c,...a){ return _cv(c,...a)+genzLine(c); }; }
 PROMPT_HOOKS.push(pres=>{ const L=pres.map(genzLine).filter(Boolean); return L.length?'\n'+L.join('\n')+'\n':''; });
 // <<< genz
@@ -5115,8 +5119,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.97.1';
+const APP_VERSION = '0.97.2';
 const CHANGELOG = [
+ {v:'0.97.2', d:'2026-11-20', notes:['Slang that fits each personality. Each one now has their own short list of words. Nangong: delulu, rizz, wife dat, mid, caught in 4K and other lazy gamer teasing, never sassy. Aria calls her fans and friends "Delulu" (her real line: "Hey there, Delulu") and stays bubbly with bestie and let\'s gooo. Dialyn: snarky roasts like cooked, skill issue, ratio and "I\'d block them". Belle: Inter-Knot meme talk like no cap, side quest and NPC. Sunna and Fufu don\'t use internet slang at all.']},
  {v:'0.97.1', d:'2026-11-20', notes:['Nangong\'s slang toned down: no sassy words (no "the ick", "it\'s giving", "ate", "slay" or "delulu"). She sticks to rizz, wife dat, mid, no cap, fr, lowkey, bet and a few others, and uses them to tease. Fufu still doesn\'t use internet slang.']},
  {v:'0.97.0', d:'2026-11-20', notes:['Gen Z slang. Young, chronically online characters (Dialyn, Nangong, Belle and Sunna) now talk like it in casual moments, in texts and out loud: rizz, larp, wife dat, no cap, fr, lowkey, it\'s giving, the ick, delulu, touch grass and more. A word or two at a time, each in their own way: Nangong uses it to tease, Dialyn saves it for off-duty snark, Belle is pure Inter-Knot meme brain, and Sunna is quiet about it and never flirty (she\'s 17). It fades when they\'re serious or working. Fufu isn\'t one of them.']},
  {v:'0.96.1', d:'2026-11-20', notes:['Nangong\'s wings, checked against canon. Her feathered wings and halo are real (the only real ones in the group), but the wings sit on mechanical mounts with screws and release-valve fittings marked "Suriel", over two jagged X-shaped scars on her upper back. The game never explains the scars or says whether the wings are partly prosthetic, so she doesn\'t either: she deflects if asked and guards where the wings join her back.']},

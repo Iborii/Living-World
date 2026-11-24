@@ -1,10 +1,10 @@
 {
- "version": "0.97.1",
+ "version": "0.97.2",
  "date": "2026-11-20",
  "notes": [
-  "Nangong's slang toned down: no sassy words (no \"the ick\", \"it's giving\", \"ate\", \"slay\" or \"delulu\"). She sticks to rizz, wife dat, mid, no cap, fr, lowkey, bet and a few others, and uses them to tease. Fufu still doesn't use internet slang."
+  "Slang that fits each personality. Each one now has their own short list of words. Nangong: delulu, rizz, wife dat, mid, caught in 4K and other lazy gamer teasing, never sassy. Aria calls her fans and friends \"Delulu\" (her real line: \"Hey there, Delulu\") and stays bubbly with bestie and let's gooo. Dialyn: snarky roasts like cooked, skill issue, ratio and \"I'd block them\". Belle: Inter-Knot meme talk like no cap, side quest and NPC. Sunna and Fufu don't use internet slang at all."
  ],
  "file": "index.html",
- "sha256": "93658fafac80180061536d04fa7c3cf574f2b111d089d24e64068a6e62c97e6a",
+ "sha256": "468274caf84d528516b80870aee9932d7be86cc58836168fb94c321a87193360",
  "minShell": "0.5.0"
 }
