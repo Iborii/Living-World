@@ -4653,6 +4653,20 @@ function genzLine(c){ const g=GENZ[c.id]; if(!g) return ''; return `\nGEN Z SPEA
 { const _cv=charVoice; charVoice=function(c,...a){ return _cv(c,...a)+genzLine(c); }; }
 PROMPT_HOOKS.push(pres=>{ const L=pres.map(genzLine).filter(Boolean); return L.length?'\n'+L.join('\n')+'\n':''; });
 // <<< genz
+// >>> periods
+// ======================= periods: enforce the user's line-ending rules =======================
+// Texts: no period at the end of messages; sentences become separate bubbles (people text in bursts). A lone 1-2 word cold reply ("ok." "No.") may keep it.
+const ABBR=/\b(Mr|Mrs|Ms|Dr|St|Sr|Jr|vs|etc|Lt|Capt|No)\.$/i;
+function tidyTextMsg(t){ t=String(t||'').trim(); if(!t||/^\[/.test(t)) return [t];
+  if(/^\S+(\s\S+)?\.$/.test(t)&&!/\.\.$/.test(t)) return [t]; // short, cold, final: keep
+  const parts=[]; let cur=''; const toks=t.split(/(\.(?!\.)(?<!\.\.)\s+)/);
+  for(let i=0;i<toks.length;i++){ const x=toks[i]; if(/^\.\s+$/.test(x)){ if(ABBR.test(cur+'.')){ cur+=x; continue; } parts.push(cur); cur=''; } else cur+=x; } if(cur) parts.push(cur);
+  return parts.map(p=>p.trim().replace(/(?<!\.)\.$/,'')).filter(Boolean).slice(0,4); }
+{ const _at=addText; addText=function(id, me, text, kind){ if(me||kind==='call'||typeof text!=='string') return _at(id,me,text,kind); const ps=tidyTextMsg(text); if(ps.length<=1) return _at(id,me,ps[0]??text,kind); for(const p of ps) _at(id,me,p,kind); }; }
+// Story: spoken lines don't end in a period, except the very last line of the reply (that's the conversation ending).
+function tidyStoryQuotes(s){ const re=/([^.])\.(["”])/g; const hits=[...s.matchAll(re)]; if(hits.length<=1) return s; const lastIx=hits[hits.length-1].index; return s.replace(re,(m,a,q,off)=>off===lastIx?m:a+q); }
+REPLY_HOOKS.push(msg=>{ try{ if(msg&&typeof msg.text==='string'&&!msg._pt){ msg._pt=1; msg.text=tidyStoryQuotes(msg.text); } }catch(e){} });
+// <<< periods
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5122,8 +5136,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.97.4';
+const APP_VERSION = '0.97.5';
 const CHANGELOG = [
+ {v:'0.97.5', d:'2026-11-20', notes:['Periods are enforced now instead of only asked for. Texts: no period at the end of a message, and a text written like "Hey. I saw your message. See you at 5." arrives as three quick bubbles with no periods, the way people actually text. A short cold reply like "ok." keeps its period on purpose, and "..." is left alone. Story: spoken lines lose their ending period, except the very last line of the reply.']},
  {v:'0.97.4', d:'2026-11-20', notes:['Nangong\'s goal is canon now: her only real goal is making her friends happy. Every goal she has is about Sunna and Aria: getting Sunna\'s song onto the stage she dreams of, making their next show one they\'ll remember, and quietly keeping money worries off them. Existing stories switch over too.']},
  {v:'0.97.3', d:'2026-11-20', notes:['Nangong\'s goals fixed. She has money (she makes it herself trading stocks and investing, and nobody knows if her family is rich too), so she isn\'t saving up for anything. Her goals now: keep secretly covering the group\'s costs without Sunna or Aria catching on, get the Angels and Sunna\'s songs a headline slot at a real venue, and figure out a dream of her own instead of a borrowed one. Her spending money also matches: about 150,000 Dennies on hand instead of 9,000, and existing stories are updated too.']},
  {v:'0.97.2', d:'2026-11-20', notes:['Slang that fits each personality. Each one now has their own short list of words. Nangong: delulu, rizz, wife dat, mid, caught in 4K and other lazy gamer teasing, never sassy. Aria calls her fans and friends "Delulu" (her real line: "Hey there, Delulu") and stays bubbly with bestie and let\'s gooo. Dialyn: snarky roasts like cooked, skill issue, ratio and "I\'d block them". Belle: Inter-Knot meme talk like no cap, side quest and NPC. Sunna and Fufu don\'t use internet slang at all.']},

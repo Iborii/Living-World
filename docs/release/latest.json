@@ -1,10 +1,10 @@
 {
- "version": "0.97.4",
+ "version": "0.97.5",
  "date": "2026-11-20",
  "notes": [
-  "Nangong's goal is canon now: her only real goal is making her friends happy. Every goal she has is about Sunna and Aria: getting Sunna's song onto the stage she dreams of, making their next show one they'll remember, and quietly keeping money worries off them. Existing stories switch over too."
+  "Periods are enforced now instead of only asked for. Texts: no period at the end of a message, and a text written like \"Hey. I saw your message. See you at 5.\" arrives as three quick bubbles with no periods, the way people actually text. A short cold reply like \"ok.\" keeps its period on purpose, and \"...\" is left alone. Story: spoken lines lose their ending period, except the very last line of the reply."
  ],
  "file": "index.html",
- "sha256": "e991e5ffad20139881024f299fdd6469462f913dee54569dc704acf80e071f1a",
+ "sha256": "212c253b7a42010aa9877bcbf25255b3bd7b56624fa31a4e6f40309ec85d22bd",
  "minShell": "0.5.0"
 }
