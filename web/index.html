@@ -4435,6 +4435,48 @@ toolTab('rep','🏛 Groups',body=>{ const F=factionsNow(); const ks=Object.keys(
     <div style="position:relative;height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin:6px 0"><i style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.3)"></i><i style="position:absolute;top:0;bottom:0;border-radius:3px;${r.v>=0?`left:50%;width:${pct-50}%;background:#6c9`:`left:${pct}%;width:${50-pct}%;background:#e66`}"></i></div>
     <div class="sr-m" style="margin:0">${F[f].map(i=>esc(charById(i).name)).join(', ')}</div>${r.log.slice(-4).reverse().map(x=>`<div class="small">${x.d>0?'+':''}${x.d} ${esc(x.why)} · ${mmdd(x.t)}</div>`).join('')}</div>`; }).join(''):'<div class="small">No groups in this world.</div>'); });
 // <<< rep
+// >>> pairs
+// ======================= side characters pair up, fight and make up =======================
+const PAIR_BLOCK=/\b(sister|brother|sibling|mother|father|mom|dad|daughter|son|family|cousin|aunt|uncle|niece|nephew|shifu|disciple|mentor|master|creator|guardian|raised|adopted|twin)\b/i;
+const FIGHT_WHY=['something one of them said that came out wrong','who was supposed to handle a chore','being ignored lately','a borrowed thing that came back broken','an old argument that never really ended','money','one of them taking a risk the other hated','a joke that went too far','being late, again','a secret one of them kept'];
+function pairOK(a,b,romance){ if(!a||!b||isDead(a)||isDead(b)) return false; if(romance){ if(a.minor||b.minor||a.protect||b.protect) return false; if(((S.dating||{})[a.id]||{}).on||((S.dating||{})[b.id]||{}).on) return false;
+  const r=(S.rel||{})[relKey(a.id,b.id)]; if(r&&PAIR_BLOCK.test(r.note||'')) return false; if(hashStr(relKey(a.id,b.id)+'spark')%4) return false; } return true; }
+function pairOf(a,b){ S.pairs=S.pairs||{}; return S.pairs[relKey(a,b)]; }
+function pairEvent(a,b,kind,why,quiet){ S.pairs=S.pairs||{}; const k=relKey(a.id,b.id); const p=S.pairs[k]=S.pairs[k]||{love:null,fight:null,log:[],known:false}; const A=a.name,B=b.name;
+  const r=(S.rel||{})[k]; const bump=d=>{ if(r){ r.score=Math.max(0,Math.min(100,r.score+d)); r.log.push({t:S.clock,d,why}); } };
+  let text='';
+  if(kind==='crush'){ p.love={s:'crush',t:S.clock,secret:true}; text=`${A} has been acting different around ${B} lately. People think there might be a crush.`; }
+  else if(kind==='dating'){ p.love={s:'dating',t:S.clock,secret:Math.random()<.5}; bump(6); text=`${A} and ${B} are seeing each other${p.love.secret?', and trying to keep it quiet':''}.`; }
+  else if(kind==='breakup'){ p.love={s:'broke up',t:S.clock}; p.fight=null; bump(-12); text=`${A} and ${B} broke up${why?' ('+why+')':''}.`; }
+  else if(kind==='fight'){ why=why||FIGHT_WHY[Math.floor(Math.random()*FIGHT_WHY.length)]; p.fight={t:S.clock,why}; bump(-6); text=`${A} and ${B} had a fight about ${why}.`; }
+  else if(kind==='madeup'){ if(!p.fight) return; p.fight=null; bump(4); text=`${A} and ${B} made up${why?' ('+why+')':''}.`; }
+  else return;
+  p.log.push({t:S.clock,kind,text}); if(p.log.length>20) p.log.shift();
+  if(!quiet){ try{ p.rumor=addRumor({text,tone:'juicy',origin:[a.id,b.id],about:'someone'}).id; }catch(e){} try{ addMemory({who:[a.id,b.id],text,imp:kind==='fight'?1:2,src:'pairs'}); }catch(e){} } }
+function pairsDaily(){ const cs=W.characters.filter(c=>!isDead(c)); if(cs.length<2) return;
+  for(let i=0;i<cs.length;i++) for(let j=i+1;j<cs.length;j++){ const a=cs[i],b=cs[j]; const r=(S.rel||{})[relKey(a.id,b.id)]; if(!r) continue; const p=pairOf(a.id,b.id); const sc=r.score;
+    if(p&&p.fight){ if(S.clock-p.fight.t>DAYMS&&Math.random()<.45) pairEvent(a,b,'madeup',''); continue; }
+    if(sc>=40&&Math.random()<(p&&p.love&&p.love.s==='dating'?.04:.015)) { pairEvent(a,b,'fight',''); continue; }
+    if(!pairOK(a,b,true)) continue; const L=p&&p.love;
+    if(!L&&sc>=70&&Math.random()<.05) pairEvent(Math.random()<.5?a:b, Math.random()<.5?b:a, 'crush','');
+    else if(L&&L.s==='crush'&&S.clock-L.t>2*DAYMS&&Math.random()<.12) pairEvent(a,b,'dating','');
+    else if(L&&L.s==='dating'&&sc<55&&Math.random()<.08) pairEvent(a,b,'breakup','it stopped working'); } }
+setInterval(()=>{ try{ if(!S||!W||!S.rel) return; const d=isoDate(S.clock); if(!S._pairDay){ S._pairDay=d; return; } if(S._pairDay!==d){ S._pairDay=d; pairsDaily(); save(); } }catch(e){} },15000);
+CONTROL_HOOKS.PAIR=arg=>{ const p=String(arg).split(':').map(x=>x.trim()); const nm=(p[0]||'').split(/\s*(?:&|\band\b|,)\s*/); const a=charByName(nm[0]||''), b=charByName(nm[1]||''); const kind=(p[1]||'').toLowerCase().replace(/\s|-/g,'');
+  if(!a||!b||a.id===b.id) return; if((kind==='crush'||kind==='dating')&&(a.minor||b.minor||a.protect||b.protect)) return;
+  pairEvent(a,b,kind==='madeup'||kind==='makeup'?'madeup':kind,p.slice(2).join(':'),false); const q=pairOf(a.id,b.id); if(q) q.known=true; };
+REPLY_HOOKS.push(()=>{ const pres=present(); const ids=new Set(pres.map(c=>c.id)); for(const [k,p] of Object.entries(S.pairs||{})){ if(p.known) continue; const [x,y]=k.split('|');
+  if(ids.has(x)&&ids.has(y)&&!(p.love&&p.love.secret)) p.known=true; else if(p.rumor){ const r=(S.gossip||[]).find(g=>g.id===p.rumor); if(r&&pres.some(c=>r.known[c.id]&&c.id!==x&&c.id!==y)) p.known=true; } } });
+PROMPT_HOOKS.push(pres=>{ const L=[]; for(let i=0;i<pres.length;i++) for(let j=i+1;j<pres.length;j++){ const p=pairOf(pres[i].id,pres[j].id); if(!p) continue; const A=pres[i].name,B=pres[j].name;
+    if(p.love&&p.love.s==='dating') L.push(`${A} and ${B} are together${p.love.secret?' but keeping it quiet (small slips: a look, a touch pulled back)':''}`);
+    if(p.love&&p.love.s==='crush') L.push(`one of ${A} and ${B} has a crush on the other; it shows a little`);
+    if(p.love&&p.love.s==='broke up'&&S.clock-p.love.t<10*DAYMS) L.push(`${A} and ${B} broke up recently; it's awkward`);
+    if(p.fight) L.push(`${A} and ${B} are in a fight about ${p.fight.why}; short with each other until they make up`); }
+  return `\nBETWEEN THE OTHERS: ${L.length?L.join('; ')+'.':'nothing going on between the people here right now.'} People also date, fight and make up with each other off-screen. If it happens in the scene, add [[PAIR: Name & Name: crush|dating|fight|madeup|breakup: why]] (romance only between adults).\n`; });
+toolTab('pairs','💬 Around',body=>{ const E=Object.entries(S.pairs||{}).filter(([k,p])=>p.known).map(([k,p])=>{ const [x,y]=k.split('|'); return {a:charById(x),b:charById(y),p}; }).filter(e=>e.a&&e.b).sort((u,v)=>(v.p.log.slice(-1)[0]?.t||0)-(u.p.log.slice(-1)[0]?.t||0));
+  const st=p=>[p.love?({crush:'a crush',dating:p.love.secret?'secretly together':'together','broke up':'broke up'})[p.love.s]:'',p.fight?'fighting':''].filter(Boolean).join(' · ')||'on good terms';
+  body.innerHTML=`<p class="small" style="margin-top:0">What's going on between other people, as far as you've heard. Things happen off-screen too, and news reaches you through whoever you spend time with.</p>`+(E.length?E.map(e=>`<div class="sr-row" style="cursor:default"><b>${esc(e.a.name)} & ${esc(e.b.name)}</b> <span class="small">${st(e.p)}</span>${e.p.log.slice(-3).reverse().map(x=>`<div class="small">${mmdd(x.t)} · ${esc(x.text)}</div>`).join('')}</div>`).join(''):'<div class="small">You haven\'t heard anything yet.</div>'); });
+// <<< pairs
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -4904,8 +4946,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '0.91.0';
+const APP_VERSION = '0.92.0';
 const CHANGELOG = [
+ {v:'0.92.0', d:'2026-11-20', notes:['The others have lives with each other. Off-screen, people fight (about chores, money, a joke that went too far) and make up a day or two later. Adults who get close can catch feelings, start seeing each other, sometimes in secret, and break up. You hear about it through gossip from whoever you spend time with, and in scenes it shows: two people being short with each other, a look between a secret couple. Romance is adults-only and never between family or mentor and student. See what you\'ve heard in 🧰 Tools → 💬 Around.']},
  {v:'0.91.0', d:'2026-11-20', notes:['Group reputation. Each group (Angels of Delusion, Cunning Hares, Public Security, Obol Squad, Krampus, Yunkui Summit, Phaethon, the Sunbringers) has its own view of you, from hostile to one of their own. It\'s separate from each person\'s trust, members who barely know you go by it, and word travels inside a group. Helping or embarrassing a group, or keeping or breaking its rules, moves it. See it in 🧰 Tools → 🏛 Groups.']},
  {v:'0.90.0', d:'2026-11-20', notes:['Your own place. In 🧰 Tools → 🏠 Home, set where you live (or tap Here). Decorate it there or in the story; anything you buy, hang or set up gets added. First-time visitors look around and react in character, regulars notice what\'s new, and a few neighbors live nearby: a sound through the wall now and then, a hallway run-in. It shows who\'s been over, and Home is at the top of the Move list.']},
  {v:'0.89.0', d:'2026-11-20', notes:['Dating bars: once it\'s official, three small bars sit under their name in the with-you bar. They start black and fade into the character\'s color as your points grow, one bar per stage. Tap anyone\'s name there to open their relationship card: trust, mood, dating stage, points and how far to the next stage, recent ups and downs, what they\'ve told you they want, their goal, inside jokes, secrets, promises and their tell. Tone: someone you mildly irritate may go a little tsundere, if it fits them.']},
