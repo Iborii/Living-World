@@ -1,10 +1,10 @@
 {
- "version": "1.9.0",
+ "version": "1.9.1",
  "date": "2026-11-20",
  "notes": [
-  "New world: Section 6 (Miyabi, Yanagi, Harumasa, Soukaku). You're H.A.N.D.'s new administrative liaison on your first morning"
+  "Miyabi: finger-fights stray cats with a hip wiggle first; waking up together on your chest when you're dating"
  ],
  "file": "index.html",
- "sha256": "8b67954d0d89d420c4df953be636bba2e1a6df3937df8d1ec24352aecb9e2920",
+ "sha256": "b0d1dd1a3b3a9f5f66a2f6f4523c9deadcbba5aa6e87e5a75d27a664cacaf8ba",
  "minShell": "0.5.0"
 }
