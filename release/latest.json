@@ -1,10 +1,10 @@
 {
- "version": "1.9.2",
+ "version": "1.9.3",
  "date": "2026-11-20",
  "notes": [
-  "Miyabi is a kuudere: blank outside, quietly stressing over how to make the people she cares about happy"
+  "Miyabi is a romantic kuudere: blank face, flustered inside over her partner or crush"
  ],
  "file": "index.html",
- "sha256": "2b614e2667351ea48eb61ae5c13eb14d1415bd4b0459ee2d31addcf6718baa4e",
+ "sha256": "c7895cf35fe6f530e86b8fe2817d5b7117785fb9a10773742fccebad2cdef7fb",
  "minShell": "0.5.0"
 }
