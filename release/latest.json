@@ -1,10 +1,10 @@
 {
- "version": "1.7.6",
+ "version": "1.7.7",
  "date": "2026-11-20",
  "notes": [
-  "Zhao blushes when someone special calls her Xiao'Zhao, and does a bunny foot stomp when she pouts"
+  "Zhao's Xiao'Zhao blush now follows the canon moment with Shunguang (S2 Ch6)"
  ],
  "file": "index.html",
- "sha256": "4397d5ea79ba580cf6330fcd783948eeea562648c9e972532a79fe9f012cd62e",
+ "sha256": "fedce1af642d8e5bdd8984cc88d213b25e09c1e087bbd403aa51a1e120ded6b9",
  "minShell": "0.5.0"
 }
