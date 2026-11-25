@@ -1,10 +1,10 @@
 {
- "version": "1.7.5",
+ "version": "1.7.6",
  "date": "2026-11-20",
  "notes": [
-  "Ju Fufu chases anything that moves and is hard to catch, not just the listed examples, with a wild, tumbling chase"
+  "Zhao blushes when someone special calls her Xiao'Zhao, and does a bunny foot stomp when she pouts"
  ],
  "file": "index.html",
- "sha256": "d8785672c6c69bbc17e2e4231c2a0af24a0cf536377562fcc68d313445e8e63d",
+ "sha256": "4397d5ea79ba580cf6330fcd783948eeea562648c9e972532a79fe9f012cd62e",
  "minShell": "0.5.0"
 }
