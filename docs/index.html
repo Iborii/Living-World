@@ -854,6 +854,29 @@ body:has(.modal.on) #chatsFab{display:none}
 .fp-more{font-style:italic;color:var(--muted)!important}
 .fp-sizes{display:inline-flex;gap:3px}
 /* <<< floorplans */
+/* >>> fuse */
+.grp-ed h4{margin:14px 0 6px;font-size:14px}
+.grp-ws{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.grp-w{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.grp-w span{font-size:12px;color:var(--muted)}
+.grp-cs{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;padding:4px 2px}
+.grp-cl{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.grp-c{display:inline-flex;align-items:center;gap:5px;font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.grp-c:has(input:checked){border-color:var(--accent)}
+.grp-c input{margin:0}
+.grp-dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+#grpMoves{display:flex;flex-direction:column;gap:4px;max-height:320px;overflow:auto}
+.grp-mv{border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.grp-mv summary{cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px}
+.grp-mv em{font-style:normal;font-size:12px;color:var(--accent)}
+.grp-mr{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.grp-mr span{color:var(--muted)}
+@media (max-width:640px){.grp-mr{grid-template-columns:1fr}}
+.grp-ed input[type=checkbox]{width:auto;height:auto;margin:0;padding:0;flex:none;accent-color:var(--accent)}
+.grp-w{align-items:center}
+.grp-w b{white-space:nowrap}
+.grp-c{white-space:nowrap}
+/* <<< fuse */
 #chatsPanel{position:fixed;z-index:97;background:rgba(22,24,30,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cp-head{display:flex;align-items:baseline;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}.cp-head b{font-size:17px}.cp-head .small{flex:1}
 #chatsList{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
@@ -5203,6 +5226,98 @@ toolTab('floor','🏠 Floor plans',body=>{
     try{ const fl=await fpDraft(st.key,st.plan.scale); if(!fl){ msg.textContent="Couldn't draft one right now. Try again."; return; } st.plan.floors=fl; commit(); load(); msg.textContent='Draft ready. Move, rename or delete anything that looks wrong.'; }catch(e){ msg.textContent="Couldn't draft one right now. Try again."; } };
   load(); });
 // <<< floorplans
+// >>> fuse
+// ======================= group stories: fused cities, single characters, moving people =======================
+// A group record: {id, title, parts:[worldIds], extra:[charIds], fuse:bool, city:'New Eridu', moves:{charId:{oldLoc:newLoc}}}
+function grpWorldOfChar(cid){ return WORLDS.find(w=>w.characters.some(c=>c.id===cid)); }
+function grpApply(gr){
+  const parts=(gr.parts||[]).filter(id=>WORLDS.some(w=>w.id===id)), extra=(gr.extra||[]).filter(cid=>grpWorldOfChar(cid)&&!parts.includes(grpWorldOfChar(cid).id));
+  const extraW=[...new Set(extra.map(cid=>grpWorldOfChar(cid).id))].filter(id=>!parts.includes(id));
+  const ws=parts.concat(extraW).map(id=>WORLDS.find(w=>w.id===id)).filter(Boolean);
+  if(!ws.length||(parts.length<2&&!extra.length)) return;
+  makeCombined(ws,{u:universeOf(ws[0]), id:gr.id, title:gr.title, group:true});
+  const g=COMBINED[COMBINED.length-1]; const keepW=new Set(parts), keepC=new Set(extra);
+  g.characters=g.characters.filter(c=>keepW.has(c.home)||keepC.has(c.id));
+  if(!parts.length) g.start={...ws[0].start};
+  // events and places from worlds that only lend a character or two
+  g.events=ws.filter(w=>keepW.has(w.id)).flatMap(w=>w.events||[]);
+  const used=new Set(g.characters.flatMap(c=>(c.schedule||[]).map(s=>s.loc)).concat(g.characters.map(c=>c.loc)));
+  g.locations=[...new Set(ws.flatMap(w=>keepW.has(w.id)?(w.locations||[]):(w.locations||[]).filter(l=>used.has(l))))];
+  // people moved to other places
+  const mv=gr.moves||{}; const moved=[];
+  for(const c of g.characters){ const m=mv[c.id]; if(!m) continue; const map=l=>m[l]||l;
+    c.schedule=(c.schedule||[]).map(s=>({...s,loc:map(s.loc)})); if(c.loc) c.loc=map(c.loc);
+    for(const [a,b] of Object.entries(m)) if(b&&b!==a){ moved.push(`${c.name}: ${a} → ${b}`); if(!g.locations.includes(b)) g.locations.push(b); } }
+  g.locations.sort(); g.parts=ws.map(w=>w.id); g.extra=extra; g.moves=mv;
+  const who=extra.length?` Joining from other stories: ${extra.map(cid=>{ const c=g.characters.find(x=>x.id===cid); return c?c.name:''; }).filter(Boolean).join(', ')}. They keep their own personality, job and relationships from their own sheets; their history with everyone else here is only what their sheets and lore say.`:'';
+  if(moved.length) g.scenario+=`\n\nPEOPLE WHO LIVE OR WORK SOMEWHERE ELSE IN THIS STORY (the player moved them; this replaces where their own sheet puts them, everything else about them stays the same):\n- ${moved.join('\n- ')}`;
+  if(gr.fuse){ const city=(gr.city||'').trim()||'the city'; g.fused=true; g.city=city;
+    const areas=[...new Set(g.locations.map(l=>String(l).split(',')[0].trim()).filter(Boolean))];
+    g.scenario+=`\n\nONE CITY: every place in this story is part of ${city}. ${areas.slice(0,30).join(', ')} are all districts or areas of the same city, connected by its metro, buses, taxis and streets. Getting between any of them is an ordinary trip across town (minutes, not hours), never a journey to another city. People from different groups cross paths in shops, streets and transit naturally.`;
+    g.setting=city; g.tags=[...new Set(g.tags.concat(['One city']))]; }
+  if(who) g.scenario+='\n\n'+who.trim();
+  g.blurb=gr.fuse?`Everyone living together in ${g.city}: ${g.characters.length} characters, one city, no set story.`:g.blurb; }
+buildCombined=function(){ COMBINED.length=0; const gs={}; for(const w of WORLDS) (gs[universeOf(w)]=gs[universeOf(w)]||[]).push(w);
+  for(const [u,ws] of Object.entries(gs)){ if(ws.length<2) continue; makeCombined(ws,{u}); }
+  for(const gr of getGroups()){ try{ grpApply(gr); }catch(e){ console.warn('group',gr.id,e); } }
+  try{ for(const gc of getGChats()){ const w=makeGroupChat(gc); if(w) COMBINED.push(w); } }catch(e){ console.warn('group chats',e); }
+  if(typeof ageAllWorlds==='function') ageAllWorlds(); };
+buildCombined();
+// in one city, nowhere counts as far away
+baseMinutes=function(dA,dB){ if(dA===dB) return 0; const h=hashStr(distKey(dA,dB)); let m=14+(h%26); if(!(W&&W.fused)&&(FAR_RX.test(dA)||FAR_RX.test(dB))) m+=35+(h%25); return m; };
+{ const _ro=routeOptions; routeOptions=function(from,to){ if(!(W&&W.fused)) return _ro(from,to);
+    from=String(from||''); to=String(to||''); if(!from||!to||from===to) return {same:true,opts:[]};
+    const dA=from.split(',')[0].trim(), dB=to.split(',')[0].trim(); const sc=+currency().scale||1;
+    if(dA===dB){ const w=3+(hashStr(distKey(from,to))%9); return {sameDistrict:true, opts:[{mode:'walk',min:w,cost:0}]}; }
+    const b=baseMinutes(dA,dB); const opts=[]; if(b<=40) opts.push({mode:'walk',min:Math.round(b*3.2),cost:0});
+    if(metroRunning()) opts.push({mode:'metro',min:b+6,cost:Math.round(FARE.metro*sc)}); if(busRunning()) opts.push({mode:'bus',min:Math.round(b*1.4)+5,cost:Math.round(FARE.bus*sc)});
+    const tm=Math.round(b*0.7*(rush()?1.45:1))+4; opts.push({mode:'taxi',min:tm,cost:Math.round((FARE.taxiBase+FARE.taxiMin*tm)*sc)}); return {opts}; }; }
+
+// ---- the editor ----
+let GRP_EDIT=null;
+groupRowsHTML=function(u){ const gs=COMBINED.filter(c=>c.group&&(c.universe===u||c.parts.some(id=>universeOf(WORLDS.find(w=>w.id===id)||{})===u)));
+  return `<div class="wm-sec" style="padding-top:6px"><h3 style="display:flex;align-items:center;gap:10px">Group stories <button class="ghost" id="grpNew" style="font-size:13px">+ New group story</button></h3>
+    <div class="small" style="margin-bottom:6px">Play worlds together, add single characters from anywhere, put people in different places, or fuse everything into one city. Editing a group keeps its story going.</div>
+    <div id="grpForm" style="display:none" class="ev-card grp-ed"></div>
+    ${gs.map(g=>{ const s=worldProgress(g); const st=s&&s.chat?.length>1; return `<div class="wm-row"><div class="wm-av" style="background:radial-gradient(circle at 30% 25%,${g.characters[0].color},#1a1b22)">⧉</div><div class="wm-tx"><b>${esc(g.title)}</b><span>${g.fused?esc(g.city)+' · ':''}${g.characters.length} characters${st?` · ${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:''}</span></div><button class="primary" data-grpgo="${g.id}">${st?'Continue':'Start'}</button><button class="ghost" data-grped="${g.id}" title="Edit">Edit</button><button class="ghost" data-grpdel="${g.id}" title="Delete">✕</button></div>`; }).join('')}</div>`; };
+function grpFormHTML(gr){ const parts=new Set(gr.parts||[]), extra=new Set(gr.extra||[]);
+  const worldRows=WORLDS.map(w=>`<label class="grp-w"><input type="checkbox" class="grpChk" value="${w.id}" ${parts.has(w.id)?'checked':''}> <b>${esc(w.title.split(':')[0])}</b> <span>${w.characters.length} people · ${esc(universeOf(w))}</span></label>`).join('');
+  const charRows=WORLDS.map(w=>`<div class="grp-cw" data-cw="${w.id}" ${parts.has(w.id)?'hidden':''}><div class="small">${esc(w.title.split(':')[0])}</div><div class="grp-cl">${w.characters.map(c=>`<label class="grp-c"><input type="checkbox" class="grpChar" value="${c.id}" ${extra.has(c.id)?'checked':''}><span class="grp-dot" style="background:${c.color}"></span>${esc(c.name)}</label>`).join('')}</div></div>`).join('');
+  return `<label class="small" for="grpName">Name</label><input id="grpName" value="${esc(gr.title||'')}" placeholder="e.g. New Eridu: Everyone I like">
+  <h4>Whole worlds</h4><div class="grp-ws">${worldRows}</div>
+  <h4>Single characters</h4><div class="small">Add just a few people from worlds you didn't pick above.</div><div class="grp-cs">${charRows}</div>
+  <h4>One city</h4><label class="grp-w"><input type="checkbox" id="grpFuse" ${gr.fuse?'checked':''}> <b>Fuse into one city</b> <span>every district becomes part of the same city; trips between them are ordinary trips across town</span></label>
+  <input id="grpCity" value="${esc(gr.city||'')}" placeholder="City name, e.g. New Eridu" ${gr.fuse?'':'hidden'}>
+  <h4>Where people live and work</h4><div class="small">Move anyone to a different place. Their schedule follows; everything else about them stays the same.</div><div id="grpMoves"></div>
+  <div class="rowbtns" style="margin-top:10px"><button class="primary" id="grpSave">${gr.id?'Save changes':'Create group story'}</button><button class="ghost" id="grpCancel">Cancel</button></div>`; }
+function grpMovesHTML(gr){ const parts=new Set(gr.parts||[]), extra=new Set(gr.extra||[]); const mv=gr.moves||{};
+  const chars=WORLDS.flatMap(w=>w.characters.filter(c=>parts.has(w.id)||extra.has(c.id)));
+  if(!chars.length) return '<div class="small" style="opacity:.7">Pick worlds or characters first.</div>';
+  const allLocs=[...new Set(WORLDS.flatMap(w=>(w.locations||[]).concat(w.characters.flatMap(c=>(c.schedule||[]).map(s=>s.loc)))).filter(Boolean))].sort();
+  return `<datalist id="grpLocs">${allLocs.map(l=>`<option value="${esc(l)}">`).join('')}</datalist>`+chars.map(c=>{ const locs=[...new Set((c.schedule||[]).map(s=>s.loc).concat(c.loc?[c.loc]:[]).filter(Boolean))]; const n=Object.keys(mv[c.id]||{}).length;
+    return `<details class="grp-mv"><summary><span class="grp-dot" style="background:${c.color}"></span>${esc(c.name)}${n?` <em>${n} moved</em>`:''}</summary>${locs.map(l=>`<div class="grp-mr"><span>${esc(l)}</span><input list="grpLocs" data-mc="${c.id}" data-ml="${esc(l)}" value="${esc((mv[c.id]||{})[l]||'')}" placeholder="stays here"></div>`).join('')}</details>`; }).join(''); }
+{ const _bind=bindGroupUI; bindGroupUI=function(u,close){ const nb=$('#grpNew'); if(!nb) return;
+  const form=$('#grpForm');
+  const read=()=>{ const g=GRP_EDIT; g.title=$('#grpName').value.trim(); g.parts=[...form.querySelectorAll('.grpChk:checked')].map(x=>x.value);
+    g.extra=[...form.querySelectorAll('.grpChar:checked')].map(x=>x.value).filter(cid=>!g.parts.includes((grpWorldOfChar(cid)||{}).id));
+    g.fuse=$('#grpFuse').checked; g.city=$('#grpCity').value.trim(); const mv={};
+    form.querySelectorAll('[data-mc]').forEach(i=>{ const v=i.value.trim(); if(v&&v!==i.dataset.ml){ (mv[i.dataset.mc]=mv[i.dataset.mc]||{})[i.dataset.ml]=v; } });
+    for(const [cid,m] of Object.entries(g.moves||{})) if(!form.querySelector(`[data-mc="${cid}"]`)) mv[cid]=m; g.moves=mv; return g; };
+  const open=gr=>{ GRP_EDIT=JSON.parse(JSON.stringify(gr)); form.innerHTML=grpFormHTML(GRP_EDIT); form.style.display=''; $('#grpMoves').innerHTML=grpMovesHTML(GRP_EDIT);
+    form.querySelectorAll('.grpChk').forEach(x=>x.onchange=()=>{ form.querySelector(`[data-cw="${x.value}"]`).hidden=x.checked; read(); $('#grpMoves').innerHTML=grpMovesHTML(GRP_EDIT); });
+    form.querySelectorAll('.grpChar').forEach(x=>x.onchange=()=>{ read(); $('#grpMoves').innerHTML=grpMovesHTML(GRP_EDIT); });
+    $('#grpFuse').onchange=e=>{ $('#grpCity').hidden=!e.target.checked; if(e.target.checked&&!$('#grpCity').value){ const w=WORLDS.find(x=>GRP_EDIT.parts.includes(x.id)); $('#grpCity').value=w&&/eridu/i.test(w.settingLong||w.setting||'')?'New Eridu':''; } };
+    $('#grpCancel').onclick=()=>{ form.style.display='none'; GRP_EDIT=null; };
+    $('#grpSave').onclick=()=>{ const g=read(); if(g.parts.length<2&&!(g.parts.length+g.extra.length>=2)){ notice('Pick at least two worlds, or a world plus a character.',true); return; }
+      if(!g.title) g.title=g.parts.map(id=>WORLDS.find(w=>w.id===id).title.split(':')[0]).concat(g.extra.map(cid=>{ const w=grpWorldOfChar(cid); return w.characters.find(c=>c.id===cid).name; })).join(' + ');
+      const all=getGroups(); const i=all.findIndex(x=>x.id===g.id); if(i>=0) all[i]=g; else { g.id='grp_'+Date.now().toString(36); all.push(g); }
+      setGroups(all); notice(i>=0?'Saved. The story keeps going with the changes.':'Group story created.'); openUniversePage(u); };
+    form.scrollIntoView({block:'start',behavior:'smooth'}); };
+  nb.onclick=()=>open({title:'',parts:[],extra:[],fuse:false,city:'',moves:{}});
+  document.querySelectorAll('[data-grped]').forEach(x=>x.onclick=()=>{ const gr=getGroups().find(g=>g.id===x.dataset.grped); if(gr) open(gr); });
+  document.querySelectorAll('[data-grpgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.grpgo); });
+  document.querySelectorAll('[data-grpdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group story and its save?')) return; LS.removeItem('livingworld_save_'+x.dataset.grpdel); setGroups(getGroups().filter(g=>g.id!==x.dataset.grpdel)); openUniversePage(u); }); }; }
+// <<< fuse
 // ======================= Obsidian vault: a read-only record of every story =======================
 // The app writes Markdown into a folder the user picks (their Obsidian vault). It never reads those files back:
 // the vault is a record, and what happened stays what happened.
@@ -5673,8 +5788,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.7.8';
+const APP_VERSION = '1.8.0';
 const CHANGELOG = [
+ {v:'1.8.0', d:'2026-11-20', notes:['Group stories: fuse worlds into one city, add single characters from any world, move people to other places, and edit a group without losing the story']},
  {v:'1.7.8', d:'2026-11-20', notes:['Nangong teases constantly, is very perceptive, and calls out eavesdroppers (canon: Prelude to Delusion)']},
  {v:'1.7.7', d:'2026-11-20', notes:['Zhao\'s Xiao\'Zhao blush now follows the canon moment with Shunguang (S2 Ch6)']},
  {v:'1.7.6', d:'2026-11-20', notes:['Zhao blushes when someone special calls her Xiao\'Zhao, and does a bunny foot stomp when she pouts']},
