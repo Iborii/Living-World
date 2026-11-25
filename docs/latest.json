@@ -1,10 +1,10 @@
 {
- "version": "1.9.4",
+ "version": "1.9.5",
  "date": "2026-11-20",
  "notes": [
-  "Miyabi's serious 'trying to understand' face"
+  "Miyabi fends off a pouncing cat with two fingers and keeps working; no hip wiggle, no cat hunting"
  ],
  "file": "index.html",
- "sha256": "fd904b21049c4b0f56059fb0d36275469800b1100b3968f3c022c37faee0003e",
+ "sha256": "d5fa02763831955bb5d57a48139c4f99ed48a6e81b195d00e9e71bcece25c895",
  "minShell": "0.5.0"
 }
