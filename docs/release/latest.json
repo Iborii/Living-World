@@ -1,10 +1,10 @@
 {
- "version": "1.9.1",
+ "version": "1.9.2",
  "date": "2026-11-20",
  "notes": [
-  "Miyabi: finger-fights stray cats with a hip wiggle first; waking up together on your chest when you're dating"
+  "Miyabi is a kuudere: blank outside, quietly stressing over how to make the people she cares about happy"
  ],
  "file": "index.html",
- "sha256": "b0d1dd1a3b3a9f5f66a2f6f4523c9deadcbba5aa6e87e5a75d27a664cacaf8ba",
+ "sha256": "2b614e2667351ea48eb61ae5c13eb14d1415bd4b0459ee2d31addcf6718baa4e",
  "minShell": "0.5.0"
 }
