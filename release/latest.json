@@ -1,10 +1,10 @@
 {
- "version": "1.8.0",
+ "version": "1.9.0",
  "date": "2026-11-20",
  "notes": [
-  "Group stories: fuse worlds into one city, add single characters from any world, move people to other places, and edit a group without losing the story"
+  "New world: Section 6 (Miyabi, Yanagi, Harumasa, Soukaku). You're H.A.N.D.'s new administrative liaison on your first morning"
  ],
  "file": "index.html",
- "sha256": "d94e558acdfa7bab5572876908b45382567ef1f3db1dfbe5b8fde1bbb8f7c132",
+ "sha256": "8b67954d0d89d420c4df953be636bba2e1a6df3937df8d1ec24352aecb9e2920",
  "minShell": "0.5.0"
 }
