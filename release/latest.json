@@ -1,10 +1,10 @@
 {
- "version": "1.9.5",
+ "version": "1.10.0",
  "date": "2026-11-20",
  "notes": [
-  "Miyabi fends off a pouncing cat with two fingers and keeps working; no hip wiggle, no cat hunting"
+  "New world: Spook Shack (Yuzuha, Alice, Manato, Lucia, Yidhari): you're the newest member on your first investigation. Miyabi is no longer described as tall"
  ],
  "file": "index.html",
- "sha256": "d5fa02763831955bb5d57a48139c4f99ed48a6e81b195d00e9e71bcece25c895",
+ "sha256": "e1b90a6848c7947627625c247da2ae547e841ac8ebf1354fd16ebba27a4a021a",
  "minShell": "0.5.0"
 }
