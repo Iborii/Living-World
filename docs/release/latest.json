@@ -1,10 +1,10 @@
 {
- "version": "1.7.4",
+ "version": "1.7.5",
  "date": "2026-11-20",
  "notes": [
-  "Ju Fufu goes silent and locked in during instinct episodes: growls only, no talking until something snaps her out of it"
+  "Ju Fufu chases anything that moves and is hard to catch, not just the listed examples, with a wild, tumbling chase"
  ],
  "file": "index.html",
- "sha256": "d64b6ce0dd6a4f316825b2db18827e3be64da0f4a3d3976e9015ab090bdbc984",
+ "sha256": "d8785672c6c69bbc17e2e4231c2a0af24a0cf536377562fcc68d313445e8e63d",
  "minShell": "0.5.0"
 }
