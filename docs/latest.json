@@ -1,10 +1,10 @@
 {
- "version": "1.7.7",
+ "version": "1.7.8",
  "date": "2026-11-20",
  "notes": [
-  "Zhao's Xiao'Zhao blush now follows the canon moment with Shunguang (S2 Ch6)"
+  "Nangong teases constantly, is very perceptive, and calls out eavesdroppers (canon: Prelude to Delusion)"
  ],
  "file": "index.html",
- "sha256": "fedce1af642d8e5bdd8984cc88d213b25e09c1e087bbd403aa51a1e120ded6b9",
+ "sha256": "8a53ee9af4cd1c84398de94277ff798d64a521c5dd7e2246b797183c4ea2cf51",
  "minShell": "0.5.0"
 }
