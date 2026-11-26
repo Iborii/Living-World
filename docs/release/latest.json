@@ -1,10 +1,10 @@
 {
- "version": "1.10.2",
+ "version": "1.10.3",
  "date": "2026-11-20",
  "notes": [
-  "Your lines are clearly labeled as yours; the story can't write lines for you or have characters repeat your words as their own"
+  "Spook Shack outfits: Yuzuha, Lucia, Manato and Yidhari"
  ],
  "file": "index.html",
- "sha256": "990cded0ef5629f824349a19a30e8b173c54f4933c862118d5879bc8e164a6e7",
+ "sha256": "be24dc7ea34568238f8265dfd4ee864d34647c4b5c719ca4e7f499fab7e8e3a7",
  "minShell": "0.5.0"
 }
