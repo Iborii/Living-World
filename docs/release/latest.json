@@ -1,10 +1,10 @@
 {
- "version": "1.10.0",
+ "version": "1.10.1",
  "date": "2026-11-20",
  "notes": [
-  "New world: Spook Shack (Yuzuha, Alice, Manato, Lucia, Yidhari): you're the newest member on your first investigation. Miyabi is no longer described as tall"
+  "Ju Fufu has human hands and feet, not paws; Thirens only get paws if their sheet says so"
  ],
  "file": "index.html",
- "sha256": "e1b90a6848c7947627625c247da2ae547e841ac8ebf1354fd16ebba27a4a021a",
+ "sha256": "014b94d70bc571a5616b11be87c176ea19e94934552059d554630d8e0e74b2b9",
  "minShell": "0.5.0"
 }
