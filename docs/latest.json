@@ -1,10 +1,10 @@
 {
- "version": "1.10.3",
+ "version": "1.10.4",
  "date": "2026-11-20",
  "notes": [
-  "Spook Shack outfits: Yuzuha, Lucia, Manato and Yidhari"
+  "Characters talk less, and almost not at all during kisses, embraces and other intimate moments"
  ],
  "file": "index.html",
- "sha256": "be24dc7ea34568238f8265dfd4ee864d34647c4b5c719ca4e7f499fab7e8e3a7",
+ "sha256": "3a6c4a7a142535c25c2c92d7569eff0f73676388672d4da99d4b03f31fc5bb67",
  "minShell": "0.5.0"
 }
