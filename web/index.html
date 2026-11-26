@@ -5586,9 +5586,9 @@ function renderFeed(){
   } else {
     const items=[]; const seen=new Set();
     const ids=S.view==='all'?W.characters.map(c=>c.id):[S.view];
-    for(const id of ids) for(const e of S.chars[id].log){ const k=e.t+'|'+e.with.join(','); if(seen.has(k)) continue; seen.add(k); items.push(e); }
+    for(const id of ids) if(S.chars[id]) for(const e of S.chars[id].log){ const k=e.t+'|'+e.with.join(','); if(seen.has(k)) continue; seen.add(k); items.push(e); }
     items.sort((a,b)=>a.t-b.t);
-    for(const e of items.slice(-150)){ const names=e.with.map(i=>charById(i)).map(c=>`<span style="color:${c.color}">${c.name}</span>`).join(' & ');
+    for(const e of items.slice(-150)){ const names=e.with.map(i=>charById(i)).filter(Boolean).map(c=>`<span style="color:${c.color}">${c.name}</span>`).join(' & ');
       h+=`<div class="beat"><div class="meta">${names} · ${wdName(e.t).slice(0,3)} ${mmdd(e.t)} ${hhmm(e.t)} · ${esc(e.loc||'')}</div>${fmt(e.text)}</div>`; }
     if(!items.length) h=`<div class="notice"><div class="in">Nothing yet. Off-screen moments appear here as the world's clock runs (every ${CFG.beat} game minutes per character).${CFG.bgOn==='0'?' Background lives are turned off in Settings.':''}</div></div>`;
   }
