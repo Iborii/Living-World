@@ -2514,11 +2514,12 @@ function scheduleBeats(){
 async function pumpQueue(){
   while(bgRunning<BG_MAX && queue.length){
     const g=queue.shift(); bgRunning++; g.forEach(id=>busyChars.add(id)); renderCards();
-    beat(g).catch(e=>{ notice('Background update failed: '+e.message, true); g.forEach(id=>S.chars[id].lastBeat=S.clock); })
+    beat(g).catch(e=>{ if(!S||g.some(id=>!S.chars[id])) return; notice('Background update failed: '+e.message, true); g.forEach(id=>S.chars[id].lastBeat=S.clock); })
       .finally(()=>{ bgRunning--; g.forEach(id=>busyChars.delete(id)); renderCards(); pumpQueue(); });
   }
 }
 async function beat(ids){
+  const S0=S; // the story this moment belongs to; if the player switches chats while the AI is writing, the result is dropped
   const cs=ids.map(charById); const st0=S.chars[ids[0]]; const now=S.clock;
   const since=Math.round((now-Math.min(...ids.map(i=>S.chars[i].lastBeat)))/MIN);
   const sys=`You write short off-screen moments in the lives of characters in a living-world roleplay set in ${W.custom?(W.setting||'their world'):(W.settingLong||'New Eridu (Zenless Zone Zero)')}. These scenes happen while the user is elsewhere; the user is never present.
@@ -2540,6 +2541,7 @@ If this moment really changes how two of them feel about each other, add a line:
 ${cs.some(hasPhone)?`${cs.some(c=>hasPhone(c)&&isContact(c.id))?`Only if a character would genuinely text ${persona().name||'the user'} right now, add a line: TEXT TO USER: Name: message. Usually do not. (Only ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).map(c=>c.name).join(', ')} ${cs.filter(c=>hasPhone(c)&&isContact(c.id)).length>1?'have':'has'} ${persona().name||'the user'}'s number.)`:`None of them has ${persona().name||'the user'}'s number, so nobody texts them.`}
 Rarely (about one moment in six), if a character would post about this moment on ${feedApp()} (the social feed), add a line: POST: Name: what they post. Usually do not.`:'Nobody here has a phone: no texting or posting.'}`;
   const out=await callAI({system:sys, messages:[{role:'user',content:prompt}], model:CFG.bg, maxTokens:800});
+  if(S!==S0||!S) return; // switched or deleted chats while waiting: don't write this moment into another story
   let story=out, memory='', textTo=null;
   const mi=out.search(/\n\s*MEMORY:/i); if(mi>=0){ story=out.slice(0,mi).trim(); const rest=out.slice(mi);
     memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*(BOUGHT|USE|SPENT):\s*([^\n]+)$/gim)) applyItemTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*CONDITION:\s*([^\n]+)$/gim)) applyCondTag(lm[1], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
