@@ -5045,6 +5045,9 @@ REPLY_HOOKS.push(msg=>{ if(!msg||_factChecked.has(msg)||CFG.factCheck===false) r
 // <<< facts
 // >>> obligations
 const _hereFor=(sl)=>{ try{ const a=String(S.user.loc||'').toLowerCase(), b=String(sl&&sl.loc||'').toLowerCase(); if(!a||!b) return false; const ba=(typeof baseLocOf==='function'?baseLocOf(S.user.loc):a)||a, bb=(typeof baseLocOf==='function'?baseLocOf(sl.loc):b)||b; return a===b||String(ba).toLowerCase()===String(bb).toLowerCase()||a.startsWith(b)||b.startsWith(a); }catch(e){ return false; } };
+// staying the night away together (camping, a sleepover, a hotel, keeping watch): bedtime happens HERE, not at home
+const OVERNIGHT_RX=/\b(tents?|camp(ing|site|fire|ed|s)?|sleeping[- ]bags?|sleepover|spend(ing)? the night|stay(ing|ed)? the night|stay(ing)? over|overnight|hotel|motel|hostel|inn room|night watch|keep(s|ing)? watch|crash(ing)? (here|at))\b/i;
+function overnightAway(){ try{ const ctx=String(S.user.loc||'')+' '+S.chat.filter(m=>!m.hidden).slice(-30).map(m=>m.text||'').join(' '); return OVERNIGHT_RX.test(ctx); }catch(e){ return false; } }
 // ======================= characters have lives: obligations pull them away, free time isn't all for you =======================
 function realCommit(sl){ if(!sl||!sl.act) return false; return !!(sl.event||BUSY.test(sl.act)||SLEEPY.test(sl.act)); }
 function nextCommit(c,from,withinMin){ for(let m=0;m<=withinMin;m+=15){ const t=from+m*MIN; const sl=slotFor(c,t); if(realCommit(sl)) return {t,sl}; } return null; }
@@ -5055,10 +5058,13 @@ REPLY_HOOKS.push(()=>{ S.together=S.together||{}; const now=S.clock; for(const i
     if(now-st._lateSince>75*MIN&&!((S.dating||{})[id]||{}).on){ S.user.companions=S.user.companions.filter(x=>x!==id); delete st._lateSince; notice(`${(typeof progOn==='function'&&progOn()&&!isKnown(id))?'???':c.name} had to go: ${sl.act}.`); } } });
 PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; S.together=S.together||{}; const L=[];
   for(const c of pres){ const now=S.clock; const sl=slotFor(c,now); const nx=nextCommit(c,now+15*MIN,180); const since=S.together[c.id]?Math.round((now-S.together[c.id])/MIN):0; const bits=[];
-    if(realCommit(sl)&&_hereFor(sl)) bits.push(`right now: ${sl.act} (this is where they're supposed to be, so they're right on schedule)`);
+    const away=overnightAway();
+    if(sl&&SLEEPY.test(sl.act)&&!_hereFor(sl)&&away) bits.push(`it's around their usual sleep time, and they're staying the night out here with ${uN()} at ${S.user.loc}: when they get tired they sleep HERE (tent, sleeping bag, couch, whatever the group set up), never at home`);
+    else if(realCommit(sl)&&_hereFor(sl)) bits.push(`right now: ${sl.act} (this is where they're supposed to be, so they're right on schedule)`);
     else if(realCommit(sl)) bits.push(`RIGHT NOW they're supposed to be ${sl.act} at ${sl.loc}. They're late or skipping it: they notice, it bothers them, and they leave for it in this reply or the next unless something serious truly stops them`);
+    else if(sl&&sl.act&&!_hereFor(sl)) bits.push(`free time right now; they're here with ${uN()} at ${S.user.loc}, so their usual routine for this hour (${sl.act}) isn't happening today`);
     else if(sl&&sl.act) bits.push(`free time right now (${sl.act})`);
-    if(nx&&!(sl&&nx.sl.act===sl.act)) bits.push(`next real commitment: ${nx.sl.act} at ${hhmm(nx.t)}${nx.t-now<=40*MIN?' (soon: they start wrapping up, check the time, mention having to go)':''}`);
+    if(nx&&!(sl&&nx.sl.act===sl.act)&&!(away&&SLEEPY.test(nx.sl.act))) bits.push(`next real commitment: ${nx.sl.act} at ${hhmm(nx.t)}${nx.t-now<=40*MIN?' (soon: they start wrapping up, check the time, mention having to go)':''}`);
     const dating=((S.dating||{})[c.id]||{}).on; if(dating) bits.push(`dating ${uN()}: they WANT to spend their free time with ${uN()} and happily give it to them, but work, practice and duty still come first`);
     if(since>=90&&!dating) bits.push(`has already spent ${since>=120?Math.round(since/60)+' hours':since+' minutes'} with ${uN()}; even if they like ${uN()}, they have their own errands, people and plans, and will want to go do their own thing before long`);
     L.push(`- ${c.name}: ${bits.join('; ')}`); }
@@ -5444,6 +5450,7 @@ PROMPT_HOOKS.push(pres=>{ if(!pres||!pres.length) return ''; const L=pres.map(c=
   return `\nPERSONALITY ANCHORS (read last, obey first): each person below keeps THEIR OWN personality, energy and way of talking from their sheet in every reply, including quiet, tender and romantic moments. Never let them drift into the same generic person (calm, stoic, dry, and easily flustered or blushing): loud people stay loud, cheerful people stay cheerful, bold people stay bold, weird people stay weird. Only characters whose sheet says so get flustered.
 NO ROBOT DIALOGUE: every spoken line must sound like that exact person, so a reader could tell who said it with the name covered. Use their own words, rhythm, catchphrases, nicknames for people, noises and laughs from how they talk below. Plain, polite, evenly calm sentences that anyone could have said are wrong for everyone except characters whose sheet says they talk that way.
 ${L.join('\n')}
+WHERE THEY ARE: everyone in the scene is physically at ${S.user.loc||'the current location'} right now. Keep the setting continuous: whatever has been set up or happened here this scene (tents, a campfire, who's keeping watch, sleeping arrangements, food) is still true. Nobody acts or talks as if they're at home, in a house or somewhere else unless the story actually went there.
 `; });
 // <<< anchor
 // ======================= Obsidian vault: a read-only record of every story =======================
@@ -5916,8 +5923,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.11.2';
+const APP_VERSION = '1.11.3';
 const CHANGELOG = [
+ {v:'1.11.3', d:'2026-11-20', notes:['Overnight trips stay overnight trips. When you\'re camping, at a sleepover, in a hotel or keeping watch somewhere, the app no longer tells characters they\'re supposed to be asleep at home and should leave, or that they\'re doing their usual home routine (like Manato making the kids breakfast); they sleep wherever the group set up. Characters with you on their free time are told their usual routine isn\'t happening today because they\'re with you. Every reply also reminds the AI where everyone physically is and that what was set up there (tents, a fire, who\'s on watch) is still true']},
  {v:'1.11.2', d:'2026-11-20', notes:['Mood updates work again. Moods only moved when the story remembered to add a mood tag, and lately it mostly didn\'t, so the little faces never changed. Now when a reply comes back without one, a quick background check reads what happened and updates how everyone in the scene feels (the feeling word and the up/down mood level)']},
  {v:'1.11.1', d:'2026-11-20', notes:['Line endings carry emotion again, your way: no mark = normal, ! = excited or mad, ? = questions, … = flustered, hesitant or confessing, ~ = playful now and then, — = cut off, a comma = serious moments only, a period = only to end a conversation. The old rule told the AI to end calm lines with a comma, and the app was turning sentence breaks into commas, so everything came out as flat commas and periods. That\'s gone: \'...\' becomes the real …, and the example lines the AI copies from (world examples, sheets, voice cards) no longer end in commas and periods. Texts follow the same system']},
  {v:'1.11.0', d:'2026-11-20', notes:['Roleplay cleanup. The story prompt was 175,000-190,000 characters and buried the characters under rules; it\'s now about 85,000-120,000. Realism details (weather, chores, fabric, romance pacing, periods and ~60 more) now only go in when the moment calls for them instead of all at once every reply (Settings > Realism: Smart is the new default; Everything is still there). The punctuation lecture attached to every turn is now one short voice-first line, and a duplicate copy is gone. Fixes: Spook Shack characters were told they were late and should leave at the very meetup they\'re scheduled for (and Lucia was scheduled to be asleep); the Saturday schedules now match the opening. Yuzuha, Alice, Lucia and Yidhari were listed as \'not a fighter, needs protection\'; they\'re S-rank agents now, as are Yanagi and Harumasa (Soukaku A). Characters no longer fixate every reply on clothes they don\'t own unless you\'re at a clothing store']},
