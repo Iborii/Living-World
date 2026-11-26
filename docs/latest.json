@@ -1,10 +1,10 @@
 {
- "version": "1.10.6",
+ "version": "1.11.0",
  "date": "2026-11-20",
  "notes": [
-  "Livelier voices: the kiss/hug detector from 1.10.4 was firing on almost every reply (any mention of lips, hugs or laps) and rewriting dialogue flat; it now only triggers when you kiss, embrace or confess. Each character's own 'how they talk' section and example lines are repeated at the end of every prompt. Spoken lines with several sentences keep their sentence breaks instead of becoming one long comma chain. Characters with no info for a reaction react at their own energy level instead of 'small'. Story temperature 0.75 to 0.9"
+  "Roleplay cleanup. The story prompt was 175,000-190,000 characters and buried the characters under rules; it's now about 85,000-120,000. Realism details (weather, chores, fabric, romance pacing, periods and ~60 more) now only go in when the moment calls for them instead of all at once every reply (Settings > Realism: Smart is the new default; Everything is still there). The punctuation lecture attached to every turn is now one short voice-first line, and a duplicate copy is gone. Fixes: Spook Shack characters were told they were late and should leave at the very meetup they're scheduled for (and Lucia was scheduled to be asleep); the Saturday schedules now match the opening. Yuzuha, Alice, Lucia and Yidhari were listed as 'not a fighter, needs protection'; they're S-rank agents now, as are Yanagi and Harumasa (Soukaku A). Characters no longer fixate every reply on clothes they don't own unless you're at a clothing store"
  ],
  "file": "index.html",
- "sha256": "3320904ba23a54db0cd32b3910ee575401d349145cb21bb97d8134775dd13cd0",
+ "sha256": "da92eb738c5ee4d8bb746bc9139d260a74d6a267447d424972a3f78600d48f7f",
  "minShell": "0.5.0"
 }
