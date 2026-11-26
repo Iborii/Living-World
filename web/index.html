@@ -4859,10 +4859,38 @@ PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ cons
 function spokenLedger(){ const U=uN(); const rows=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text&&!m.hidden).slice(-8);
   for(const m of recent){ const t=String(m.text);
     if(m.role==='user'){ const qs=[...t.matchAll(/["“]([^"”]{2,240})["”]/g)].map(x=>x[1]); const said=qs.length?qs:(/^\s*\*[^*]+\*\s*$/.test(t)?[]:[t.replace(/\*[^*]*\*/g,'').trim()].filter(x=>x.length>1)); for(const q of said) rows.push(`${U}: "${q.slice(0,200)}"`); }
-    else if(m.role==='assistant'){ for(const x of t.matchAll(/^\s*\**([A-Z][\w .'-]{1,30}?)\**:\s*["“]([^"”]{2,240})["”]/gm)) rows.push(`${x[1].trim()}: "${x[2].slice(0,200)}"`); } }
+    else if(m.role==='assistant'){ for(const x of t.matchAll(/^\s*\**([A-Z?][\w .'?-]{1,30}?)\**:\s*["“]([^"”]{2,240})["”]/gm)) rows.push(`${x[1].trim()}: "${x[2].slice(0,200)}"`); } }
   return rows.slice(-14); }
 PROMPT_HOOKS.push(()=>{ const L=spokenLedger(); if(!L.length) return ''; const qs=[]; for(const r of L){ const who=r.slice(0,r.indexOf(':')); for(const q of (r.slice(r.indexOf(':')+2).match(/[^.!?"~]*\?/g)||[])) if(q.trim().length>3) qs.push(who+' asked "'+q.trim()+'"'); }
   return `\nCONTINUITY, WHO SAID WHAT (the last spoken lines, in order, with the real speaker):\n${L.join('\n')}\n${qs.length?`Questions asked so far: ${qs.slice(-8).join('; ')}.\n`:''}Never attribute a line, question, idea or promise to the wrong person. If a character asked something, THEY asked it; ${uN()} only said what is under ${uN()}'s name. Characters remember their own questions and whether they got an answer.\n`; });
+// ---- clearer player turns + no speaking for the player + no echoing the player's lines ----
+function playerTurnText(t){ const U=uN(); const parts=[]; let rest=String(t);
+  if(!/[*"“]/.test(rest)) return `${U} (plain text: read it as ${U}'s own words or action, whichever fits): ${rest.trim()}`;
+  const re=/\*([^*]+)\*|["“]([^"”]+)["”]/g; let m, last=0;
+  while((m=re.exec(rest))){ const pre=rest.slice(last,m.index).trim(); if(pre) parts.push(`(${U}'s action) ${pre}`);
+    if(m[1]!=null) parts.push(`(${U}'s action) ${m[1].trim()}`); else parts.push(`${U} says: "${m[2].trim()}"`); last=re.lastIndex; }
+  const tail=rest.slice(last).trim(); if(tail) parts.push(/^[(\[]/.test(tail)?tail:`(${U}'s action) ${tail}`);
+  return parts.join('\n'); }
+chatMessages=function(){ const U=uN(); const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
+  for(const m of recent){
+    if(m.role==='user') out.push({role:'user',content:m.hidden?m.text:`[PLAYER TURN: written by ${U}. Every word and action below belongs to ${U} alone; "I", "me" and "my" mean ${U}. No character said or did any of this. Characters may react to it, but must never repeat it as their own line or claim they said it.]\n${playerTurnText(m.text)}`});
+    else if(m.role==='assistant') out.push({role:'assistant',content:m.text});
+    else if(m.role==='text') out.push({role:'user',content:`(A ${phoneApp()} text arrives on the user's phone from ${m.from}: "${m.text}")`}); }
+  const merged=[]; for(const m of out){ if(merged.length&&merged[merged.length-1].role===m.role) merged[merged.length-1].content+='\n\n'+m.content; else merged.push({...m}); }
+  if(merged.length&&merged[0].role==='assistant') merged.unshift({role:'user',content:'(The story begins.)'});
+  return merged; };
+PROMPT_HOOKS.push(()=>`\nSPEAKERS: lines marked "${uN()} says" in the player's turn are ${uN()}'s. Write only the characters' own new lines. Never write a line of dialogue for ${uN()}, never start a line with "${uN()}:", and never have a character echo or re-say what ${uN()} just said as if it were theirs.\n`);
+function _norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+REPLY_HOOKS.push(msg=>{ try{ if(!msg||!msg.text) return; const U=uN(); if(!U) return; const esc2=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const lastU=[...S.chat].reverse().find(m=>m.role==='user'&&!m.hidden); const uq=lastU?[...String(lastU.text).matchAll(/["“]([^"”]{6,})["”]/g)].map(x=>_norm(x[1])).filter(Boolean):[];
+  const lines=msg.text.split('\n'); const keep=[]; let drop=false, removed=0;
+  const userLine=new RegExp('^\\s*\\**'+esc2(U)+'\\**\\s*:\\s*["“]');
+  for(let i=0;i<lines.length;i++){ const l=lines[i];
+    if(drop){ drop=false; if(/^\s*\*[^*"]+\*\s*$/.test(l)){ removed++; continue; } }
+    if(userLine.test(l)){ removed++; drop=true; continue; }
+    const q=l.match(/^\s*\**[^:*"]{1,30}\**\s*:\s*["“]([^"”]+)["”]/); if(q&&uq.length&&uq.includes(_norm(q[1]))){ removed++; drop=true; continue; }
+    keep.push(l); }
+  if(removed){ msg.text=keep.join('\n').replace(/\n{3,}/g,'\n\n').trim(); if(msg.versions&&msg.versions.length) msg.versions[msg.vi??msg.versions.length-1]=msg.text; } }catch(e){ console.warn('speaker guard',e); } });
 // <<< ledger
 // >>> sceneage
 // ======================= scene prompts age: once the story moves on, the opening setup becomes background, not "right now" =======================
@@ -5815,8 +5843,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.10.1';
+const APP_VERSION = '1.10.2';
 const CHANGELOG = [
+ {v:'1.10.2', d:'2026-11-20', notes:['Your lines are clearly labeled as yours; the story can\'t write lines for you or have characters repeat your words as their own']},
  {v:'1.10.1', d:'2026-11-20', notes:['Ju Fufu has human hands and feet, not paws; Thirens only get paws if their sheet says so']},
  {v:'1.10.0', d:'2026-11-20', notes:['New world: Spook Shack (Yuzuha, Alice, Manato, Lucia, Yidhari): you\'re the newest member on your first investigation. Miyabi is no longer described as tall']},
  {v:'1.9.5', d:'2026-11-20', notes:['Miyabi fends off a pouncing cat with two fingers and keeps working; no hip wiggle, no cat hunting']},

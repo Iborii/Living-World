@@ -1,10 +1,10 @@
 {
- "version": "1.10.1",
+ "version": "1.10.2",
  "date": "2026-11-20",
  "notes": [
-  "Ju Fufu has human hands and feet, not paws; Thirens only get paws if their sheet says so"
+  "Your lines are clearly labeled as yours; the story can't write lines for you or have characters repeat your words as their own"
  ],
  "file": "index.html",
- "sha256": "014b94d70bc571a5616b11be87c176ea19e94934552059d554630d8e0e74b2b9",
+ "sha256": "990cded0ef5629f824349a19a30e8b173c54f4933c862118d5879bc8e164a6e7",
  "minShell": "0.5.0"
 }
