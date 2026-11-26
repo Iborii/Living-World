@@ -1507,6 +1507,8 @@ function load(){
   if(!S.personaId || !PS.list.find(p=>p.id===S.personaId)) S.personaId = PS.defaultId;
 }
 let saveTimer=null;
+// deleting a save: if it's the story currently loaded, drop the in-memory copy first so nothing (a pending save, the 15s flush, opening another chat) writes it back
+function dropSave(k){ if(S&&SAVE_KEY===k){ clearTimeout(saveTimer); S=null; } LS.removeItem(k); }
 function save(){ if(!W||!S) return; S.lastPlayed=Date.now(); if(VAULT_ON()) vaultSoon(); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
 function saveCfg(){ try{ LS.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 
@@ -3598,7 +3600,7 @@ function renderGChats(){ const sec=$('#gcSec'); if(!sec) return; const list=getG
       return `<div class="bcard" data-gc="${g.id}"><div class="bav gc-stack">${mem.slice(0,3).map(c=>`<span style="background:${avatarBg(c.color,c.img)}">${c.img?'':esc(c.name[0])}</span>`).join('')}</div><div style="min-width:0;flex:1"><div class="bt">${esc(g.title)}</div><div class="bm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(mem.map(c=>c.name).join(', '))}</div><div class="bm">${s?`${wdName(s.clock).slice(0,3)} ${mmdd(s.clock)} ${hhmm(s.clock)}`:'Not started'}</div></div><button class="ghost" data-gcdel="${g.id}" title="Delete">✕</button></div>`; }).join('');
   $('#gcNew').onclick=()=>openGCModal();
   $('#gcGrid').querySelectorAll('[data-gc]').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-gcdel]')) return; enterWorld(el.dataset.gc,{scene:{mode:'default'}}); });
-  $('#gcGrid').querySelectorAll('[data-gcdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group chat and its save?')) return; LS.removeItem('livingworld_save_'+x.dataset.gcdel); setGChats(getGChats().filter(g=>g.id!==x.dataset.gcdel)); renderGChats(); }); }
+  $('#gcGrid').querySelectorAll('[data-gcdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group chat and its save?')) return; dropSave('livingworld_save_'+x.dataset.gcdel); setGChats(getGChats().filter(g=>g.id!==x.dataset.gcdel)); renderGChats(); }); }
 let GCP=[];
 function openGCModal(){ GCP=[]; $('#gcName').value=''; $('#gcScene').value=''; $('#gcLoc').value=''; $('#gcIds').value=''; renderGCPicked(); renderGCSuggest(); $('#gcModal').classList.add('on'); setTimeout(()=>$('#gcIds').focus(),50); }
 function renderGCPicked(){ $('#gcPicked').innerHTML=GCP.length?GCP.map(k=>{ const c=allChars().find(x=>x.key===k); return c?`<span class="pill gc-pill" style="border-color:${c.color};font-size:14px"><b>${esc(c.name)}</b> <span style="font-size:11px;opacity:.6">${esc(charCode(c,c.world))}</span> <a href="#" data-gcrm="${esc(k)}">✕</a></span>`:''; }).join(''):'<span class="small">Nobody yet. Paste IDs above or tap people below.</span>';
@@ -3615,9 +3617,9 @@ function gcAddIds(){ const raw=$('#gcIds').value; const codes=raw.split(/[\s,;]+
 function allChatsList(){ const out=[]; const snip=s=>{ const a=[...(s.chat||[])].reverse().find(m=>m.role==='assistant'&&!m.hidden); return (a?.text||'').replace(/^\|.*\|\s*/,'').replace(/[*"]/g,'').replace(/\s+/g,' ').slice(0,90); };
   const read=k=>{ try{ return JSON.parse(LS.getItem(k)||'null'); }catch(e){ return null; } };
   for(const w of [...WORLDS,...COMBINED]){ const s=read('livingworld_save_'+w.id); if(!s||!(s.chat||[]).some(m=>m.role==='assistant')) continue;
-    out.push({kind:w.chat?'Group chat':w.group?'Group story':w.combined?'Everyone':'Story', title:w.chat||w.group?w.title:w.title.split(':')[0]+(w.combined&&!w.group?'':''), sub:w.combined&&!w.group&&!w.chat?w.title:'', last:s.lastPlayed||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:(w.characters||[]).slice(0,3), open:()=>enterWorld(w.id), key:'livingworld_save_'+w.id, del:()=>{ LS.removeItem('livingworld_save_'+w.id); if(w.chat) setGChats(getGChats().filter(g=>g.id!==w.id)); else if(w.group) setGroups(getGroups().filter(g=>g.id!==w.id)); return true; }, cur:SCREEN==='world'&&W&&W.id===w.id&&!S.branch&&SAVE_KEY==='livingworld_save_'+w.id}); }
+    out.push({kind:w.chat?'Group chat':w.group?'Group story':w.combined?'Everyone':'Story', title:w.chat||w.group?w.title:w.title.split(':')[0]+(w.combined&&!w.group?'':''), sub:w.combined&&!w.group&&!w.chat?w.title:'', last:s.lastPlayed||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:(w.characters||[]).slice(0,3), open:()=>enterWorld(w.id), key:'livingworld_save_'+w.id, del:()=>{ dropSave('livingworld_save_'+w.id); if(w.chat) setGChats(getGChats().filter(g=>g.id!==w.id)); else if(w.group) setGroups(getGroups().filter(g=>g.id!==w.id)); return true; }, cur:SCREEN==='world'&&W&&W.id===w.id&&!S.branch&&SAVE_KEY==='livingworld_save_'+w.id}); }
   for(const b of getBranches()){ const w=findWorld(b.world); if(!w) continue; const s=read(branchSaveKey(b.world,b.id)); if(!s||!(s.chat||[]).some(m=>m.role==='assistant')) continue; const c=b.charId&&w.characters.find(x=>x.id===b.charId);
-    out.push({kind:b.charId?'1-on-1':b.fresh?'Roleplay':'Timeline', title:c?c.full:b.title, sub:c?b.title:w.title.split(':')[0], last:s.lastPlayed||b.last||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:c?[c]:(w.characters||[]).slice(0,3), open:()=>openBranch(b.id), key:branchSaveKey(b.world,b.id), del:()=>{ setBranches(getBranches().filter(x=>x.id!==b.id)); LS.removeItem(branchSaveKey(b.world,b.id)); return true; }, cur:SCREEN==='world'&&SAVE_KEY===branchSaveKey(b.world,b.id)}); }
+    out.push({kind:b.charId?'1-on-1':b.fresh?'Roleplay':'Timeline', title:c?c.full:b.title, sub:c?b.title:w.title.split(':')[0], last:s.lastPlayed||b.last||0, clock:s.clock, loc:s.user&&s.user.loc, snip:snip(s), cast:c?[c]:(w.characters||[]).slice(0,3), open:()=>openBranch(b.id), key:branchSaveKey(b.world,b.id), del:()=>{ setBranches(getBranches().filter(x=>x.id!==b.id)); dropSave(branchSaveKey(b.world,b.id)); return true; }, cur:SCREEN==='world'&&SAVE_KEY===branchSaveKey(b.world,b.id)}); }
   return out.sort((a,b)=>b.last-a.last); }
 function agoText(t){ if(!t) return ''; const m=Math.round((Date.now()-t)/60000); return m<1?'just now':m<60?`${m}m ago`:m<1440?`${Math.round(m/60)}h ago`:`${Math.round(m/1440)}d ago`; }
 let CHATS_ITEMS=[];
@@ -5409,7 +5411,7 @@ function grpMovesHTML(gr){ const parts=new Set(gr.parts||[]), extra=new Set(gr.e
   nb.onclick=()=>open({title:'',parts:[],extra:[],fuse:false,city:'',moves:{}});
   document.querySelectorAll('[data-grped]').forEach(x=>x.onclick=()=>{ const gr=getGroups().find(g=>g.id===x.dataset.grped); if(gr) open(gr); });
   document.querySelectorAll('[data-grpgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.grpgo); });
-  document.querySelectorAll('[data-grpdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group story and its save?')) return; LS.removeItem('livingworld_save_'+x.dataset.grpdel); setGroups(getGroups().filter(g=>g.id!==x.dataset.grpdel)); openUniversePage(u); }); }; }
+  document.querySelectorAll('[data-grpdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group story and its save?')) return; dropSave('livingworld_save_'+x.dataset.grpdel); setGroups(getGroups().filter(g=>g.id!==x.dataset.grpdel)); openUniversePage(u); }); }; }
 // <<< fuse
 // >>> moments
 // ======================= less talking, especially in intimate moments =======================
@@ -5862,7 +5864,7 @@ function openUniversePage(u){ const ws=universeGroups()[u]; if(!ws) return; cons
   $('#wmBody').querySelectorAll('[data-go]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.go); });
   $('#wmBody').querySelectorAll('[data-allgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.allgo); });
   $('#wmBody').querySelectorAll('[data-allfresh]').forEach(x=>x.onclick=()=>newRoleplay(x.dataset.allfresh, close));
-  $('#wmBody').querySelectorAll('[data-allnew]').forEach(x=>x.onclick=()=>{ if(confirm('Start the Everyone story over? The current one is deleted.')){ LS.removeItem('livingworld_save_'+x.dataset.allnew); close(); enterWorld(x.dataset.allnew); } });
+  $('#wmBody').querySelectorAll('[data-allnew]').forEach(x=>x.onclick=()=>{ if(confirm('Start the Everyone story over? The current one is deleted.')){ dropSave('livingworld_save_'+x.dataset.allnew); close(); enterWorld(x.dataset.allnew); } });
   $('#wmBody').querySelectorAll('[data-wmb]').forEach(x=>x.onclick=()=>{ close(); openBranch(x.dataset.wmb); });
   $('#wmBody').querySelectorAll('[data-wmdel]').forEach(x=>x.onclick=()=>{ deleteBranch(x.dataset.wmdel); openUniversePage(u); });
   bindGroupUI(u, close);
@@ -5876,7 +5878,7 @@ function bindGroupUI(u, close){ const nb=$('#grpNew'); if(!nb) return; nb.onclic
   $('#grpMake').onclick=()=>{ const parts=[...document.querySelectorAll('.grpChk:checked')].map(x=>x.value); if(parts.length<2){ notice('Pick at least two worlds.',true); return; } const title=$('#grpName').value.trim()||parts.map(id=>WORLDS.find(w=>w.id===id).title.split(':')[0]).join(' + ');
     const g=getGroups(); g.push({id:'grp_'+Date.now().toString(36), title, parts}); setGroups(g); openUniversePage(u); };
   document.querySelectorAll('[data-grpgo]').forEach(x=>x.onclick=()=>{ close(); enterWorld(x.dataset.grpgo); });
-  document.querySelectorAll('[data-grpdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group story and its save?')) return; LS.removeItem('livingworld_save_'+x.dataset.grpdel); setGroups(getGroups().filter(g=>g.id!==x.dataset.grpdel)); openUniversePage(u); }); }
+  document.querySelectorAll('[data-grpdel]').forEach(x=>x.onclick=()=>{ if(!confirm('Delete this group story and its save?')) return; dropSave('livingworld_save_'+x.dataset.grpdel); setGroups(getGroups().filter(g=>g.id!==x.dataset.grpdel)); openUniversePage(u); }); }
 function openWorldPage(wid,fromU){ const w=WORLDS.find(x=>x.id===wid); if(!w) return; const s=worldProgress(w); const started=s&&s.chat?.length>1;
   const subs=getBranches().filter(b=>b.world===w.id);
   const subRow=b=>{ let bs=null; try{ bs=JSON.parse(LS.getItem(branchSaveKey(b.world,b.id))||'null'); }catch(e){} const c=b.charId&&w.characters.find(x=>x.id===b.charId);
@@ -5890,7 +5892,7 @@ function openWorldPage(wid,fromU){ const w=WORLDS.find(x=>x.id===wid); if(!w) re
   const close=()=>$('#worldModal').classList.remove('on'); $('#wmClose').onclick=close; $('#wmBack').onclick=()=>openUniversePage(universeOf(w));
   $('#wmGo').onclick=()=>{ close(); enterWorld(w.id); };
   const nf=$('#wmFresh'); if(nf) nf.onclick=()=>newRoleplay(w.id, close);
-  const nw=$('#wmNew'); if(nw) nw.onclick=()=>{ if(confirm('Start this world over from the beginning? The current story is deleted (your 1-on-1s and timelines stay).')){ LS.removeItem('livingworld_save_'+w.id); close(); enterWorld(w.id); } };
+  const nw=$('#wmNew'); if(nw) nw.onclick=()=>{ if(confirm('Start this world over from the beginning? The current story is deleted (your 1-on-1s and timelines stay).')){ dropSave('livingworld_save_'+w.id); close(); enterWorld(w.id); } };
   $('#wmLore').onclick=()=>{ close(); LORE_WORLD=w.id; openLore(); };
   $('#wmBody').querySelectorAll('[data-wmsolo]').forEach(b=>b.onclick=()=>{ close(); openSolo(w.id+':'+b.dataset.wmsolo); });
   $('#wmBody').querySelectorAll('[data-wmchar]').forEach(b=>b.onclick=()=>{ close(); openChar(w.id+':'+b.dataset.wmchar); });
@@ -5925,8 +5927,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.11.5';
+const APP_VERSION = '1.11.6';
 const CHANGELOG = [
+ {v:'1.11.6', d:'2026-11-26', notes:['Deleted chats now stay deleted after refresh. Deleting a chat removed its save, but the story stayed loaded in the background and got saved right back (especially if you deleted it from the home screen right after playing it, or opened another chat next). "Start over" had the same problem and could bring back the old story; it now really starts fresh']},
  {v:'1.11.5', d:'2026-11-26', notes:['Livelier reactions. The rules for how strongly people react contradicted each other: one said mild teasing gets mild reactions, a joke gets a chuckle at most and big reactions are rare, while another said nobody is ever flat. Now everyone reacts at their own volume: loud, playful and teasing characters react big and often (a teaser teases constantly), and quiet ones answer in their own smaller way instead of not reacting at all', 'The live feed sounds like the characters. Off-screen moments only gave the AI each character\'s short summary; now they also get how that character talks and a few sample lines, so background scenes keep their voice', 'Texts keep their personality. Longer character sheets were cut off for texting, so characters like Nangong lost their texting quirks ("You miss me?"); texts now get the whole sheet', 'Sunna only stutters when she\'s embarrassed, flustered or put on the spot; when she\'s comfortable, with Nangong and Aria, talking music or arguing, she talks fast and clearly. Teased about something embarrassing, she goes teary-eyed and her voice shakes, but it\'s playful and over in a moment, never real sobbing']},
  {v:'1.11.4', d:'2026-11-26', notes:['Live feed fixes. On phones, the people button opened the wrong panel (the screen just dimmed), so you couldn\'t reach "Everyone (live feed)" or the character cards; it now opens the Who\'s where drawer, and tapping a card closes it. The live feed also no longer crashes when an old off-screen moment mentions a character that has since been removed', 'Sunna and Nangong are minors now: Sunna is 13 (14 on July 18) and Nangong is 14 (15 on September 29). Their ages count up with the in-app calendar, and every under-18 safeguard applies to them: nothing romantic or sexual, no dating, no adult items. Nangong keeps her cheeky, constant teasing of the Manager, just never romantic', 'Cissia habitually lies her way out of things and slips out of conversations, so she\'s notoriously hard to pin down. Yixuan acts surprised by things she saw coming, but a casual "if fate allows" gives her away']},
  {v:'1.11.3', d:'2026-11-20', notes:['Overnight trips stay overnight trips. When you\'re camping, at a sleepover, in a hotel or keeping watch somewhere, the app no longer tells characters they\'re supposed to be asleep at home and should leave, or that they\'re doing their usual home routine (like Manato making the kids breakfast); they sleep wherever the group set up. Characters with you on their free time are told their usual routine isn\'t happening today because they\'re with you. Every reply also reminds the AI where everyone physically is and that what was set up there (tents, a fire, who\'s on watch) is still true']},
@@ -6285,7 +6288,7 @@ function newRoleplay(wid, closeFn){ const w=findWorld(wid); if(!w) return; const
   const id='t'+Date.now().toString(36); const list=getBranches(); list.push({id, world:wid, kind:'timeline', fresh:true, title:name.trim()||`Roleplay ${n}`, charId:null, created:Date.now(), last:Date.now()}); setBranches(list);
   if(closeFn) closeFn(); enterWorld(wid,{branchId:id}); }
 function deleteBranch(bid){ const b=getBranches().find(x=>x.id===bid); if(!b||!confirm(`Delete ${b.kind==='timeline'?'the timeline':'the 1-on-1'} "${b.title}"? This can't be undone.`)) return;
-  setBranches(getBranches().filter(x=>x.id!==bid)); LS.removeItem(branchSaveKey(b.world,bid)); }
+  setBranches(getBranches().filter(x=>x.id!==bid)); dropSave(branchSaveKey(b.world,bid)); }
 
 // ======================= lorebook UI =======================
 let lbTab='world', lbSel=null, lbBook='';
@@ -6840,7 +6843,7 @@ $('#crSave').onclick=()=>{
 };
 $('#crDelete').onclick=()=>{ const c=CR; if(c._builtin){ if(!confirm(`Put ${c.full||c.name} back to how they originally were? Your edits to them are removed.`)) return; const OV=getOverrides(); delete OV[c.world+':'+c.id]; setOverrides(OV); rebuildWorlds(); buildCombined(); if(W&&W.id===c.world){ flushSave(); W=WORLDS.find(x=>x.id===c.world); load(); render(); } $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); if(SCREEN==='home') renderHome(); return; } if(!confirm(`Delete ${c.full||c.name}? Their card, schedule and sheet are removed. (Stories they were in keep what already happened.)`)) return;
   const C=getCustom(); const w=C.chars.find(x=>x.id===c.id)?.world; C.chars=C.chars.filter(x=>x.id!==c.id); C.worlds=C.worlds.filter(x=>C.chars.some(y=>y.world===x.id));
-  if(w&&!C.worlds.some(x=>x.id===w)) LS.removeItem('livingworld_save_'+w);
+  if(w&&!C.worlds.some(x=>x.id===w)) dropSave('livingworld_save_'+w);
   setCustom(C); rebuildWorlds(); buildCombined(); $('#createModal').classList.remove('on'); $('#charModal').classList.remove('on'); renderHome(); };
 // export / import a character (with its world, if it has its own)
 $('#cmExport').onclick=()=>{ const [w,id]=cmKey.split(':'); const C=getCustom(); const ch=C.chars.find(x=>x.id===id&&x.world===w); if(!ch) return;
