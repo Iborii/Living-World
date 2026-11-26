@@ -1172,7 +1172,7 @@ body:has(.modal.on) #chatsFab{display:none}
   </header>
   <div id="sideShade"></div>
   <div id="main">
-    <aside>
+    <aside id="sidePanel">
       <h3>Your story</h3>
       <div class="card sel" id="myStoryCard"><div class="nm"><span class="dot" style="background:var(--accent)"></span>You</div><div class="where" id="myWhere"></div><div class="act" id="myWith"></div></div>
       <h3>Watch the world</h3>
@@ -6523,8 +6523,8 @@ $('#phBack').onclick=()=>openPhone(phView==='chat'?'msgs':'home');
 $('#phClose').onclick=()=>{ if(CALL&&CALL.state==='live'){ if(!confirm('Hang up?')) return; endCall(false); } $('#phoneModal').classList.remove('on'); };
 $('#phCallBtn').onclick=()=>startCall(charById(phoneOpenId));
 $('#phInvBtn').onclick=()=>openPhone('invite');
-function closeSide(){ const a=document.querySelector('aside'); if(a) a.classList.remove('open'); $('#sideShade').classList.remove('on'); }
-$('#sideBtn').onclick=()=>{ document.querySelector('aside').classList.add('open'); $('#sideShade').classList.add('on'); }; $('#sideShade').onclick=closeSide; document.querySelector('aside').addEventListener('click',e=>{ if(e.target.closest('.card')) setTimeout(closeSide,60); });
+function closeSide(){ const a=$('#sidePanel'); if(a) a.classList.remove('open'); $('#sideShade').classList.remove('on'); }
+$('#sideBtn').onclick=()=>{ $('#sidePanel').classList.add('open'); $('#sideShade').classList.add('on'); }; $('#sideShade').onclick=closeSide; $('#sidePanel').addEventListener('click',e=>{ if(e.target.closest('.card')) setTimeout(closeSide,60); });
 $('#phoneBtn').onclick=()=>{ if(phonesOn()) openPhone('home'); };
 $('#worldBtn').onclick=()=>openHub();
 $('#chatsFab').onclick=toggleChats; $('#chatsClose').onclick=closeChats; $('#chatsScrim').onclick=closeChats;
