@@ -1542,7 +1542,7 @@ function unreadCount(){ const P=phone(); let n=0; for(const id in P.threads) n+=
 const uN=()=>persona().name||'User';
 function textSnippet(id,n){ return (phone().threads[id]||[]).slice(-n).map(m=>`[${mmdd(m.t)} ${hhmm(m.t)}] ${m.me?uN():charById(id).name}: ${m.text.replace(/\n+/g,' / ')}`).join(' | '); }
 function recentTextsBlock(){ const out=[]; const P=phone(); const since=S.clock-12*60*MIN;
-  for(const id in P.threads){ const c=charById(id); if(!c) continue; const recent=P.threads[id].filter(m=>m.t>since).slice(-6); if(recent.length) out.push(`Texts with ${c.name}:\n`+recent.map(m=>`  [${hhmm(m.t)}] ${m.me?uN():c.name}: ${m.text.replace(/\n+/g,' / ')}`).join('\n')); }
+  for(const id in P.threads){ const c=charById(id); if(!c) continue; const recent=P.threads[id].filter(m=>m.t>since).slice(-6); if(recent.length) out.push(`Texts with ${c.name}:\n`+recent.map(m=>`  [${hhmm(m.t)}] ${m.me?uN():c.name}: ${toneFix(m.text.replace(/\n+/g,' / '))}`).join('\n')); }
   for(const k of P.calls.filter(k=>k.t>since).slice(-4)){ const c=charById(k.id); if(c) out.push(`Call ${k.out?'to':'from'} ${c.name} at ${hhmm(k.t)}: ${k.missed?'missed':`${k.dur||1} min${k.sum?' – '+k.sum:''}`}`); }
   for(const f of P.feed.filter(f=>f.t>since).slice(-4)){ const who=f.who==='user'?uN():(charById(f.who)?.name||'?'); out.push(`${feedApp()} post by ${who} at ${hhmm(f.t)}: ${f.text}${f.comments.length?` (comments: ${f.comments.slice(-3).map(x=>(x.who==='user'?uN():charById(x.who)?.name)+': '+x.text).join(' / ')})`:''}`); }
   return out.join('\n'); }
@@ -1613,7 +1613,7 @@ Write ${c.name}'s reply as real phone texts: their own texting style (slang, pun
   for(const l of lines) addText(c.id,false,l);
   const lastMe=[...th].reverse().find(m=>m.me);
   addMemory({who:[c.id], text:`Texted with ${pn}: ${lastMe?`${pn} wrote "${lastMe.text.slice(0,120)}"; `:''}${c.name} wrote "${lines.join(' ').slice(0,140)}"`, imp:1, src:'text'});
-  if(lines.length){ const st=S.chars[c.id]; st.log.push({t:S.clock, text:`*${c.name} pauses ${String(st.act||'what they were doing').replace(/\s*\(with you\)$/,'')} to pull out their phone and text ${pn} back.* "${lines.join(' / ').slice(0,300)}"`, with:[c.id], loc:st.loc}); st.changed=true; }
+  if(lines.length){ const st=S.chars[c.id]; st.log.push({t:S.clock, text:`*${c.name} pauses ${String(st.act||'what they were doing').replace(/\s*\(with you\)$/,'')} to pull out their phone and text ${pn} back.* "${toneFix(lines.join(' / ').slice(0,300))}"`, with:[c.id], loc:st.loc}); st.changed=true; }
   if(!phoneOn()||phoneOpenId!==c.id) pushNotif({icon:'💬', app:phoneApp(), title:contactName(c), body:lines.map(l=>isPhotoText(l)?'📷 Photo':l).join(' · '), open:{view:'chat',id:c.id}});
   return decision?decision.toUpperCase():null;
 }
@@ -2365,7 +2365,7 @@ ${(()=>{ const e=worldEventLines(); return e?`WORLD EVENTS (today and the next t
   if(lore.length) s+=`WORLD LORE (background facts relevant right now; use naturally, never recite):\n${lore.map(e=>`## ${e.title}\n${e.text}`).join('\n\n')}\n\n`;
   s+=raceLoreBlock([...pres, persona()], ctx);
   if(!S.branch){ s+=`ELSEWHERE IN THE WORLD (the user does not know any of this unless it reaches them; these characters ${phonesOn()?'may text the user or ':''}arrive only if it makes sense for their schedule):\n`;
-  for(const c of absent){ if(isDead(c)) continue; const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${(st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500)}\n`; } }
+  for(const c of absent){ if(isDead(c)) continue; const st=S.chars[c.id]; s+=`- ${c.full}${raceText(c)||genderOf(c)?' ('+[genderOf(c).toLowerCase(),raceText(c)].filter(Boolean).join(', ')+')':''}: at ${st.loc}, ${st.act}${stateBits(c,true).length?` (${stateBits(c,true).join(', ')})`:''}. ${c.brief}\n  Latest: ${toneFix((st.log.slice(-1)[0]?.text||'').replace(/\n+/g,' ').slice(0,500))}\n`; } }
   try{ for(const f of (window.PROMPT_HOOKS||[])) s+=f(pres)||''; }catch(e){}
   return subUser(s);
 }
@@ -2543,7 +2543,7 @@ Rarely (about one moment in six), if a character would post about this moment on
     memory=(rest.match(/MEMORY:\s*([^\n]+)/i)||[])[1]||''; for(const bm of rest.matchAll(/BOND:\s*([^\n]+)/gi)) applyBond(bm[1], ids); for(const dm of out.matchAll(/^\s*DOING:\s*([^\n]+)$/gim)){ const a=dm[1]; const i=a.indexOf(':'); if(i>0){ const c=charByName(a.slice(0,i)); if(c&&ids.includes(c.id)) setDoing(c,a.slice(i+1)); } } for(const lm of out.matchAll(/^\s*(ATE|MOOD|OUTFIT|BUY|HURT):\s*([^\n]+)$/gim)) applyLifeTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*(BOUGHT|USE|SPENT):\s*([^\n]+)$/gim)) applyItemTag(lm[1].toUpperCase(), lm[2], ids); for(const lm of out.matchAll(/^\s*CONDITION:\s*([^\n]+)$/gim)) applyCondTag(lm[1], ids); for(const dm of out.matchAll(/^\s*DIED:\s*([^:\n]+):?\s*([^\n]*)$/gim)){ const dc=charByName(dm[1]); if(dc&&ids.includes(dc.id)) killChar(dc, dm[2]); } for(const pm of out.matchAll(/POST:\s*([^:\n]+):\s*([^\n]+)/gi)){ const pc=charByName(pm[1]); if(pc&&ids.includes(pc.id)&&hasPhone(pc)) addPost(pc.id, pm[2]); } const tm=rest.match(/TEXT TO USER:\s*([^:\n]+):\s*([^\n]+)/i); if(tm) textTo={from:tm[1].trim(), text:tm[2].trim()}; }
   gossipFromBeat(out, ids);
   story=story.replace(/^\s*(POST|TEXT TO USER|BOND|DOING|ATE|MOOD|OUTFIT|BUY|BOUGHT|USE|SPENT|CONDITION|HURT|DIED|GOSSIP):.*$/gim,'').trim();
-  const entry={t:now, text:story.trim(), with:ids, loc:st0.loc};
+  const entry={t:now, text:toneFix(story.trim()), with:ids, loc:st0.loc};
   for(const id of ids){ const st=S.chars[id]; st.log.push(entry); if(st.log.length>300) st.log.splice(0,st.log.length-300); st.lastBeat=now; st.changed=false;
   }
   try{ directorAfterBeat(ids, entry); }catch(e){}
