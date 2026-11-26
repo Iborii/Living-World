@@ -1601,7 +1601,7 @@ async function textReply(c, extra){
   const sys=`You are ${c.full}, texting ${pn} on ${phoneApp()} (the phone messaging app in this world). Stay completely in character.
 ${charVoice(c, th.map(m=>m.text).join(' '))}${(phone().passed||{})[c.id]&&!thread(c.id).some(m=>!m.me&&m.kind!=='call')?`\n\nYou never gave ${pn} your number: ${charById(phone().passed[c.id])?.name||'someone'} passed it along. This is a number you don't have saved, so at first you don't know who's texting; react like you would to that.`:''}
 
-Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line, ending the way people really text: usually no period at the end (a period reads serious or cold), ! for excitement, ~ for playful or affectionate (sparingly), ? for questions. A photo counts as a message: when it truly fits (showing where they are, something funny or pretty they saw, food, a new outfit, a selfie; not in every conversation), they can send one as its own line written exactly as [photo: one sentence describing what the picture shows]. When ${pn} sends a [photo: …], react to what's in it. To put an emoji reaction on ${pn}'s last text (a ❤️, 😂, 😮, 😢, 😡 or 👍 on it, like real phones), add a line [react: 😂]; sometimes a reaction is the whole reply. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
+Write ${c.name}'s reply as real phone texts: their own texting style (slang, punctuation, emoji or none, caps, typos only if it fits them), usually short. 1 to 4 messages, each on its own line, ending the way people really text: usually no period at the end (a period reads serious or cold), ! for excitement, … for flustered, shy, hesitant or confessing, ~ for playful or affectionate (sparingly), ? for questions, a comma at the end only when it's serious. A photo counts as a message: when it truly fits (showing where they are, something funny or pretty they saw, food, a new outfit, a selfie; not in every conversation), they can send one as its own line written exactly as [photo: one sentence describing what the picture shows]. When ${pn} sends a [photo: …], react to what's in it. To put an emoji reaction on ${pn}'s last text (a ❤️, 😂, 😮, 😢, 😡 or 👍 on it, like real phones), add a line [react: 😂]; sometimes a reaction is the whole reply. No narration, no actions in asterisks, no quotation marks, no name prefix. Their reply must fit what they are doing right now: if their hands or attention are busy they answer late, briefly, or with a typo-filled one-liner, and they can mention what they're in the middle of. If they're asleep, in the shower or mid-fight they wouldn't be texting at all. Never speak for ${pn}. If the real ${c.name} would read this and not answer right now (annoyed, nothing to say, low trust, swamped), write only: [READ] (they'll be shown as having read it).${!S.user.companions.includes(c.id)&&!S.branch?`\n\n${comingContext(c)}`:''}${extra?`\n\nSITUATION: ${extra}`:''}`;
   let merged=threadMsgs(th); if(!merged.length||merged[merged.length-1].role!=='user') merged.push({role:'user',content:extra?'(no new message from '+pn+')':'(…)'});
   let out=await callAI({system:sys, messages:merged, model:CFG.bg, maxTokens:320}); try{ out=textReactHook(c,out); }catch(e){}
   const decision=(out.match(/^\s*(ACCEPT|DECLINE)\s*$/mi)||[])[1];
@@ -2325,18 +2325,21 @@ WHO KNOWS WHAT
 Characters only know what they saw or heard themselves, what someone told them, what they remember, and what was sent to them. PLANS WITH THE USER, RECENT PHONE ACTIVITY and ELSEWHERE IN THE WORLD are for you, the narrator: a plan the user made with one character is private between those two unless one of them told someone else. A character who wasn't there doesn't know what happened.
 `}`;
   s+='\n\n';
-  { const ex=worldExamples(); if(ex) s+=`HOW THESE CHARACTERS SOUND\nStyle examples written for this world. They did NOT happen in this story; never repeat them or treat them as memories. Match their voices, word choice, humor, rhythm, tone lines and level of detail, so every character sounds exactly like themselves and never flat or stoic.\n\n${subUser(ex)}\n\n`; }
-  s+=`SPOKEN DIALOGUE HAS REAL EMOTION
-Characters talk out loud with the same feeling they put into their texts, in their own way. Never write every spoken line as calm sentences of only commas and periods. Let punctuation carry the emotion, matched to who is talking and how they feel right now:
-- Exclamation marks for excitement, anger, surprise, panic or teasing ("Hey! Give that back!"); "?!" for shocked questions.
-- Trailing "..." for hesitation, sleepiness, sulking or trailing off. Stutters and blushing only for characters whose sheet says they get flustered; most people don't.
-- Cut-off words and interruptions with a dash ("Wait, I didn't mea—"); ALL CAPS for real shouting; stretched words for whining or drawling ("Nooo, five more minutes...").
-- Interjections, laughs and noises in their voice: "Huh?", "Ugh.", "Pfft!", "Ehehe~", "Hmph!", "Tch."
-Calm or stoic characters can stay clipped and quiet; everyone else should sound alive, and even calm characters crack when something gets to them.
-- Periods are rare: at most one per reply, only when the conversation actually ends or a line is completely final. While the talk is still going, the last spoken line of the reply ends with "," if the speaker is calm, or "..." if they're nervous or the moment is tense or climactic.
+  { const ex=toneFix(worldExamples()); if(ex) s+=`HOW THESE CHARACTERS SOUND\nStyle examples written for this world. They did NOT happen in this story; never repeat them or treat them as memories. Match their voices, word choice, humor, rhythm, tone lines and level of detail, so every character sounds exactly like themselves and never flat or stoic.\n\n${subUser(ex)}\n\n`; }
+  s+=`HOW A SPOKEN LINE ENDS SETS ITS EMOTION (follow this exactly; flat endings make the roleplay feel dead)
+- No end mark = normal, relaxed talk: "Yeah I saw it" / "Come on in"
+- ! = happy, excited, loud, surprised, yelling or mad: "Hey! Give that back!" ("?!" for shocked questions)
+- ? = questions.
+- … (use the real "…" character) = flustered, hesitant, shy, nervous, trailing off, or a confession: "I… I kind of like you…" / "That's not what I meant…"
+- ~ = playful, teasing, singsongy or affectionate, now and then only: "Gotcha~"
+- — = cut off mid-word ("Wait, I didn't mea—") or not finished speaking.
+- , at the end of a line = a SERIOUS moment only: heavy, grave, sincere, dead-serious: "I'm not leaving you here,"
+- . = only to end a whole conversation (one at most per reply, and only when the talk is truly over).
+Most lines should end with no mark, !, ?, … or ~. Ending ordinary lines with "," or "." is wrong: it makes everyone sound emotionless.
+Also: interjections, laughs and noises in their own voice ("Huh?", "Ugh", "Pfft!", "Ehehe~", "Hmph!", "Tch"); ALL CAPS for real shouting; stretched words for whining or drawling ("Nooo, five more minutes…"). Stutters and blushing only for characters whose sheet says they get flustered. Calm or stoic characters can stay clipped, but even they crack when something gets to them.
 
 `;
-  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${c.sheet}\n\n`; }
+  for(const c of pres){ s+=`=== ${c.full.toUpperCase()} (in the scene) ===\n${idLine(c)}${toneFix(c.sheet)}\n\n`; }
   if(S.summary) s+='STORY SO FAR\n'+S.summary+'\n\n';
   // What's true right now
   s+=`CURRENT TIME: ${timeLine(S.clock)}
@@ -2371,7 +2374,7 @@ function restoreSnap(sn){ if(!sn) return false; S.clock=sn.clock; S.user=JSON.pa
   for(const [k,v] of Object.entries(sn.trust||{})) if(S.chars[k]) Object.assign(S.chars[k],v);
   if(sn.contacts&&S.phone) S.phone.contacts=[...sn.contacts]; if(sn.rel) S.rel=JSON.parse(JSON.stringify(sn.rel)); updateSchedules(); return true; }
 function snapBefore(i){ for(let j=i-1;j>=0;j--) if(S.chat[j].snap) return S.chat[j].snap; return S.startSnap||null; }
-const VOICE_NUDGE='(Narrator note, not part of the story: every character sounds like THEMSELVES, with their own words, energy, humor, catchphrases and noises; nobody sounds like a polite robot. Line endings carry tone: no mark = normal talk, ! = excited, loud or mad, ? = questions, ~ = playful now and then, ... = hesitant or trailing off, a dash = cut off; a period only when a conversation is over. Keep reactions sized to what happened.)';
+const VOICE_NUDGE='(Narrator note, not part of the story: every character sounds like THEMSELVES, with their own words, energy, humor, catchphrases and noises. Line endings carry the emotion: no mark = normal talk, ! = excited, loud or mad, ? = questions, … = flustered, hesitant, nervous or confessing, ~ = playful now and then, — = cut off, "," = serious moments only, "." = only when a conversation ends. Never end ordinary lines with "," or "." Keep reactions sized to what happened.)';
 function chatMessages(){
   const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
   for(const m of recent){
@@ -4787,12 +4790,14 @@ function tidyTextMsg(t){ t=String(t||'').trim(); if(!t||/^\[/.test(t)) return [t
   for(let i=0;i<toks.length;i++){ const x=toks[i]; if(/^\.\s+$/.test(x)){ if(ABBR.test(cur+'.')){ cur+=x; continue; } parts.push(cur); cur=''; } else cur+=x; } if(cur) parts.push(cur);
   return parts.map(p=>p.trim().replace(/(?<!\.)\.$/,'')).filter(Boolean).slice(0,4); }
 { const _at=addText; addText=function(id, me, text, kind){ if(me||kind==='call'||typeof text!=='string') return _at(id,me,text,kind); const ps=tidyTextMsg(text); if(ps.length<=1) return _at(id,me,ps[0]??text,kind); for(const p of ps) _at(id,me,p,kind); }; }
-// Story: inside spoken lines, sentence periods become commas ("Hey. Come in." -> "Hey, come in"), and the line doesn't end in a period,
-// except the very last spoken line of the reply (that's the conversation ending, so it keeps its period).
+// Story (the user's line-ending system): no mark = normal, ! excited, ? question, … flustered/hesitant/confession, ~ playful,
+// — cut off, "," serious moments only, "." only to end a conversation. Here: "..." becomes the real "…", and a period ending a
+// spoken line is dropped unless it's the very last line of the reply (where it can mean the conversation is over).
 function keepCap(w){ if(/^(I|I'm|I'll|I've|I'd|OK|TV)\b/.test(w)) return true; const n=[uN(),...(W?W.characters.flatMap(c=>[c.name,...String(c.full||'').split(/\s+/)]):[])].filter(Boolean); return n.some(x=>w.startsWith(x)); }
-function tidyQuote(inner,last){ const nSent=(inner.match(/[^.]\.\s+\S/g)||[]).length; if(nSent>1){ return last?inner:inner.replace(/([^.])\.$/,'$1'); } let out=inner.replace(/(^|[^.])\.\s+(?=(\S+))/g,(m,a,nx,off,str)=>{ const before=str.slice(0,off+a.length+1); if(ABBR.test(before)) return m; return a+', '; });
-  out=out.replace(/, (\S+)/g,(m,w)=>', '+(keepCap(w)?w:w.charAt(0).toLowerCase()+w.slice(1)));
-  if(!last) out=out.replace(/([^.])\.$/,'$1'); return out; }
+function tidyQuote(inner,last){ let out=inner.replace(/\.{3,}/g,'…'); if(!last) out=out.replace(/([^.…])\.$/,'$1'); return out; }
+// example lines and sheets: their old "," and "." endings taught the AI to write flat lines, so in what the AI reads,
+// a spoken line ends the way it would under the system above (plain lines get no end mark).
+function toneFix(t){ return String(t||'').replace(/(["“])([^"“”\n]{1,600}?)(["”])/g,(m,o,inner,c)=>{ let x=inner.replace(/\.{3,}/g,'…'); x=x.replace(/([^.…])[.,]$/,'$1'); return o+x+c; }); }
 function tidyStoryQuotes(s){ const re=/(["“])([^"“”\n]{1,600}?)(["”])/g; const hits=[...s.matchAll(re)]; if(!hits.length) return s; const lastIx=hits[hits.length-1].index; return s.replace(re,(m,o,inner,c,off)=>o+tidyQuote(inner,off===lastIx)+c); }
 REPLY_HOOKS.push(msg=>{ try{ if(msg&&typeof msg.text==='string'&&!msg._pt){ msg._pt=1; msg.text=tidyStoryQuotes(msg.text); } }catch(e){} });
 // one-time cleanup of stories and texts written before this fix
@@ -4859,7 +4864,7 @@ function voiceCard(c){ const v=VOICES[c.id]; if(!v) return ''; return `HOW ${c.n
 // also pull each character's own lines out of the world's example scenes, so the long examples count per person
 function exampleLinesFor(c,n){ const ex=String((typeof worldExamples==='function'&&worldExamples())||''); if(!ex) return []; const out=[]; const re=new RegExp('^'+c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':\\s*(".+")\\s*$','gm'); let m; while((m=re.exec(ex))&&out.length<40) out.push(m[1]); return out.sort(()=>Math.random()-.5).slice(0,n); }
 PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ const card=voiceCard(c); const ex=exampleLinesFor(c,card?2:4); return (card||(ex.length?`HOW ${c.name.toUpperCase()} TALKS:`:''))+(ex.length?`\n  from the examples: ${ex.join('  ')}`:''); }).filter(Boolean);
-  return L.length?`\nVOICES (each person must sound exactly like this, in every line; these are style guides, not things that happened):\n${L.join('\n')}\n`:''; });
+  return L.length?`\nVOICES (each person must sound exactly like this, in every line; these are style guides, not things that happened):\n${toneFix(L.join("\n"))}\n`:''; });
 { const _cv=charVoice; charVoice=function(c,...a){ const v=voiceCard(c); return _cv(c,...a)+(v?'\n'+v:''); }; }
 // <<< voices
 // >>> ledger
@@ -5414,10 +5419,10 @@ const NOT_THIS={
  yidhari:'dreamy, unhurried, quietly teasing. Calm, but warm and playful underneath; doesn\'t fluster on the surface.',
 };
 // the character's own "HOW SHE TALKS" section from their sheet, repeated at the very end so it isn't drowned out by the long rules above
-function talkOf(c){ const lines=String(c.sheet||'').split('\n'); const i=lines.findIndex(l=>/^(HOW (SHE|HE|THEY) (TALKS?|SPEAKS?)|VOICE AND DETAILS)/.test(l)); if(i<0) return ''; const o=[]; for(let j=i+1;j<lines.length;j++){ const l=lines[j]; if(/^[A-Z][A-Z0-9 '&\/(),.:-]{3,}$/.test(l.trim())) break; o.push(l); } return o.join('\n').trim().slice(0,1100); }
+function talkOf(c){ const lines=String(c.sheet||'').split('\n'); const i=lines.findIndex(l=>/^(HOW (SHE|HE|THEY) (TALKS?|SPEAKS?)|VOICE AND DETAILS)/.test(l)); if(i<0) return ''; const o=[]; for(let j=i+1;j<lines.length;j++){ const l=lines[j]; if(/^[A-Z][A-Z0-9 '&\/(),.:-]{3,}$/.test(l.trim())) break; o.push(l); } return (typeof toneFix==='function'?toneFix(o.join('\n').trim()):o.join('\n').trim()).slice(0,1100); }
 PROMPT_HOOKS.push(pres=>{ if(!pres||!pres.length) return ''; const L=pres.map(c=>{ const V=(typeof VOICES!=='undefined'&&VOICES[c.id])||null; const t=talkOf(c);
     const voice=t?`\n  How ${c.name} talks:\n  ${t.replace(/\n/g,'\n  ')}`:(V&&V.how?`\n  How ${c.name} talks: ${V.how}`:'');
-    const ex=V&&V.lines&&!t?`\n  Sounds like: ${V.lines.slice(0,3).join(' / ')}`:'';
+    const ex=V&&V.lines&&!t?`\n  Sounds like: ${toneFix(V.lines.slice(0,3).join(' / '))}`:'';
     return `- ${c.name}: ${String(c.brief||'').slice(0,500)}${NOT_THIS[c.id]?'\n  Core energy: '+NOT_THIS[c.id]:''}${voice}${ex}`; });
   return `\nPERSONALITY ANCHORS (read last, obey first): each person below keeps THEIR OWN personality, energy and way of talking from their sheet in every reply, including quiet, tender and romantic moments. Never let them drift into the same generic person (calm, stoic, dry, and easily flustered or blushing): loud people stay loud, cheerful people stay cheerful, bold people stay bold, weird people stay weird. Only characters whose sheet says so get flustered.
 NO ROBOT DIALOGUE: every spoken line must sound like that exact person, so a reader could tell who said it with the name covered. Use their own words, rhythm, catchphrases, nicknames for people, noises and laughs from how they talk below. Plain, polite, evenly calm sentences that anyone could have said are wrong for everyone except characters whose sheet says they talk that way.
@@ -5894,8 +5899,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.11.1';
 const CHANGELOG = [
+ {v:'1.11.1', d:'2026-11-20', notes:['Line endings carry emotion again, your way: no mark = normal, ! = excited or mad, ? = questions, … = flustered, hesitant or confessing, ~ = playful now and then, — = cut off, a comma = serious moments only, a period = only to end a conversation. The old rule told the AI to end calm lines with a comma, and the app was turning sentence breaks into commas, so everything came out as flat commas and periods. That\'s gone: \'...\' becomes the real …, and the example lines the AI copies from (world examples, sheets, voice cards) no longer end in commas and periods. Texts follow the same system']},
  {v:'1.11.0', d:'2026-11-20', notes:['Roleplay cleanup. The story prompt was 175,000-190,000 characters and buried the characters under rules; it\'s now about 85,000-120,000. Realism details (weather, chores, fabric, romance pacing, periods and ~60 more) now only go in when the moment calls for them instead of all at once every reply (Settings > Realism: Smart is the new default; Everything is still there). The punctuation lecture attached to every turn is now one short voice-first line, and a duplicate copy is gone. Fixes: Spook Shack characters were told they were late and should leave at the very meetup they\'re scheduled for (and Lucia was scheduled to be asleep); the Saturday schedules now match the opening. Yuzuha, Alice, Lucia and Yidhari were listed as \'not a fighter, needs protection\'; they\'re S-rank agents now, as are Yanagi and Harumasa (Soukaku A). Characters no longer fixate every reply on clothes they don\'t own unless you\'re at a clothing store']},
  {v:'1.10.6', d:'2026-11-20', notes:['Livelier voices: the kiss/hug detector from 1.10.4 was firing on almost every reply (any mention of lips, hugs or laps) and rewriting dialogue flat; it now only triggers when you kiss, embrace or confess. Each character\'s own \'how they talk\' section and example lines are repeated at the end of every prompt. Spoken lines with several sentences keep their sentence breaks instead of becoming one long comma chain. Characters with no info for a reaction react at their own energy level instead of \'small\'. Story temperature 0.75 to 0.9']},
  {v:'1.10.5', d:'2026-11-20', notes:['Characters keep their own personalities: loud ones stay loud, only those written as shy get flustered; talk limits now depend on who\'s talking']},
