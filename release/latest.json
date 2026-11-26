@@ -1,10 +1,10 @@
 {
- "version": "1.10.4",
+ "version": "1.10.5",
  "date": "2026-11-20",
  "notes": [
-  "Characters talk less, and almost not at all during kisses, embraces and other intimate moments"
+  "Characters keep their own personalities: loud ones stay loud, only those written as shy get flustered; talk limits now depend on who's talking"
  ],
  "file": "index.html",
- "sha256": "3a6c4a7a142535c25c2c92d7569eff0f73676388672d4da99d4b03f31fc5bb67",
+ "sha256": "57c1da1cf0074f74007aa75f55d20f78cd8dcdfcec86ac6effb7d0c0904d5321",
  "minShell": "0.5.0"
 }
