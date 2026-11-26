@@ -1,10 +1,10 @@
 {
- "version": "1.11.1",
+ "version": "1.11.2",
  "date": "2026-11-20",
  "notes": [
-  "Line endings carry emotion again, your way: no mark = normal, ! = excited or mad, ? = questions, \u2026 = flustered, hesitant or confessing, ~ = playful now and then, \u2014 = cut off, a comma = serious moments only, a period = only to end a conversation. The old rule told the AI to end calm lines with a comma, and the app was turning sentence breaks into commas, so everything came out as flat commas and periods. That's gone: '...' becomes the real \u2026, and the example lines the AI copies from (world examples, sheets, voice cards) no longer end in commas and periods. Texts follow the same system"
+  "Mood updates work again. Moods only moved when the story remembered to add a mood tag, and lately it mostly didn't, so the little faces never changed. Now when a reply comes back without one, a quick background check reads what happened and updates how everyone in the scene feels (the feeling word and the up/down mood level)"
  ],
  "file": "index.html",
- "sha256": "214bbd8fd9eeb16a01cf51b7d055058ca0bcef5e3d1cd3a369ef173b7e200f28",
+ "sha256": "fe6452c6ab83c1c347dafe623bf2e4dc16bdc153bb2108d109a0ef500207bc9e",
  "minShell": "0.5.0"
 }

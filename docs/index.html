@@ -4288,6 +4288,23 @@ CONTROL_HOOKS.MOODSHIFT=arg=>{ const m=arg.match(/^\s*([^:+\-]+?)\s*:?\s*([+-]\s
 (()=>{ try{ const _d=dChange; dChange=function(id,delta,why){ return _d.call(this,id,moodScale(id,delta),why); }; }catch(e){} })();
 PROMPT_HOOKS.push(pres=>{ if(!pres.length) return ''; const L=pres.map(c=>{ const v=mv(c.id), b=moodBase(c), I=moodInfo(v); return `${c.name}: ${I[1]}${v!==b?` (normally ${moodInfo(b)[1]})`:''}${S.chars[c.id].mvWhy&&v!==b?` because ${S.chars[c.id].mvWhy}`:''}`; });
   return `\nMOODS RIGHT NOW (play them: a bad mood means shorter answers, less patience, kindness lands less; a great mood means warmth comes easily; neutral is normal for some people, happy for others):\n- ${L.join('\n- ')}\nWhen something clearly lifts or sours someone's mood, add [[MOODSHIFT: Name +1: why]] or [[MOODSHIFT: Name -1: why]] (±2 for big things).\n`; });
+// The story is asked to add [[MOOD]] / [[MOODSHIFT]] tags, but it often forgets them, and then nobody's mood ever moves.
+// So when a reply comes back with no mood tags, a quick background check reads it and updates moods itself.
+let _moodTagged=false;
+(()=>{ try{ const _alt=applyLifeTag; applyLifeTag=function(C){ if(C==='MOOD') _moodTagged=true; return _alt.apply(this,arguments); }; const _ms=CONTROL_HOOKS.MOODSHIFT; CONTROL_HOOKS.MOODSHIFT=function(){ _moodTagged=true; return _ms.apply(this,arguments); }; }catch(e){} })();
+const _moodChecked=new WeakSet();
+REPLY_HOOKS.push(msg=>{ const tagged=_moodTagged; _moodTagged=false; if(!msg||_moodChecked.has(msg)||tagged||!CFG.key) return; _moodChecked.add(msg);
+  const pres=present(); const txt=String(msg.text||''); if(!pres.length||txt.length<40) return;
+  const u=[...S.chat].reverse().find(m=>!m.hidden&&m.role==='user');
+  setTimeout(async()=>{ try{
+    const now=pres.map(c=>`${c.name}: ${moodInfo(mv(c.id))[1]}${S.chars[c.id].mood?.word?` (last feeling: ${S.chars[c.id].mood.word})`:''}`).join('\n');
+    const out=await callAI({model:CFG.bg, maxTokens:300, system:'You track how characters in a roleplay feel. Reply with JSON only.', messages:[{role:'user',content:`MOODS BEFORE:\n${now}\n\n${uN()} DID/SAID:\n${String(u?.text||'').slice(-1500)}\n\nWHAT HAPPENED:\n${txt.slice(-4000)}\n\nFor each person above whose feelings clearly changed in WHAT HAPPENED (not ${uN()}), return {"name":"Name","feeling":"one or two words for how they feel now (e.g. giddy, annoyed, flustered, hurt, proud, bored, nervous)","shift":-2 to 2 (how much their overall mood went up or down; 0 if it's only a passing feeling),"why":"a few words"}. Skip anyone whose feelings didn't really change. Return a JSON array, [] if nobody's did.`}]});
+    const arr=JSON.parse((String(out).match(/\[[\s\S]*\]/)||['[]'])[0]); let n=0;
+    for(const r of arr.slice(0,8)){ const c=r&&charByName(String(r.name||'')); if(!c||!pres.includes(c)) continue; const st=S.chars[c.id];
+      if(r.feeling){ st.mood={word:String(r.feeling).slice(0,40), why:String(r.why||'').slice(0,140), t:S.clock}; st._mwT=S.clock; n++; }
+      const d=Math.max(-2,Math.min(2,parseInt(r.shift)||0)); if(d){ moodShift(c.id,d,r.why||r.feeling||''); n++; } }
+    if(n){ save(); render(); }
+  }catch(e){ console.warn('moodcheck',e); } },120); });
 // show it: a small face next to their name in the people bar
 function moodBadge(id){ const I=moodInfo(mv(id)); return `<span class="mood-b" title="${esc(I[1])}">${I[2]}</span>`; }
 
@@ -5899,8 +5916,9 @@ $('#search').oninput=doSearch;
 $('#homeSettings').onclick=openSettings;
 
 // ======================= version, update log & updates =======================
-const APP_VERSION = '1.11.1';
+const APP_VERSION = '1.11.2';
 const CHANGELOG = [
+ {v:'1.11.2', d:'2026-11-20', notes:['Mood updates work again. Moods only moved when the story remembered to add a mood tag, and lately it mostly didn\'t, so the little faces never changed. Now when a reply comes back without one, a quick background check reads what happened and updates how everyone in the scene feels (the feeling word and the up/down mood level)']},
  {v:'1.11.1', d:'2026-11-20', notes:['Line endings carry emotion again, your way: no mark = normal, ! = excited or mad, ? = questions, … = flustered, hesitant or confessing, ~ = playful now and then, — = cut off, a comma = serious moments only, a period = only to end a conversation. The old rule told the AI to end calm lines with a comma, and the app was turning sentence breaks into commas, so everything came out as flat commas and periods. That\'s gone: \'...\' becomes the real …, and the example lines the AI copies from (world examples, sheets, voice cards) no longer end in commas and periods. Texts follow the same system']},
  {v:'1.11.0', d:'2026-11-20', notes:['Roleplay cleanup. The story prompt was 175,000-190,000 characters and buried the characters under rules; it\'s now about 85,000-120,000. Realism details (weather, chores, fabric, romance pacing, periods and ~60 more) now only go in when the moment calls for them instead of all at once every reply (Settings > Realism: Smart is the new default; Everything is still there). The punctuation lecture attached to every turn is now one short voice-first line, and a duplicate copy is gone. Fixes: Spook Shack characters were told they were late and should leave at the very meetup they\'re scheduled for (and Lucia was scheduled to be asleep); the Saturday schedules now match the opening. Yuzuha, Alice, Lucia and Yidhari were listed as \'not a fighter, needs protection\'; they\'re S-rank agents now, as are Yanagi and Harumasa (Soukaku A). Characters no longer fixate every reply on clothes they don\'t own unless you\'re at a clothing store']},
  {v:'1.10.6', d:'2026-11-20', notes:['Livelier voices: the kiss/hug detector from 1.10.4 was firing on almost every reply (any mention of lips, hugs or laps) and rewriting dialogue flat; it now only triggers when you kiss, embrace or confess. Each character\'s own \'how they talk\' section and example lines are repeated at the end of every prompt. Spoken lines with several sentences keep their sentence breaks instead of becoming one long comma chain. Characters with no info for a reaction react at their own energy level instead of \'small\'. Story temperature 0.75 to 0.9']},
