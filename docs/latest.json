@@ -1,10 +1,12 @@
 {
- "version": "1.11.3",
- "date": "2026-11-20",
+ "version": "1.11.4",
+ "date": "2026-11-26",
  "notes": [
-  "Overnight trips stay overnight trips. When you're camping, at a sleepover, in a hotel or keeping watch somewhere, the app no longer tells characters they're supposed to be asleep at home and should leave, or that they're doing their usual home routine (like Manato making the kids breakfast); they sleep wherever the group set up. Characters with you on their free time are told their usual routine isn't happening today because they're with you. Every reply also reminds the AI where everyone physically is and that what was set up there (tents, a fire, who's on watch) is still true"
+  "Live feed fixes. On phones, the people button opened the wrong panel (the screen just dimmed), so you couldn't reach \"Everyone (live feed)\" or the character cards; it now opens the Who's where drawer, and tapping a card closes it. The live feed also no longer crashes when an old off-screen moment mentions a character that has since been removed",
+  "Sunna and Nangong are minors now: Sunna is 13 (14 on July 18) and Nangong is 14 (15 on September 29). Their ages count up with the in-app calendar, and every under-18 safeguard applies to them: nothing romantic or sexual, no dating, no adult items. Nangong keeps her cheeky, constant teasing of the Manager, just never romantic",
+  "Cissia habitually lies her way out of things and slips out of conversations, so she's notoriously hard to pin down. Yixuan acts surprised by things she saw coming, but a casual \"if fate allows\" gives her away"
  ],
  "file": "index.html",
- "sha256": "4746cfd32efea20c1d1cefe67f2cbde58d110b1d2c84d7188846378ec9479e24",
+ "sha256": "4e44cc6bab10e1bf56cb7fed7bf1abe6c9964d8e031425f66fc87aebb6548d15",
  "minShell": "0.5.0"
 }
