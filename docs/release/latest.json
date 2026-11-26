@@ -1,10 +1,10 @@
 {
- "version": "1.10.5",
+ "version": "1.10.6",
  "date": "2026-11-20",
  "notes": [
-  "Characters keep their own personalities: loud ones stay loud, only those written as shy get flustered; talk limits now depend on who's talking"
+  "Livelier voices: the kiss/hug detector from 1.10.4 was firing on almost every reply (any mention of lips, hugs or laps) and rewriting dialogue flat; it now only triggers when you kiss, embrace or confess. Each character's own 'how they talk' section and example lines are repeated at the end of every prompt. Spoken lines with several sentences keep their sentence breaks instead of becoming one long comma chain. Characters with no info for a reaction react at their own energy level instead of 'small'. Story temperature 0.75 to 0.9"
  ],
  "file": "index.html",
- "sha256": "57c1da1cf0074f74007aa75f55d20f78cd8dcdfcec86ac6effb7d0c0904d5321",
+ "sha256": "3320904ba23a54db0cd32b3910ee575401d349145cb21bb97d8134775dd13cd0",
  "minShell": "0.5.0"
 }
