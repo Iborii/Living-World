@@ -748,6 +748,25 @@ body:has(.modal.on) #chatsFab{display:none}
 .ph-photo .pic::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 25%,rgba(255,255,255,.22),transparent 45%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 2px,transparent 2px 4px)}
 .ph-photo .cap{padding:8px 10px;font-size:12.5px;line-height:1.4;color:#d9d6ce}
 .ph-gal{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
+/* other people's phones */
+.cp-wall{border-radius:16px;padding:18px 16px;min-height:150px;margin-bottom:18px;cursor:zoom-in;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;box-shadow:inset 0 -70px 60px -30px rgba(0,0,0,.6)}
+.cp-wall .ph-clock,.cp-full .ph-clock{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.cp-wall .ph-date,.cp-full .ph-date{color:rgba(255,255,255,.85)}
+.cp-full{min-height:min(520px,70vh);margin:12px;border-radius:18px;padding:22px 18px;cursor:zoom-out;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+.cp-full .cp-hint{color:rgba(255,255,255,.75);padding:0}
+.cp-row{display:flex;flex-direction:column;padding:3px 14px}
+.cp-row.out{align-items:flex-end}.cp-row.in{align-items:flex-start}
+.cp-bub{max-width:80%;padding:8px 11px;border-radius:14px;font-size:14px;line-height:1.35;white-space:pre-wrap;word-break:break-word}
+.cp-row.out .cp-bub{background:var(--pa,#d9a441);color:var(--pat,#16130c)}
+.cp-row.in .cp-bub{background:#262833;color:var(--text)}
+.cp-t{font-size:10px;color:var(--muted);margin:2px 4px}
+.cp-call{text-align:center;font-size:12px;color:var(--muted);padding:6px}
+.cp-note{padding:10px 16px;border-bottom:1px solid #1f2129;font-size:14px;line-height:1.4;word-break:break-word}
+.cp-note .small{display:block;margin-top:2px}
+.cp-sec{padding:12px 16px 4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.cp-hint{padding:10px 16px;font-size:12px;color:var(--muted);line-height:1.4}
+.cp-cur{box-shadow:inset 3px 0 0 var(--pa,#d9a441)}
+.cp-money{font-size:28px;font-weight:700;padding:14px 16px 4px}
 .ph-gal .ph-photo{width:auto;cursor:pointer}.ph-gal .ph-photo .pic{height:110px;font-size:30px}.ph-gal .who{font-size:11px;color:var(--muted);padding:0 10px 8px}
 .bub{position:relative}.bub .rx{position:absolute;bottom:-11px;right:6px;background:#22242d;border:1px solid #33364a;border-radius:10px;font-size:12px;padding:0 4px;line-height:18px}
 .bub.me .rx{right:auto;left:6px}.bub.has-rx{margin-bottom:14px}.bub.them{cursor:pointer}
@@ -1061,7 +1080,7 @@ body:has(.modal.on) #chatsFab{display:none}
 <div class="modal" id="hubModal"><div class="box hub-box"><div class="hub-head"><div id="hubTabs" class="hub-tabs"></div><button class="ghost" id="hubClose" title="Close">✕</button></div><div id="hubBody" class="hub-body"></div></div></div>
 <div class="modal" id="phoneModal"><div class="box">
   <div class="ph-bar"><span id="phTime"></span><span id="phWx"></span></div>
-  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><span id="phBatt" class="small" style="white-space:nowrap"></span><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
+  <div class="ph-top"><button class="ghost" id="phBack" style="display:none;padding:4px 10px">‹</button><div class="ph-av" id="phAv" style="display:none;width:32px;height:32px;font-size:15px"></div><div style="min-width:0;flex:1"><b id="phTitle">Phone</b><div id="phSub" class="small"></div></div><button class="ghost" id="phPeekBtn" title="People's phones" aria-label="People's phones" style="padding:4px 9px">👀</button><button class="ghost" id="phInvBtn" title="Invite" style="display:none;padding:4px 9px">📅</button><button class="ghost" id="phCallBtn" title="Call" style="display:none;padding:4px 9px">📞</button><span id="phBatt" class="small" style="white-space:nowrap"></span><button class="ghost" id="phClose" style="padding:4px 10px">✕</button></div>
   <div class="ph-body" id="phBody"></div><input type="file" id="phPhotoFile" accept="image/*" style="display:none">
   <div class="ph-send" id="phSendRow" style="display:none"><button class="ghost" id="phCam" title="Send a photo" style="padding:6px 9px">📷</button><input id="phInput" placeholder="Text message" autocomplete="off"><button class="primary" id="phSend">Send</button></div>
 </div></div>
@@ -3785,6 +3804,76 @@ if(!PHONE_APPS.some(a=>a[0]==='gallery')) PHONE_APPS.splice(PHONE_APPS.findIndex
 function sendPhoto(){ if(!phoneOpenId) return; const d=prompt('Describe the photo you send (what it shows):',''); if(!d||!d.trim()) return; const inp=$('#phInput'); const keep=inp.value; inp.value=`[photo: ${d.trim().replace(/[\[\]]/g,'')}]`; sendText(); inp.value=keep; }
 (()=>{ const b=$('#phCam'); if(b) b.onclick=sendPhoto; })();
 
+// ---------- other people's phones: a read-only look at what the story already knows (never saves, never marks anything read) ----------
+let peekId=null, peekApp='', peekWall=false, peekOpen='';
+const cssCol=v=>String(v||'#5b4a8a').replace(/[^#\w(),.% -]/g,'');
+function peekChar(){ return peekId?charById(peekId):null; }
+function peekWallBg(c){ const pic=c.phoneImg||c.img||''; const col=cssCol(c.color); return pic?`url("${String(pic).replace(/["\\]/g,'')}") center/cover`:`radial-gradient(circle at 28% 18%, ${col}, transparent 62%), linear-gradient(160deg, ${col}, #0e0f14 78%)`; }
+function peekBatt(c){ const st=S.chars[c.id]||{}; return st.batt!=null?st.batt:55+(hashStr(String(c.id))%45); }
+function peekMoney(c){ const st=S.chars[c.id]||{}; if(st.money!=null) return st.money; const base=c.money!=null?c.money:(typeof BUILTIN_MONEY!=='undefined'&&BUILTIN_MONEY[c.id]!=null?BUILTIN_MONEY[c.id]:120); return Math.round(base*(+currency().scale||1)); }
+// apps their sheet points to; the "why" line is shown so nothing is made up
+function peekSheetApps(c){ const s=String(c.sheet||''); const out=[]; const line=rx=>{ const l=s.split('\n').find(x=>rx.test(x)); return l?l.replace(/^\s*-\s*/,'').trim():''; };
+  const gf=s.match(/Godfinger (?:username|handle|name)\s*"([^"]+)"/i);
+  if(gf) out.push({k:'godfinger',ic:'🎮',l:'Godfinger',sub:'Username: '+gf[1],why:line(/Godfinger/i)});
+  else if(/rhythm game|arcade|\bgamer\b|video games?/i.test(s)) out.push({k:'games',ic:'🎮',l:'Games',sub:'',why:line(/rhythm game|arcade|\bgamer\b|video games?/i)});
+  if(/\bstocks?\b|\btrading\b|investing/i.test(s)) out.push({k:'stocks',ic:'📈',l:'Stocks',sub:'',why:line(/\bstocks?\b|\btrading\b|investing/i)});
+  if(/compos(es|er|ing)|songwrit|melod/i.test(s)) out.push({k:'music',ic:'🎵',l:'Music',sub:'',why:line(/compos(es|er|ing)|songwrit|melod/i)});
+  if(/\bcamera\b|photograph|selfie/i.test(s)) out.push({k:'camera',ic:'📸',l:'Camera',sub:'',why:line(/\bcamera\b|photograph|selfie/i)});
+  return out; }
+function peekPhotos(c){ const P=phone(); const out=[];
+  for(const m of (P.threads[c.id]||[])) if(isPhotoText(m.text)) out.push({t:m.t, d:photoDesc(m.text), from:m.me?'Sent to them by you':'Sent to you'});
+  for(const f of (P.feed||[])) if(f.who===c.id&&isPhotoText(f.text)) out.push({t:f.t, d:photoDesc(f.text), from:'Posted on '+feedApp()});
+  return out.sort((a,b)=>b.t-a.t); }
+function peekSchedToday(c){ const d=dt(S.clock), now=d.h*60+d.mi; return (c.schedule||[]).filter(e=>!e.days||e.days.includes(d.wd)).map(e=>({...e, cur:toMin(e.start)<=now&&now<toMin(e.end)})).sort((a,b)=>toMin(a.start)-toMin(b.start)); }
+function openPeek(id, app){ if(id!==undefined) peekId=id; peekApp=app||''; peekWall=false; peekOpen=''; openPhone(peekId?'peekphone':'peek'); }
+const peekBack=to=>{ $('#phBack').dataset.peek=to; };
+PHONE_VIEWS.peek=(B,P)=>{ phHeader("People's phones",'Peek at what\'s on their phones',true); peekBack('home');
+  const list=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(hasPhone);
+  B.innerHTML=list.length?list.map(c=>`<div class="ph-item" data-pk="${esc(c.id)}">${avHTML(c,40,false)}<div style="flex:1;min-width:0"><b>${esc(c.full)}</b><div class="small">${isContact(c.id)?'You have their number':'Not in your contacts'} · 🔋 ${peekBatt(c)}%</div></div><span class="small">›</span></div>`).join('')
+    :'<div class="cp-hint">Nobody in this story has a phone.</div>';
+  B.querySelectorAll('[data-pk]').forEach(d=>d.onclick=()=>openPeek(d.dataset.pk,'')); };
+PHONE_VIEWS.peekphone=(B,P)=>{ const c=peekChar(); if(!c){ openPeek(null); return; } const st=S.chars[c.id]||{}; const nm=esc(c.name); const pn=esc(uN());
+  const go=(a)=>{ peekApp=a; peekOpen=''; renderPhone(); };
+  const inferred=peekSheetApps(c);
+  const apps=[['msgs','💬',esc(appLabel('msgs'))],['contacts','👥','Contacts'],['photos','🖼️','Photos'],['feed','#️⃣',esc(feedApp())],['wallet','💳','Wallet'],['cal','🗓️','Calendar'],['notes','📝','Notes'],...inferred.map(a=>[a.k,a.ic,esc(a.l)]),['wall','🎨','Wallpaper']];
+  if(peekWall){ phHeader(`${nm}'s wallpaper`,'',true); peekBack('peekhome');
+    B.innerHTML=`<div class="cp-full" id="cpFull" style="background:${peekWallBg(c)}"><div><div class="ph-clock">${hhmm(S.clock)}</div><div class="ph-date">${wdName(S.clock)}, ${mmdd(S.clock)}</div></div><div class="cp-hint">Tap to close</div></div>`;
+    $('#cpFull').onclick=()=>{ peekWall=false; renderPhone(); }; return; }
+  if(!peekApp){ phHeader(`${nm}'s phone`,`🔋 ${peekBatt(c)}% · ${esc(subUser(st.act||''))}`,true); peekBack('peek');
+    B.innerHTML=`<div class="ph-home"><div class="cp-wall" id="cpWall" style="background:${peekWallBg(c)}" title="View wallpaper"><div class="ph-clock">${hhmm(S.clock)}</div><div class="ph-date">${wdName(S.clock)}, ${mmdd(S.clock)} · ${esc(weather(S.clock).desc)}, ${weather(S.clock).temp}°F</div></div>
+      <div class="ph-grid">${apps.map(([k,ic,l])=>`<button class="ph-app" data-ca="${k}"><span class="ic">${ic}</span><span class="lb">${l}</span></button>`).join('')}</div></div>`;
+    $('#cpWall').onclick=()=>{ peekWall=true; renderPhone(); };
+    B.querySelectorAll('[data-ca]').forEach(b=>b.onclick=()=>{ if(b.dataset.ca==='wall'){ peekWall=true; renderPhone(); } else go(b.dataset.ca); });
+    return; }
+  const hdr=(t,sub)=>{ phHeader(t,sub,true); peekBack('peekhome'); };
+  if(peekApp==='msgs'){ hdr(`${esc(appLabel('msgs'))} · ${pn}`,`On ${nm}'s phone`);
+    const th=P.threads[c.id]||[];
+    B.innerHTML=th.length?th.map(m=>m.kind==='call'?`<div class="cp-call">📞 ${esc(subUser(m.text||'Call'))} · ${hhmm(m.t)}</div>`
+      :`<div class="cp-row ${m.me?'in':'out'}"><div class="cp-bub">${isPhotoText(m.text)?photoCard(photoDesc(m.text)):esc(subUser(m.text))}</div><div class="cp-t">${m.me?pn:nm} · ${wdName(m.t).slice(0,3)} ${hhmm(m.t)}</div></div>`).join('')+`<div class="cp-hint">Their texts with you. Chats with other people aren't part of the story.</div>`
+      :`<div class="cp-hint">${nm} and you haven't texted yet.</div>`;
+    B.scrollTop=B.scrollHeight; return; }
+  if(peekApp==='contacts'){ hdr('Contacts',`On ${nm}'s phone`);
+    const others=W.characters.filter(o=>o.id!==c.id&&!isDead(o)).map(o=>({o, r:(S.rel||{})[relKey(c.id,o.id)]})).filter(x=>x.r&&x.r.score>=40).sort((a,b)=>b.r.score-a.r.score);
+    const rows=[]; if(isContact(c.id)) rows.push(`<div class="ph-item" data-cc="__user"><div class="ph-av" style="width:36px;height:36px;font-size:16px;background:#2c2f3d">${esc((uN()||'?')[0])}</div><div style="flex:1;min-width:0"><b>${pn}</b><div class="small">Trust: ${esc(trustLabel(st.trust||0))} · tap to read your texts</div></div></div>`);
+    for(const {o,r} of others) rows.push(`<div class="ph-item" data-cc="${esc(o.id)}" style="align-items:flex-start">${avHTML(o,36,false)}<div style="flex:1;min-width:0"><b>${esc(o.full)}</b><div class="small">${esc(relWord(r.score))}</div>${peekOpen===o.id?`<div class="small" style="margin-top:4px">${esc(subUser(r.note||''))}</div>`:''}</div></div>`);
+    B.innerHTML=rows.length?rows.join('')+`<div class="cp-hint">People ${nm} knows well enough to have their number. Tap someone to see how they get along.</div>`:`<div class="cp-hint">No saved contacts yet.</div>`;
+    B.querySelectorAll('[data-cc]').forEach(d=>d.onclick=()=>{ const id=d.dataset.cc; if(id==='__user'){ go('msgs'); return; } peekOpen=peekOpen===id?'':id; renderPhone(); }); return; }
+  if(peekApp==='photos'){ hdr('Photos',`On ${nm}'s phone`); const ph=peekPhotos(c);
+    B.innerHTML=ph.length?`<div class="ph-gal">${ph.map(x=>`<div class="ph-photo">${photoCard(x.d).replace(/^<div class="ph-photo">|<\/div>$/g,'')}<div class="who">${esc(x.from)} · ${wdName(x.t).slice(0,3)} ${mmdd(x.t)}</div></div>`).join('')}</div>`:`<div class="cp-hint">No photos yet. Photos they text you or post on ${esc(feedApp())} show up here.</div>`; return; }
+  if(peekApp==='feed'){ hdr(esc(feedApp()),`${nm}'s posts`); const posts=(P.feed||[]).filter(f=>f.who===c.id).slice().sort((a,b)=>b.t-a.t);
+    B.innerHTML=posts.length?posts.map(f=>`<div class="cp-note">${isPhotoText(f.text)?photoCard(photoDesc(f.text)):esc(subUser(f.text))}<span class="small">${wdName(f.t).slice(0,3)} ${mmdd(f.t)} ${hhmm(f.t)} · ❤️ ${(f.likes||[]).length} · 💬 ${(f.comments||[]).length}</span></div>`).join(''):`<div class="cp-hint">${nm} hasn't posted anything yet.</div>`; return; }
+  if(peekApp==='wallet'){ hdr('Wallet',`On ${nm}'s phone`); const inv=(st.inv||[]).filter(x=>x&&x.name);
+    B.innerHTML=`<div class="cp-money">${esc(money(peekMoney(c)))}</div><div class="cp-hint" style="padding-top:0">Balance</div><div class="cp-sec">In their bag</div>${inv.length?inv.map(x=>`<div class="cp-note">${esc(x.name)}${x.n>1?` ×${x.n}`:''}</div>`).join(''):'<div class="cp-hint">Nothing noted yet.</div>'}`; return; }
+  if(peekApp==='cal'){ hdr('Calendar',`${nm} · today, ${wdName(S.clock)}`); const sc=peekSchedToday(c);
+    B.innerHTML=(S.branch?`<div class="cp-hint">In a 1-on-1, ${nm}'s day follows the story instead of this routine.</div>`:'')+(sc.length?sc.map(e=>`<div class="cp-note${e.cur?' cp-cur':''}"><b>${esc(e.start)}–${esc(e.end)}</b> ${esc(subUser(e.act||''))}<span class="small">${esc(subUser(e.loc||''))}${e.cur?' · now':''}</span></div>`).join(''):`<div class="cp-hint">Nothing on ${nm}'s calendar today.</div>`); return; }
+  if(peekApp==='notes'){ hdr('Notes',`Things ${nm} remembers`); const ms=(S.memories||[]).filter(m=>m.who.includes(c.id)).slice().sort((a,b)=>b.t-a.t).slice(0,40);
+    B.innerHTML=ms.length?ms.map(m=>`<div class="cp-note">${m.pinned?'📌 ':''}${esc(subUser(m.text))}<span class="small">${wdName(m.t).slice(0,3)} ${mmdd(m.t)} ${hhmm(m.t)}</span></div>`).join(''):`<div class="cp-hint">No notes yet. As ${nm} lives through the story, what they remember shows up here.</div>`; return; }
+  const a=inferred.find(x=>x.k===peekApp);
+  if(a){ hdr(esc(a.l),`On ${nm}'s phone`);
+    B.innerHTML=`<div style="padding:20px 16px;text-align:center"><div style="font-size:46px">${a.ic}</div><div style="font-weight:700;margin-top:6px">${esc(a.l)}</div>${a.sub?`<div class="small" style="margin-top:4px">${esc(a.sub)}</div>`:''}</div>${a.why?`<div class="cp-sec">From ${nm}'s profile</div><div class="cp-note">${esc(subUser(a.why))}</div>`:''}`; return; }
+  peekApp=''; renderPhone(); };
+(()=>{ const b=$('#phPeekBtn'); if(b) b.onclick=()=>openPeek(null); })();
+
 // ---------- text reactions ----------
 const REACTS=['❤️','😂','😮','😢','😡','👍'];
 function textReactHook(c,out){ const m=String(out).match(/^\s*\[react(?:ion)?\s*:\s*([^\]]{1,8})\]\s*$/mi); if(!m) return out; const e=m[1].trim();
@@ -6402,7 +6491,7 @@ function renderPhoneBadge(){ const n=S?unreadCount():0; const b=$('#phBadge'); i
 function openPhone(view, id){ if(!S) return; { const la=[...S.chat].reverse().find(m=>m.role==='assistant'&&!m.hidden); if(la&&S.doingChecked!==S.chat.length) checkDoing(la.text,true); } phView=view||'home'; if(id!==undefined) phoneOpenId=id; $('#phoneModal').classList.add('on'); renderPhone(); if(phView==='chat') setTimeout(()=>{ const i=$('#phInput'); if(i) i.focus(); },50); }
 function avHTML(c,size=42,dot=true){ const s=contactStatus(c); const pic=contactPic(c); return `<div class="ph-av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.46)}px;background:${avatarBg(c.color,pic)}">${pic?'':esc(c.name[0])}${dot?`<span class="ph-dot" style="background:${ST_COL[s.k]}"></span>`:''}</div>`; }
 function statusPill(c){ const s=contactStatus(c); return `<span class="ph-st ${s.k}">${esc(s.label)}</span>${s.sub?`<span class="ph-stsub">${esc(s.sub)}</span>`:''}`; }
-function phHeader(title, sub, back){ const pb=$('#phBatt'); if(pb&&S) pb.textContent=`${hasSignal('user')?'📶':'📵 no signal'} ${battIcon(battOf('user'))}`; $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
+function phHeader(title, sub, back){ delete $('#phBack').dataset.peek; { const inPeek=phView==='peek'||phView==='peekphone'; const pk=$('#phPeekBtn'); if(pk) pk.style.display=inPeek?'none':''; if(inPeek) ['#phInvBtn','#phCallBtn'].forEach(s=>{ const b=$(s); if(b) b.style.display='none'; }); } const pb=$('#phBatt'); if(pb&&S) pb.textContent=`${hasSignal('user')?'📶':'📵 no signal'} ${battIcon(battOf('user'))}`; $('#phTitle').innerHTML=title; $('#phSub').innerHTML=sub||''; $('#phBack').style.display=back?'':'none'; $('#phAv').style.display='none'; $('#phSendRow').style.display='none'; }
 let lastPhView='';
 function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; return; }
   { const k=phView+'|'+phoneOpenId; if(k!==lastPhView){ lastPhView=k; const pb=$('#phBody'); if(pb){ pb.classList.remove('phIn'); void pb.offsetWidth; pb.classList.add('phIn'); } } }
@@ -6530,7 +6619,7 @@ function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) re
   if(!hasSignal('user')){ const m=thread(c.id).slice(-1)[0]; if(m) m.queued=true; save(); renderPhone(); notice('📵 No signal here. It will send when you have signal again.'); return; }
   const P=phone(); if(!P.pending[c.id]) P.pending[c.id]=S.clock+replyDelay(c)*MIN; renderPhone(); }
 $('#phSend').onclick=sendText; $('#phInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } };
-$('#phBack').onclick=()=>openPhone(phView==='chat'?'msgs':'home');
+$('#phBack').onclick=()=>{ const pk=$('#phBack').dataset.peek; if(pk){ if(pk==='peekhome') openPeek(peekId,''); else if(pk==='peek') openPeek(null); else openPhone(pk); return; } openPhone(phView==='chat'?'msgs':'home'); };
 $('#phClose').onclick=()=>{ if(CALL&&CALL.state==='live'){ if(!confirm('Hang up?')) return; endCall(false); } $('#phoneModal').classList.remove('on'); };
 $('#phCallBtn').onclick=()=>startCall(charById(phoneOpenId));
 $('#phInvBtn').onclick=()=>openPhone('invite');
