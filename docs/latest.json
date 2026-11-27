@@ -1,10 +1,12 @@
 {
- "version": "1.11.6",
- "date": "2026-11-26",
+ "version": "1.11.7",
+ "date": "2026-11-27",
  "notes": [
-  "Deleted chats now stay deleted after refresh. Deleting a chat removed its save, but the story stayed loaded in the background and got saved right back (especially if you deleted it from the home screen right after playing it, or opened another chat next). \"Start over\" had the same problem and could bring back the old story; it now really starts fresh"
+  "Peek at other characters' phones. Tap 👀 at the top of your phone, pick someone, and look through their phone: their texts with you, contacts, photos, posts, wallet and bag, today's calendar, notes on what they remember, apps their profile mentions (like Godfinger or stocks) and their wallpaper. It only shows what the story already knows and changes nothing",
+  "Each chat keeps its own memories. Starting over or starting a new chat after deleting one could bring back what characters remembered from the old chat; deleted chats now take their remembered moments with them",
+  "Fixed an error when you switched chats while a background moment was still being written; that moment is now simply dropped instead of landing in the wrong story"
  ],
  "file": "index.html",
- "sha256": "80373060d067f0fd344ab7bae5da34ae8e93a4ad3141d2ad9392ac5835f025e2",
+ "sha256": "0b4921ec9a21b960ce05b8e01518e828959e7f0cfacfa16be86aa8a0bb449a6f",
  "minShell": "0.5.0"
 }
