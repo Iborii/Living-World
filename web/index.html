@@ -1508,7 +1508,9 @@ function load(){
 }
 let saveTimer=null;
 // deleting a save: if it's the story currently loaded, drop the in-memory copy first so nothing (a pending save, the 15s flush, opening another chat) writes it back
-function dropSave(k){ if(S&&SAVE_KEY===k){ clearTimeout(saveTimer); S=null; } LS.removeItem(k); }
+function dropSave(k){ if(S&&SAVE_KEY===k){ clearTimeout(saveTimer); S=null; if(SCREEN==='world') try{ showScreen('home'); }catch(e){} } LS.removeItem(k);
+  // its archived memories go too, or a new chat that reuses this save slot would recall the deleted chat
+  const ak=k.replace('_save_','_memarc_'); LS.removeItem(ak); try{ if(MEMARC.k===ak) MEMARC={k:'',a:[]}; }catch(e){} }
 function save(){ if(!W||!S) return; S.lastPlayed=Date.now(); if(VAULT_ON()) vaultSoon(); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{ LS.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ notice('Could not save (browser storage is full). Export your save from Settings.', true); } }, 400); }
 function saveCfg(){ try{ LS.setItem(SET_KEY, JSON.stringify(CFG)); }catch(e){} }
 
@@ -2624,7 +2626,7 @@ function fireworks(g,x0,y0,w,h,dpr,sp,F){ const now=performance.now()/1000; if(F
 if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(skyLoop);
 function tick(){
   const now=Date.now(); let dtReal=now-lastReal; lastReal=now;
-  if(!W||SCREEN!=='world') return;
+  if(!W||!S||SCREEN!=='world') return;
   if(dtReal>60000){ // the app was asleep (phone locked, app in the background, computer asleep)
     if(CFG.away==='catchup'&&!S.paused){ const gone=Math.min(dtReal,12*3600000); notice(`While you were away, ${gone>=3600000?Math.round(gone/360000)/10+' hours':Math.round(gone/60000)+' minutes'} of real time passed in the world.`); dtReal=gone; }
     else dtReal=1000; }
@@ -4197,11 +4199,11 @@ PROMPT_HOOKS.push(()=>{ const A=wxAlertFor(S.clock); if(!A.length) return ''; re
 // ======================= your messages type out, and people can cut you off =======================
 const TYPE_CPS=38; let TYPE_A=null; // {m, shown, timer}
 function typeNodes(el){ const out=[]; const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())) out.push(n); return out; }
-function typeApply(){ if(!TYPE_A) return; const el=document.querySelector(`#feed [data-i="${S.chat.indexOf(TYPE_A.m)}"] .bubble`); if(!el) return;
+function typeApply(){ if(!TYPE_A||!S) return; const el=document.querySelector(`#feed [data-i="${S.chat.indexOf(TYPE_A.m)}"] .bubble`); if(!el) return;
   const ns=typeNodes(el); if(!el._full) { el._full=ns.map(n=>n.nodeValue); } let left=TYPE_A.shown; ns.forEach((n,i)=>{ const f=el._full[i]||''; n.nodeValue=f.slice(0,Math.max(0,left)); left-=f.length; });
   el.classList.toggle('typing-cur',TYPE_A.shown<TYPE_A.len); }
 function typeStart(m){ if(CFG.typeAnim==='off') return; if(TYPE_A&&TYPE_A.timer) clearInterval(TYPE_A.timer); const len=plainMsg(m).length+20;
-  TYPE_A={m, shown:0, len}; TYPE_A.timer=setInterval(()=>{ if(!TYPE_A) return; TYPE_A.shown+=Math.max(1,Math.round(TYPE_CPS/20)); typeApply(); if(TYPE_A.shown>=TYPE_A.len+400){ clearInterval(TYPE_A.timer); const el=document.querySelector('#feed .typing-cur'); if(el) el.classList.remove('typing-cur'); TYPE_A=null; } },50); typeApply(); }
+  TYPE_A={m, shown:0, len}; TYPE_A.timer=setInterval(()=>{ if(!TYPE_A) return; if(!S){ clearInterval(TYPE_A.timer); TYPE_A=null; return; } TYPE_A.shown+=Math.max(1,Math.round(TYPE_CPS/20)); typeApply(); if(TYPE_A.shown>=TYPE_A.len+400){ clearInterval(TYPE_A.timer); const el=document.querySelector('#feed .typing-cur'); if(el) el.classList.remove('typing-cur'); TYPE_A=null; } },50); typeApply(); }
 (()=>{ const _r=render; render=function(){ const r=_r.apply(this,arguments); try{ typeApply(); }catch(e){} return r; }; })();
 // the story can cut you off: [[CUTOFF: the exact words you got out]]
 function applyCutoff(arg){ const said=String(arg||'').trim().replace(/[—–-]+$/,''); if(said.length<2) return; const u=[...S.chat].reverse().find(x=>x.role==='user'&&!x.hidden); if(!u||u.cut) return;
