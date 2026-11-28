@@ -767,6 +767,7 @@ body:has(.modal.on) #chatsFab{display:none}
 .cp-hint{padding:10px 16px;font-size:12px;color:var(--muted);line-height:1.4}
 .cp-cur{box-shadow:inset 3px 0 0 var(--pa,#d9a441)}
 .cp-money{font-size:28px;font-weight:700;padding:14px 16px 4px}
+.cardpov{margin-left:auto;padding:2px 7px;font-size:14px;line-height:1}
 .mind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px}
 .mind-slot{background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;color:var(--text)}
 .mind-slot.locked{cursor:default;opacity:.55}
@@ -5796,8 +5797,9 @@ function renderCards(){
   $('#allCard').style.display=S.branch?'none':''; document.querySelectorAll('aside h3')[1].textContent=S.branch?'In this chat':'Watch the world';
   $('#charCards').innerHTML=W.characters.filter(c=>!S.branch||c.id===S.branch.charId).map(c=>{ const st=S.chars[c.id]; const withU=pres.includes(c.id);
     const mv=lastCardLoc[c.id]!==undefined&&lastCardLoc[c.id]!==st.loc; lastCardLoc[c.id]=st.loc;
-    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''} ${withU?'withu':''}" data-id="${c.id}" style="--cc:${c.color}"><div class="nm"><span class="dot cav" style="background:${c.img?`center/cover url('${c.img}')`:c.color}">${c.img?'':esc((c.name||'?')[0])}</span><span class="cn">${esc(c.full)}</span>${withU?'<span class="badge">with you</span>':''}</div>${!S.branch&&!st.dead&&(S.user.companions.includes(c.id)||withU)?`<button class="ghost wbtn" data-wtog="${c.id}">${S.user.companions.includes(c.id)?'Leave them':'Bring along'}</button>`:''}${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div>${withU&&/^with you$/i.test(st.act||'')?'':`<div class="act">${esc(st.act)}</div>`}`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
-  document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-wtog]')) return; S.view=el.dataset.id; render(); save(); closeSide(); });
+    return `<div class="card ${S.view===c.id?'sel':''} ${busyChars.has(c.id)?'busy':''} ${st.dead?'dead':''} ${mv?'moved':''} ${withU?'withu':''}" data-id="${c.id}" style="--cc:${c.color}"><div class="nm"><span class="dot cav" style="background:${c.img?`center/cover url('${c.img}')`:c.color}">${c.img?'':esc((c.name||'?')[0])}</span><span class="cn">${esc(c.full)}</span>${S.takeover&&S.takeover.id===c.id?'<span class="badge">you</span>':withU?'<span class="badge">with you</span>':''}${!S.branch&&!st.dead&&!(S.takeover&&S.takeover.id===c.id)?`<button class="ghost cardpov" data-pov="${c.id}" title="Play as ${esc(c.name)}" aria-label="Play as ${esc(c.name)}">🎭</button>`:''}</div>${!S.branch&&!st.dead&&(S.user.companions.includes(c.id)||withU)?`<button class="ghost wbtn" data-wtog="${c.id}">${S.user.companions.includes(c.id)?'Leave them':'Bring along'}</button>`:''}${st.dead?`<div class="where">† Died ${mmdd(st.dead.t)}${st.dead.how?' · '+esc(st.dead.how):''}</div>`:`<div class="where">${esc(st.loc)}</div>${withU&&/^with you$/i.test(st.act||'')?'':`<div class="act">${esc(st.act)}</div>`}`}${st.dead?'':(()=>{ const b=stateBits(c,true); const o=st.outfit; return (b.length||o)?`<div class="needs">${b.map(x=>`<span>${esc(x)}</span>`).join('')}${o?`<span class="ow">👕 ${esc(o.name)}</span>`:''}</div>`:''; })()}</div>`; }).join('');
+  document.querySelectorAll('#charCards [data-pov]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); switchPov(b.dataset.pov); closeSide(); });
+  document.querySelectorAll('#charCards .card').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-wtog]')||e.target.closest('[data-pov]')) return; S.view=el.dataset.id; render(); save(); closeSide(); });
   document.querySelectorAll('[data-wtog]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.wtog, c=charById(id); const was=S.user.companions.includes(id);
     if(was){ setCompanions(S.user.companions.filter(x=>x!==id)); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.name} is no longer with ${uN()}; they went off on their own and are not in the scene anymore. Don't bring them back unless the story calls for it.)`}); notice(`${c.name} is no longer with you.`); }
     else { setCompanions([...S.user.companions,id]); S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: ${c.name} is now with ${uN()} and will come along wherever they go.)`}); notice(`${c.name} is with you now.`); }
@@ -5818,10 +5820,12 @@ function renderStatus(){
 }
 function renderViewbar(){
   const v=S.view;
-  $('#viewbar').innerHTML = v==='me' ? (S.branch?`<b>1-on-1 with ${esc(charById(S.branch.charId).full)}</b> · ${esc(S.branch.title)} · ${esc(S.user.loc)}`:`<b>Your story</b> · ${esc(S.user.loc)}`) :
+  const tk=S.takeover&&charById(S.takeover.id);
+  $('#viewbar').innerHTML = v==='me' ? (S.branch?`<b>1-on-1 with ${esc(charById(S.branch.charId).full)}</b> · ${esc(S.branch.title)} · ${esc(S.user.loc)}`:tk?`<b>Playing as ${esc(tk.full)}</b> · ${esc(S.user.loc)} <button class="ghost" id="povBack" style="margin-left:auto">↩ Back to ${esc(uN())}</button>`:`<b>Your story</b> · ${esc(S.user.loc)}`) :
     v==='all' ? `<b>Watching everyone</b> · live off-screen feed <button class="ghost" id="backBtn" style="margin-left:auto">← Back to my story</button>` :
-    `<b>Watching ${esc(charById(v).full)}</b> · ${esc(S.chars[v].loc)} · ${esc(S.chars[v].act)} <button class="ghost" id="backBtn" style="margin-left:auto">← Back to my story</button>`;
+    `<b>Watching ${esc(charById(v).full)}</b> · ${esc(S.chars[v].loc)} · ${esc(S.chars[v].act)} ${!S.branch&&!isDead(charById(v))&&!(S.takeover&&S.takeover.id===v)?`<button class="ghost" id="povHere" style="margin-left:auto" title="Switch your point of view to ${esc(charById(v).name)}">🎭 Play as ${esc(charById(v).name)}</button>`:''}<button class="ghost" id="backBtn" style="${!S.branch&&!isDead(charById(v))&&!(S.takeover&&S.takeover.id===v)?'':'margin-left:auto'}">← Back to my story</button>`;
   const b=$('#backBtn'); if(b) b.onclick=()=>{ S.view='me'; render(); };
+  { const pb=$('#povBack'); if(pb) pb.onclick=()=>switchPov(null); const ph=$('#povHere'); if(ph) ph.onclick=()=>switchPov(v); }
   $('#composer').style.display = v==='me'?'':'none';
 }
 function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return;
@@ -5840,7 +5844,7 @@ function takeOver(id){ const c=charById(id); if(!c||isDead(c)) return;
   S.takeover={id, t:S.clock, prev:{loc:S.user.loc, companions:[...S.user.companions]}};
   S.user.loc=st.loc; S.user.companions=withProxy?S.user.companions.filter(x=>x!==id):[];
   S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: from here on the player is playing as ${c.full}, not ${uN()}. Continue the story from ${c.name}'s point of view at ${st.loc}. ${withProxy?`${uN()} is still here, now as a background character.`:`${uN()} is elsewhere.`})`});
-  updateSchedules(); save(); render(); notice(`You're now playing as ${c.name}. Pick your persona under "Playing as" to switch back.`); }
+  S.view='me'; updateSchedules(); save(); render(); notice(`You're now playing as ${c.name}. Tap "↩ Back to ${uN()}" (or "Playing as") to switch back.`); }
 function endTakeover(silent){ const t=S.takeover; if(!t) return; const c=charById(t.id); const st=S.chars[t.id]; const here=S.user.loc;
   const withX=S.user.companions.slice(); // people who stayed with the played character
   S.user.loc=t.prev.loc; S.user.companions=t.prev.companions.filter(id=>id!==t.id&&!withX.includes(id)&&charById(id)&&!isDead(charById(id)));
@@ -5849,16 +5853,21 @@ function endTakeover(silent){ const t=S.takeover; if(!t) return; const c=charByI
   if(sameLoc(here,S.user.loc)) for(const id of withX) if(!S.user.companions.includes(id)) S.user.companions.push(id);
   delete S.takeover;
   S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: the player is back to playing ${uN()}${c?`; ${c.name} is an ordinary character again and carries on from where they are`:''}. ${uN()} is at ${S.user.loc}.)`});
-  updateSchedules(); save(); if(!silent){ render(); notice(`Back to playing as ${uN()}.`); } }
+  S.view='me'; updateSchedules(); save(); if(!silent){ render(); notice(`Back to playing as ${uN()}.`); } }
 PROMPT_HOOKS.push(pres=>{ if(!S||!S.takeover) return ''; const c=charById(S.takeover.id); if(!c) return ''; const U=uN(); const proxyHere=sameLoc(S.user.loc,S.takeover.prev.loc);
   return `\nTAKE-OVER (read last, obey first): the player is playing as ${c.full} right now, not as ${U}. Every [PLAYER TURN] from the take-over on is written by ${c.name}: ${c.name}'s own words, actions, thoughts and choices. Never write ${c.name}'s dialogue, actions, thoughts or decisions yourself, and never move ${c.name} anywhere; narrate the world and how everyone else reacts to ${c.name}, from ${c.name}'s point of view and senses. Everyone treats ${c.name} exactly as they normally would; nobody knows anything changed.
 ${idLine(c)}WHO ${c.name.toUpperCase()} IS: ${c.brief}
 ${relLines([c].concat(pres.filter(x=>x.id!==c.id)), c.id)||''}
 ${proxyHere?`${U} (the player's usual character) is here too but is not being played: keep ${U} in the background, quiet and natural, never making big choices or talking for long.`:`${U} (the player's usual character) is elsewhere and not in this scene.`} Everything above about ${U}'s trust, dating, body, phone and memories still describes ${U}, not ${c.name}.${c.minor||c.protect?`\n${c.name} is a minor: keep everything age-appropriate, never romantic or sexual.`:''}\n`; });
-function openPersonaPick(v){ if(v.startsWith('__as:')){ takeOver(v.slice(5)); renderPersonaSel(); return true; }
-  if(v==='__me'){ if(busyMain){ notice('Wait for the current reply to finish first.'); } else endTakeover(false); renderPersonaSel(); return true; } return false; }
+var PENDING_SWITCH=null;
+// switch point of view at any time: to a character (id) or back to your own (null); mid-reply it waits for the reply to finish
+function switchPov(id){ if(!S||!W) return; if(S.branch){ notice("Switching characters isn't available in a 1-on-1."); return; }
+  if(busyMain){ PENDING_SWITCH={id}; const c=id&&charById(id); notice(c?`Switching to ${c.name} as soon as this reply finishes.`:`Switching back to ${uN()} as soon as this reply finishes.`); renderPersonaSel(); return; }
+  if(id) takeOver(id); else endTakeover(false); renderPersonaSel(); }
+function openPersonaPick(v){ if(v.startsWith('__as:')){ switchPov(v.slice(5)); return true; }
+  if(v==='__me'){ switchPov(null); return true; } return false; }
 function render(){ renderPersonaSel(); $('#worldTitle').textContent=S.branch?`${charById(S.branch.charId).full} · 1-on-1`:W.title; renderClock(); renderCards(); renderViewbar(); renderFeed(); renderStatus(); }
-function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; if($('#contBtn')) $('#contBtn').disabled=busyMain; $('#sendBtn').classList.toggle('stopping',busyMain); }
+function setBusyUI(){ if(!busyMain&&typeof PENDING_SWITCH!=='undefined'&&PENDING_SWITCH){ const p=PENDING_SWITCH; PENDING_SWITCH=null; setTimeout(()=>switchPov(p.id),0); } $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; if($('#contBtn')) $('#contBtn').disabled=busyMain; $('#sendBtn').classList.toggle('stopping',busyMain); }
 function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>{ d.classList.add('leave'); setTimeout(()=>d.remove(),360); }, err?15000:6000); }
 
 // ======================= UI wiring =======================
