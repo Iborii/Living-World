@@ -767,6 +767,14 @@ body:has(.modal.on) #chatsFab{display:none}
 .cp-hint{padding:10px 16px;font-size:12px;color:var(--muted);line-height:1.4}
 .cp-cur{box-shadow:inset 3px 0 0 var(--pa,#d9a441)}
 .cp-money{font-size:28px;font-weight:700;padding:14px 16px 4px}
+.mind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px}
+.mind-slot{background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;color:var(--text)}
+.mind-slot.locked{cursor:default;opacity:.55}
+.mind-art{position:relative;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;border:1px solid #2a2c38;display:flex;align-items:center;justify-content:center}
+.mind-art.big{aspect-ratio:3/4;max-height:60vh}
+.mind-ini{font-size:46px;font-weight:800;color:rgba(255,255,255,.16)}
+.mind-art.big .mind-ini{font-size:120px}
+.mind-num{position:absolute;bottom:6px;right:8px;font-weight:700;font-size:13px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .ph-gal .ph-photo{width:auto;cursor:pointer}.ph-gal .ph-photo .pic{height:110px;font-size:30px}.ph-gal .who{font-size:11px;color:var(--muted);padding:0 10px 8px}
 .bub{position:relative}.bub .rx{position:absolute;bottom:-11px;right:6px;background:#22242d;border:1px solid #33364a;border-radius:10px;font-size:12px;padding:0 4px;line-height:18px}
 .bub.me .rx{right:auto;left:6px}.bub.has-rx{margin-bottom:14px}.bub.them{cursor:pointer}
@@ -3876,6 +3884,45 @@ PHONE_VIEWS.peekphone=(B,P)=>{ const c=peekChar(); if(!c){ openPeek(null); retur
   peekApp=''; renderPhone(); };
 (()=>{ const b=$('#phPeekBtn'); if(b) b.onclick=()=>openPeek(null); })();
 
+// ---------- mindscapes: the proxy obtains a character's mindscapes (pictures their mind produces) as their bond grows ----------
+// progress lives in the story (per chat); your own attached pictures live per character, outside the save. Never anything sexual;
+// custom pictures are switched off for anyone under 18 or protected.
+const MIND_AT=[30,45,60,70,80,90], MIND_ROMAN=['I','II','III','IV','V','VI'];
+let mindId=null, mindBig=0;
+function mindLevel(c){ const t=(S.chars[c.id]||{}).trust||0; return MIND_AT.filter(x=>t>=x).length; }
+function mindsOf(id){ S.minds=S.minds||{}; return S.minds[id]||0; }
+function mindKey(c){ return 'livingworld_mind_'+(c.home||W.id)+'_'+c.id; }
+function mindPics(c){ try{ return JSON.parse(LS.getItem(mindKey(c))||'{}')||{}; }catch(e){ return {}; } }
+function mindCanUpload(c){ return !c.minor&&!c.protect; }
+function mindCast(){ return (S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(c=>!isDead(c)); }
+function mindTick(){ if(!S||!W||SCREEN!=='world') return; S.minds=S.minds||{}; const first=!S.mindsInit; let got=[];
+  for(const c of mindCast()){ const lv=mindLevel(c), cur=S.minds[c.id]||0; if(lv>cur){ S.minds[c.id]=lv; if(!first) got.push([c,lv,cur]); } }
+  if(first) S.mindsInit=1;
+  for(const [c,lv,cur] of got){ const nm=lv-cur>1?`Mindscapes ${MIND_ROMAN[cur]}–${MIND_ROMAN[lv-1]}`:`Mindscape ${MIND_ROMAN[lv-1]}`; notice(`🎞️ You obtained ${c.name}'s ${nm}. See ${lv-cur>1?'them':'it'} in Mindscapes on your phone.`); try{ pushNotif({icon:'🎞️',app:'Mindscapes',title:`${c.name}: ${nm}`,body:'A new mindscape surfaced.',open:{view:'minds'}}); }catch(e){} }
+  if(first||got.length) save(); }
+setInterval(()=>{ try{ mindTick(); }catch(e){} }, 4000);
+function mindArt(c,n,big){ const col=cssCol(c.color); const hue=(hashStr(c.id+':'+n)%360);
+  return `<div class="mind-art${big?' big':''}" style="background:radial-gradient(circle at ${20+n*11}% ${25+(n%3)*18}%, hsl(${hue} 70% 62% / .55), transparent 55%), radial-gradient(circle at 80% 85%, ${col}, transparent 60%), linear-gradient(160deg, #141520, #0b0b10)"><span class="mind-ini">${esc((c.name||'?')[0])}</span><span class="mind-num">${MIND_ROMAN[n-1]}</span></div>`; }
+if(!PHONE_APPS.some(a=>a[0]==='minds')) PHONE_APPS.splice(PHONE_APPS.findIndex(a=>a[0]==='wx'),0,['minds','🎞️']);
+PHONE_VIEWS.minds=(B,P)=>{ phHeader('Mindscapes','Pictures from their minds, obtained as you grow closer',true); mindTick();
+  const cs=mindCast(); B.innerHTML=cs.map(c=>{ const n=mindsOf(c.id); return `<div class="ph-item" data-md="${esc(c.id)}">${avHTML(c,40,false)}<div style="flex:1;min-width:0"><b>${esc(c.full)}</b><div class="small">${n?`${n} of 6 obtained`:`None yet · first one at trust ${MIND_AT[0]}`}</div></div><span class="small">${'●'.repeat(n)}${'○'.repeat(6-n)}</span></div>`; }).join('')||'<div class="cp-hint">Nobody here yet.</div>';
+  B.querySelectorAll('[data-md]').forEach(d=>d.onclick=()=>{ mindId=d.dataset.md; mindBig=0; openPhone('mind'); }); };
+PHONE_VIEWS.mind=(B,P)=>{ const c=mindId&&charById(mindId); if(!c){ openPhone('minds'); return; } phHeader(`${esc(c.name)}'s mindscapes`,`${mindsOf(c.id)} of 6 obtained · trust ${(S.chars[c.id]||{}).trust||0}`,true); $('#phBack').dataset.peek='minds';
+  const n=mindsOf(c.id), pics=mindPics(c), up=mindCanUpload(c);
+  if(mindBig&&mindBig<=n){ const k=mindBig; const pic=pics[k];
+    B.innerHTML=`<div style="padding:12px">${pic?`<div class="mind-art big" style="background:#0b0b10 url('${String(pic).replace(/['"\\]/g,'')}') center/contain no-repeat"></div>`:mindArt(c,k,true)}
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><b style="flex:1">Mindscape ${MIND_ROMAN[k-1]}</b>${up?`<button class="ghost" id="mdUp">${pic?'Change picture':'Attach a picture'}</button>${pic?'<button class="ghost" id="mdDel">Remove</button>':''}`:''}<button class="ghost" id="mdClose">Close</button></div>
+      <div class="cp-hint" style="padding:8px 0">${up?'Attach your own art for this mindscape. Keep it non-sexual.':`Custom pictures are off for ${esc(c.name)} because they're under 18.`}</div><input type="file" id="mdFile" accept="image/*" style="display:none"></div>`;
+    $('#mdClose').onclick=()=>{ mindBig=0; renderPhone(); };
+    if(up){ $('#mdUp').onclick=()=>$('#mdFile').click();
+      $('#mdFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; try{ const p=mindPics(c); p[k]=await shrinkImage(f,900); LS.setItem(mindKey(c),JSON.stringify(p)); }catch(er){ notice('Could not save that picture: '+er.message,true); } renderPhone(); };
+      const d=$('#mdDel'); if(d) d.onclick=()=>{ const p=mindPics(c); delete p[k]; LS.setItem(mindKey(c),JSON.stringify(p)); renderPhone(); }; }
+    return; }
+  B.innerHTML=`<div class="mind-grid">${[1,2,3,4,5,6].map(k=>k<=n?`<button class="mind-slot" data-mk="${k}">${pics[k]&&up?`<div class="mind-art" style="background:#0b0b10 url('${String(pics[k]).replace(/['"\\]/g,'')}') center/cover"><span class="mind-num">${MIND_ROMAN[k-1]}</span></div>`:mindArt(c,k,false)}</button>`
+      :`<div class="mind-slot locked"><div class="mind-art"><span class="mind-num">🔒</span></div><div class="small">Trust ${MIND_AT[k-1]}</div></div>`).join('')}</div>
+    <div class="cp-hint">Mindscapes surface as ${esc(c.name)} comes to trust you. Tap one to view it.</div>`;
+  B.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{ mindBig=+b.dataset.mk; renderPhone(); }); };
+
 // ---------- text reactions ----------
 const REACTS=['❤️','😂','😮','😢','😡','👍'];
 function textReactHook(c,out){ const m=String(out).match(/^\s*\[react(?:ion)?\s*:\s*([^\]]{1,8})\]\s*$/mi); if(!m) return out; const e=m[1].trim();
@@ -6648,7 +6695,7 @@ function renderPhone(){ if(!S||!phoneOn()){ renderPhoneBadge(); lastPhView=''; r
   if(phView!=='chat'){ $('#phCallBtn').style.display='none'; $('#phInvBtn').style.display='none'; }
   renderPhoneBadge(); save();
 }
-function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather',gallery:'Photos',dnd:'Focus'})[k]; }
+function appLabel(k,pc){ const p=pc||phoneCfg(); const z=p.style==='zzz'; return k==='msgs'?(p.msgName||(z?'Knock Knock':'Messages')):k==='feed'?(p.feedName||(z?'Inter-Knot':'Social')):({calls:'Calls',invite:'Invite',map:'Map',cal:'Calendar',wx:'Weather',gallery:'Photos',dnd:'Focus',minds:'Mindscapes'})[k]; }
 function lightColor(hex){ const m=String(hex).match(/^#?([0-9a-f]{6})$/i); if(!m) return false; const n=parseInt(m[1],16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>150; }
 function sendText(){ const v=$('#phInput').value.trim(); if(!v||!phoneOpenId) return; if(phoneDead('user')){ notice('🪫 Your phone is dead. Charge it at home or use a power bank.',true); return; } $('#phInput').value=''; const c=charById(phoneOpenId); addText(c.id,true,v); S.user.batt=Math.max(0,battOf('user')-0.4);
   if(!S.branch&&present().some(x=>x.id===c.id)){ // they're right here: their phone buzzes in the scene
