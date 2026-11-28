@@ -2077,6 +2077,7 @@ function updateSchedules(){
   for(const c of W.characters){
     const st=S.chars[c.id];
     if(st.dead){ st.loc='—'; st.act='passed away'; continue; }
+    if(S.takeover&&S.takeover.id===c.id){ st.loc=S.user.loc; st.act='played by the player'; continue; }
     if(st.ovr&&(st.ovr.slot!==slotKey(c)||S.clock-(st.ovr.t||0)>8*HOUR)) delete st.ovr; // their schedule moved on
     if(S.user.companions.includes(c.id)){ st.loc=S.user.loc; st.act=st.ovr?st.ovr.act+' (with you)':'with you'; continue; }
     if(st.ovr){ st.act=st.ovr.act; if(st.ovr.loc) st.loc=st.ovr.loc; continue; }
@@ -2271,7 +2272,7 @@ Return ONLY JSON like {"Name":{"with":false,"doing":"same","trust":0},"_rumor":n
     if(changed){ updateSchedules(); save(); if(SCREEN==='world'){ renderCards(); renderStatus(); } if($('#phoneModal').classList.contains('on')) renderPhone(); }
   }catch(e){ if(!sceneCheckErrShown){ sceneCheckErrShown=true; notice('Couldn\'t update who\'s with you and relationships: '+e.message+' (check the background model in Settings).',true); } } }
 // once per existing story: rate everyone's trust from the story so far, so an established relationship doesn't sit at the starting value
-async function calibrateTrust(){ if(!S||S.trustCal||!CFG.key) return; const said=S.chat.filter(m=>m.role==='assistant'&&!m.hidden); if(said.length<4){ return; }
+async function calibrateTrust(){ if(!S||S.trustCal||!CFG.key||S.takeover) return; const said=S.chat.filter(m=>m.role==='assistant'&&!m.hidden); if(said.length<4){ return; }
   S.trustCal=1; save(); const cast=(S.branch?W.characters.filter(c=>c.id===S.branch.charId):W.characters).filter(c=>!isDead(c));
   const recent=S.chat.filter(m=>!m.hidden).slice(-24).map(m=>(m.role==='user'?uN():'Story')+': '+m.text).join('\n\n').slice(-12000);
   try{ const out=await aiQuick({system:`Rate how much each main character of a roleplay trusts and likes ${uN()} right now, 0 to 100: 0-9 distrusts or hates them, 10-24 wary, 25-39 stranger, 40-54 acquaintance, 55-69 friendly, 70-84 close friend / trusts them, 85-100 partner, family-level closeness, deeply in love. Base it only on what happened in the story. Characters who have barely met ${uN()} stay around 25-35. Return ONLY JSON {"Name":number}.`,
@@ -2418,7 +2419,7 @@ async function send(text){
   if(overBudget()&&!confirm(`You've reached today's spending limit ($${(+CFG.dailyLimit).toFixed(2)}). Off-screen lives are paused. Send this message anyway?`)) return;
   text=(text||'').trim(); if(!text) return; try{ if(window.SEND_FILTER) text=SEND_FILTER(text); }catch(e){ console.warn('send filter',e); }
   if(PS.list.length && !persona().gender){ openPersonas(persona().id); $('#pmMsg').textContent='Please choose a gender for this persona before you play.'; return; }
-  S.chat.push({role:'user',text,t:S.clock,pid:S.personaId,pname:persona().name}); S.view='me'; bumpStats(present().map(c=>c.id)); render(); save();
+  S.chat.push({role:'user',text,t:S.clock,pid:S.personaId,pname:S.takeover&&charById(S.takeover.id)?charById(S.takeover.id).name:persona().name,...(S.takeover?{as:S.takeover.id}:{})}); S.view='me'; bumpStats(present().map(c=>c.id)); render(); save();
   await generateReply();
 }
 async function continueScene(){
@@ -2463,6 +2464,7 @@ function applyControls(text){
     const m=l.match(/^\s*\[\[(\w+):\s*([^\]]+)\]\]\s*$/);
     if(!m){ keep.push(l); continue; }
     const [_,cmd,arg]=m; const C=cmd.toUpperCase();
+    if(S.takeover&&TAKEOVER_SKIP.has(C)) continue; // trust, dating and numbers belong to the usual character, not the one being played
     if(C==='MOVE'){ S.user.lastLoc=S.user.loc; S.user.loc=arg.trim(); }
     else if(C==='RIDE'){ rideMode=arg; }
     else if(C==='JOIN'){ const c=charByName(arg); if(c&&!S.user.companions.includes(c.id)){ freshJoin(c.id); S.user.companions.push(c.id); } }
@@ -4332,7 +4334,7 @@ CONTROL_HOOKS.BREAKUP=arg=>{ const [n,...w]=arg.split(':'); const c=charByName(n
 CONTROL_HOOKS.INTIMATE=arg=>{ const c=charByName(arg.split(':')[0].trim()); const d=c&&dOf(c.id); if(!d) return; (d.intimate=d.intimate||[]).push(S.clock); if(d.intimate.length>30) d.intimate.shift(); };
 // neglect: days without seeing or texting your partner cost points; random calls once you're locked in
 function datingTick(){ if(!S||!W||SCREEN!=='world'||!S.dating) return; const day=Math.floor(S.clock/DAYMS); if(S._dDay===day) return; S._dDay=day; const P=phone();
-  for(const id in S.dating){ const d=S.dating[id]; if(!d.on) continue; const c=charById(id); if(!c||isDead(c)||c.minor||c.protect){ continue; }
+  for(const id in S.dating){ const d=S.dating[id]; if(!d.on) continue; const c=charById(id); if(!c||isDead(c)||c.minor||c.protect||(S.takeover&&S.takeover.id===id)){ continue; }
     const seen=S.chat.slice(-400).some(m=>m.role==='assistant'&&S.clock-m.t<3*DAYMS&&new RegExp(`\\b${c.name}\\b`).test(m.text||''))||((P.threads||{})[id]||[]).some(m=>m.me&&S.clock-m.t<3*DAYMS);
     if(!seen) dChange(id,-1,'you haven\'t been around in days');
     if(dStage(d.pts).n>=2&&isContact(id)&&hasPhone(c)&&Math.random()<.3&&!P.pending[id]){ P.extra[id]=`You're dating ${uN()} (${dStage(d.pts).name.split(': ')[1].toLowerCase()}) and just felt like hearing from them, out of nowhere: call or text them, in character.`; P.pending[id]=S.clock+(1+Math.random()*8)*HOUR; } } }
@@ -4989,7 +4991,7 @@ function spokenLedger(){ const U=uN(); const rows=[]; const recent=S.chat.filter
 PROMPT_HOOKS.push(()=>{ const L=spokenLedger(); if(!L.length) return ''; const qs=[]; for(const r of L){ const who=r.slice(0,r.indexOf(':')); for(const q of (r.slice(r.indexOf(':')+2).match(/[^.!?"~]*\?/g)||[])) if(q.trim().length>3) qs.push(who+' asked "'+q.trim()+'"'); }
   return `\nCONTINUITY, WHO SAID WHAT (the last spoken lines, in order, with the real speaker):\n${L.join('\n')}\n${qs.length?`Questions asked so far: ${qs.slice(-8).join('; ')}.\n`:''}Never attribute a line, question, idea or promise to the wrong person. If a character asked something, THEY asked it; ${uN()} only said what is under ${uN()}'s name. Characters remember their own questions and whether they got an answer.\n`; });
 // ---- clearer player turns + no speaking for the player + no echoing the player's lines ----
-function playerTurnText(t){ const U=uN(); const parts=[]; let rest=String(t);
+function playerTurnText(t, who){ const U=who||uN(); const parts=[]; let rest=String(t);
   if(!/[*"“]/.test(rest)) return `${U} (plain text: read it as ${U}'s own words or action, whichever fits): ${rest.trim()}`;
   const re=/\*([^*]+)\*|["“]([^"”]+)["”]/g; let m, last=0;
   while((m=re.exec(rest))){ const pre=rest.slice(last,m.index).trim(); if(pre) parts.push(`(${U}'s action) ${pre}`);
@@ -4998,7 +5000,8 @@ function playerTurnText(t){ const U=uN(); const parts=[]; let rest=String(t);
   return parts.join('\n'); }
 chatMessages=function(){ const U=uN(); const out=[]; const recent=S.chat.filter(m=>!m.streaming&&m.text).slice(-24);
   for(const m of recent){
-    if(m.role==='user') out.push({role:'user',content:m.hidden?m.text:`[PLAYER TURN: written by ${U}. Every word and action below belongs to ${U} alone; "I", "me" and "my" mean ${U}. No character said or did any of this. Characters may react to it, but must never repeat it as their own line or claim they said it.]\n${playerTurnText(m.text)}`});
+    const PU=(m.as&&charById(m.as))?charById(m.as).name:U; // a turn written while the player had taken over a character keeps that character's name
+    if(m.role==='user') out.push({role:'user',content:m.hidden?m.text:`[PLAYER TURN: written by ${PU}. Every word and action below belongs to ${PU} alone; "I", "me" and "my" mean ${PU}. No character said or did any of this. Characters may react to it, but must never repeat it as their own line or claim they said it.]\n${playerTurnText(m.text,PU)}`});
     else if(m.role==='assistant') out.push({role:'assistant',content:m.text});
     else if(m.role==='text') out.push({role:'user',content:`(A ${phoneApp()} text arrives on the user's phone from ${m.from}: "${m.text}")`}); }
   const merged=[]; for(const m of out){ if(merged.length&&merged[merged.length-1].role===m.role) merged[merged.length-1].content+='\n\n'+m.content; else merged.push({...m}); }
@@ -5774,7 +5777,39 @@ function renderViewbar(){
   const b=$('#backBtn'); if(b) b.onclick=()=>{ S.view='me'; render(); };
   $('#composer').style.display = v==='me'?'':'none';
 }
-function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return; sel.innerHTML=PS.list.map(p=>`<option value="${p.id}">Playing as ${esc(p.name||'(unnamed)')}</option>`).join('')+'<option value="__manage">Manage personas…</option>'; sel.value=S.personaId||''; }
+function renderPersonaSel(){ const sel=$('#personaSel'); if(!sel) return;
+  const takeable=S.branch?[]:W.characters.filter(c=>!isDead(c));
+  sel.innerHTML=(S.takeover?`<option value="__me">↩ Back to playing as ${esc(uN())}</option>`:'')+PS.list.map(p=>`<option value="${p.id}">Playing as ${esc(p.name||'(unnamed)')}</option>`).join('')
+    +(takeable.length?`<optgroup label="Take over a character">${takeable.map(c=>`<option value="__as:${esc(c.id)}">Playing as ${esc(c.name)}</option>`).join('')}</optgroup>`:'')
+    +'<option value="__manage">Manage personas…</option>';
+  sel.value=S.takeover?'__as:'+S.takeover.id:(S.personaId||''); }
+// ---- take over a character: the player plays as them (their POV, voice and choices); the story, chat and everyone's state carry on ----
+var TAKEOVER_SKIP=new Set(['TRUST','DATING','LOVE','BREAKUP','INTIMATE','NUMBER']);
+function takeOver(id){ const c=charById(id); if(!c||isDead(c)) return;
+  if(S.branch){ notice("Taking over a character isn't available in a 1-on-1."); return; }
+  if(busyMain){ notice('Wait for the current reply to finish first.'); return; }
+  if(S.takeover){ if(S.takeover.id===id) return; endTakeover(true); }
+  const st=S.chars[id]; const withProxy=S.user.companions.includes(id)||sameLoc(st.loc,S.user.loc);
+  S.takeover={id, t:S.clock, prev:{loc:S.user.loc, companions:[...S.user.companions]}};
+  S.user.loc=st.loc; S.user.companions=withProxy?S.user.companions.filter(x=>x!==id):[];
+  S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: from here on the player is playing as ${c.full}, not ${uN()}. Continue the story from ${c.name}'s point of view at ${st.loc}. ${withProxy?`${uN()} is still here, now as a background character.`:`${uN()} is elsewhere.`})`});
+  updateSchedules(); save(); render(); notice(`You're now playing as ${c.name}. Pick your persona under "Playing as" to switch back.`); }
+function endTakeover(silent){ const t=S.takeover; if(!t) return; const c=charById(t.id); const st=S.chars[t.id]; const here=S.user.loc;
+  const withX=S.user.companions.slice(); // people who stayed with the played character
+  S.user.loc=t.prev.loc; S.user.companions=t.prev.companions.filter(id=>id!==t.id&&!withX.includes(id)&&charById(id)&&!isDead(charById(id)));
+  for(const id of withX){ const s2=S.chars[id]; if(s2&&!sameLoc(here,S.user.loc)){ s2.loc=here; s2.lastBeat=S.clock; } }
+  if(st){ st.loc=here; st.lastBeat=S.clock; if(sameLoc(here,S.user.loc)&&!S.user.companions.includes(t.id)) S.user.companions.push(t.id); }
+  if(sameLoc(here,S.user.loc)) for(const id of withX) if(!S.user.companions.includes(id)) S.user.companions.push(id);
+  delete S.takeover;
+  S.chat.push({role:'user',hidden:true,t:S.clock,text:`(Story note: the player is back to playing ${uN()}${c?`; ${c.name} is an ordinary character again and carries on from where they are`:''}. ${uN()} is at ${S.user.loc}.)`});
+  updateSchedules(); save(); if(!silent){ render(); notice(`Back to playing as ${uN()}.`); } }
+PROMPT_HOOKS.push(pres=>{ if(!S||!S.takeover) return ''; const c=charById(S.takeover.id); if(!c) return ''; const U=uN(); const proxyHere=sameLoc(S.user.loc,S.takeover.prev.loc);
+  return `\nTAKE-OVER (read last, obey first): the player is playing as ${c.full} right now, not as ${U}. Every [PLAYER TURN] from the take-over on is written by ${c.name}: ${c.name}'s own words, actions, thoughts and choices. Never write ${c.name}'s dialogue, actions, thoughts or decisions yourself, and never move ${c.name} anywhere; narrate the world and how everyone else reacts to ${c.name}, from ${c.name}'s point of view and senses. Everyone treats ${c.name} exactly as they normally would; nobody knows anything changed.
+${idLine(c)}WHO ${c.name.toUpperCase()} IS: ${c.brief}
+${relLines([c].concat(pres.filter(x=>x.id!==c.id)), c.id)||''}
+${proxyHere?`${U} (the player's usual character) is here too but is not being played: keep ${U} in the background, quiet and natural, never making big choices or talking for long.`:`${U} (the player's usual character) is elsewhere and not in this scene.`} Everything above about ${U}'s trust, dating, body, phone and memories still describes ${U}, not ${c.name}.${c.minor||c.protect?`\n${c.name} is a minor: keep everything age-appropriate, never romantic or sexual.`:''}\n`; });
+function openPersonaPick(v){ if(v.startsWith('__as:')){ takeOver(v.slice(5)); renderPersonaSel(); return true; }
+  if(v==='__me'){ if(busyMain){ notice('Wait for the current reply to finish first.'); } else endTakeover(false); renderPersonaSel(); return true; } return false; }
 function render(){ renderPersonaSel(); $('#worldTitle').textContent=S.branch?`${charById(S.branch.charId).full} · 1-on-1`:W.title; renderClock(); renderCards(); renderViewbar(); renderFeed(); renderStatus(); }
 function setBusyUI(){ $('#sendBtn').disabled=false; $('#sendBtn').textContent=busyMain?'■ Stop':'Send'; if($('#contBtn')) $('#contBtn').disabled=busyMain; $('#sendBtn').classList.toggle('stopping',busyMain); }
 function notice(msg,err){ const f=$('#feed'); const d=document.createElement('div'); d.className='notice'+(err?' err':''); d.innerHTML=`<div class="in">${esc(msg)}</div>`; f.appendChild(d); f.scrollTop=f.scrollHeight; setTimeout(()=>{ d.classList.add('leave'); setTimeout(()=>d.remove(),360); }, err?15000:6000); }
@@ -6332,7 +6367,9 @@ $('#pmDelete').onclick=()=>{ const p=PS.list.find(x=>x.id===pmEditing); if(!p||!
 $('#pmClose').onclick=()=>$('#personaModal').classList.remove('on');
 $('#personaModal').onclick=e=>{ if(e.target.id==='personaModal') $('#personaModal').classList.remove('on'); };
 $('#homePersonas').onclick=()=>openPersonas();
-$('#personaSel').onchange=e=>{ if(e.target.value==='__manage'){ renderPersonaSel(); openPersonas(); return; } S.personaId=e.target.value; save(); render(); notice(`You're now playing as ${persona().name}.`); };
+$('#personaSel').onchange=e=>{ if(e.target.value==='__manage'){ renderPersonaSel(); openPersonas(); return; } if(openPersonaPick(e.target.value)) return;
+  if(S.takeover){ if(busyMain){ notice('Wait for the current reply to finish first.'); renderPersonaSel(); return; } endTakeover(true); }
+  S.personaId=e.target.value; save(); render(); notice(`You're now playing as ${persona().name}.`); };
 
 // ======================= 1-on-1 branches =======================
 const BR_KEY='livingworld_branches';
