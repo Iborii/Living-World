@@ -1,12 +1,13 @@
 {
- "version": "1.11.7",
- "date": "2026-11-27",
+ "version": "1.11.8",
+ "date": "2026-11-28",
  "notes": [
-  "Peek at other characters' phones. Tap 👀 at the top of your phone, pick someone, and look through their phone: their texts with you, contacts, photos, posts, wallet and bag, today's calendar, notes on what they remember, apps their profile mentions (like Godfinger or stocks) and their wallpaper. It only shows what the story already knows and changes nothing",
-  "Each chat keeps its own memories. Starting over or starting a new chat after deleting one could bring back what characters remembered from the old chat; deleted chats now take their remembered moments with them",
-  "Fixed an error when you switched chats while a background moment was still being written; that moment is now simply dropped instead of landing in the wrong story"
+  "Take over a character. Under \"Playing as\", pick anyone in the story and play as them: their point of view, their voice, their choices. The story, chat and everyone's state carry on, your own character's trust and relationships aren't touched, and \"Back to playing as…\" switches you back",
+  "Mindscapes. As someone comes to trust you, you obtain their mindscapes (six each). See them in the new Mindscapes app on your phone; for adult characters you can attach your own picture to one you've unlocked",
+  "Ages: Nangong is 18 now. Sunna is 16 and Aria is 10 (mentally around 20); both stay under the under-18 rules, so nothing romantic or sexual with them, and Aria keeps her petite idol look",
+  "Cissia is homeless, and rumored to crush people in their sleep. Belle is good friends with everyone"
  ],
  "file": "index.html",
- "sha256": "0b4921ec9a21b960ce05b8e01518e828959e7f0cfacfa16be86aa8a0bb449a6f",
+ "sha256": "e5537c322c9e765a75c880a3793379c5f0e0299ad15b50d55e588ff7ee2dcf37",
  "minShell": "0.5.0"
 }
