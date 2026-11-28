@@ -1,13 +1,10 @@
 {
- "version": "1.11.8",
+ "version": "1.11.9",
  "date": "2026-11-28",
  "notes": [
-  "Take over a character. Under \"Playing as\", pick anyone in the story and play as them: their point of view, their voice, their choices. The story, chat and everyone's state carry on, your own character's trust and relationships aren't touched, and \"Back to playing as…\" switches you back",
-  "Mindscapes. As someone comes to trust you, you obtain their mindscapes (six each). See them in the new Mindscapes app on your phone; for adult characters you can attach your own picture to one you've unlocked",
-  "Ages: Nangong is 18 now. Sunna is 16 and Aria is 10 (mentally around 20); both stay under the under-18 rules, so nothing romantic or sexual with them, and Aria keeps her petite idol look",
-  "Cissia is homeless, and rumored to crush people in their sleep. Belle is good friends with everyone"
+  "Cissia: sneaks back to sleep once let in; more personality."
  ],
  "file": "index.html",
- "sha256": "e5537c322c9e765a75c880a3793379c5f0e0299ad15b50d55e588ff7ee2dcf37",
+ "sha256": "a9fab5f5b3da9246e643ed006ad7a9865d78f71e9c29b8dff1c6fe9b0c36d18e",
  "minShell": "0.5.0"
 }
