@@ -1,10 +1,10 @@
 {
- "version": "1.11.9",
+ "version": "1.11.10",
  "date": "2026-11-28",
  "notes": [
-  "Cissia: sneaks back to sleep once let in; more personality."
+  "Cissia lives with Belle above Random Play now (no more dorm room or rent). She only sleeps over at your place if you say yes, and then the rumor turns out true: she coils up and crushes you in your sleep like the snake she is"
  ],
  "file": "index.html",
- "sha256": "a9fab5f5b3da9246e643ed006ad7a9865d78f71e9c29b8dff1c6fe9b0c36d18e",
+ "sha256": "730a0b759e39edcce842d7f7354a81c0e49166367b522a9de4254b0491bfe9a8",
  "minShell": "0.5.0"
 }
